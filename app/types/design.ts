@@ -13,6 +13,10 @@ export interface BucketSize {
   frontImage?: string;
   description?: string;
   tag?: string;
+  canvasFilter?: string;
+  cssFilter?: string;
+  colorName?: string;
+  colorHex?: string;
 }
 
 export interface WrapperType {
@@ -33,6 +37,17 @@ export interface FlowerDef {
   emoji: string;
   color: string;
   description?: string;
+  colorName?: string;
+}
+
+export interface FlowerFamily {
+  id: string;
+  name: string;
+  category: FlowerCategory;
+  emoji: string;
+  description?: string;
+  defaultFlowerId: string;
+  variants: FlowerDef[];
 }
 
 export interface PlacedFlower {

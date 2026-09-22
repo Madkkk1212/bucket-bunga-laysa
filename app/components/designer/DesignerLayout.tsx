@@ -11,6 +11,7 @@ import StepFlowers from '../steps/StepFlowers';
 import StepText from '../steps/StepText';
 import StepPreview from '../steps/StepPreview';
 import StepDownload from '../steps/StepDownload';
+import ModalPortal from '../ui/ModalPortal';
 import { BookOpen, Edit3, SlidersHorizontal, ChevronRight } from 'lucide-react';
 
 const STEP_TITLES: Record<number, string> = {
@@ -190,7 +191,10 @@ export default function DesignerLayout() {
       </div>
 
       {/* ─── MODAL / DRAWER ATUR BUNGA (TAMPIL HANYA SAAT DIKLIK) ─── */}
-      {isAturBungaOpen && !isFinalOrStep5 && (
+      <ModalPortal
+        isOpen={isAturBungaOpen && !isFinalOrStep5}
+        onClose={() => setIsAturBungaOpen(false)}
+      >
         <div
           className="artisan-drawer-backdrop"
           onClick={() => setIsAturBungaOpen(false)}
@@ -205,7 +209,7 @@ export default function DesignerLayout() {
             <SelectionSummary onClose={() => setIsAturBungaOpen(false)} />
           </div>
         </div>
-      )}
+      </ModalPortal>
     </div>
   );
 }

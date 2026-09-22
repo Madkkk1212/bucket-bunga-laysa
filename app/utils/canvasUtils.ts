@@ -195,13 +195,13 @@ export function getBouquetDimensions(
   let baseTargetW: number;
   if (ratioVal >= 1.6) {
     // 9:16 Snapgram (tall vertical)
-    baseTargetW = Math.round(Math.min(canvasW * 0.94, 520));
+    baseTargetW = Math.round(Math.min(canvasW * 0.88, 475));
   } else if (ratioVal > 1.1) {
     // 4:5 or 3:4 portrait
-    baseTargetW = Math.round(Math.min(canvasW * 0.92, 530));
+    baseTargetW = Math.round(Math.min(canvasW * 0.84, 480));
   } else {
-    // 1:1 square
-    baseTargetW = Math.round(Math.min(canvasW * 0.90, 540));
+    // 1:1 square: well proportioned so top flowers and bottom wrapper/ribbon are never cut off
+    baseTargetW = Math.round(Math.min(canvasW * 0.76, 455));
   }
 
   const targetW = Math.round(baseTargetW * bMultiplier);
@@ -211,7 +211,7 @@ export function getBouquetDimensions(
   const bucketX = Math.round((canvasW - targetW) / 2);
 
   // Position bouquet in the vertical center of the canvas according to the ratio
-  // The bouquet visual center (including flowers blooming above collar) is at bucketY + targetH * 0.44
+  // The bouquet visual center (including flowers blooming above collar) is at bucketY + targetH * 0.45
   let bucketY: number;
   if (ratioVal >= 1.4) {
     // For tall vertical ratios (Snapgram 9:16, etc.), center bouquet nicely in the middle zone
@@ -222,8 +222,9 @@ export function getBouquetDimensions(
     const visualCenterOffset = Math.round(targetH * 0.46);
     bucketY = Math.round(canvasH / 2 - visualCenterOffset);
   } else {
-    // 1:1 square: centered with slightly more room on top for flower dome
-    bucketY = Math.round((canvasH - targetH) / 2 + 10);
+    // 1:1 square: centered with balanced margins top and bottom
+    const visualCenterOffset = Math.round(targetH * 0.45);
+    bucketY = Math.round(canvasH / 2 - visualCenterOffset);
   }
 
   const bottomY = bucketY + targetH;
@@ -270,6 +271,9 @@ export function drawBouquetBack(
 
   // If real bucket image from images/bucket is loaded, render it directly!
   if (backImg && backImg.complete && backImg.naturalWidth) {
+    if (bucket.canvasFilter) {
+      ctx.filter = bucket.canvasFilter;
+    }
     ctx.shadowColor = 'rgba(0, 0, 0, 0.25)';
     ctx.shadowBlur = 18;
     ctx.shadowOffsetY = 8;
@@ -624,6 +628,9 @@ export function drawBouquetFront(
 
   // If real front piece is loaded from images/bucket:
   if (frontImg && frontImg.complete && frontImg.naturalWidth) {
+    if (bucket.canvasFilter) {
+      ctx.filter = bucket.canvasFilter;
+    }
     // Relative positioning calibrated to 1866 x 1954 original dimensions:
     // front starts at x = 401, y = 1050, width = 1359, height = 904
     const frontW = Math.round(1359 * dims.scale);

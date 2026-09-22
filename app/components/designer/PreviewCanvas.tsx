@@ -16,7 +16,6 @@ import {
   drawCanvasBackground,
 } from '../../utils/canvasUtils';
 import { CanvasRatio, BackgroundTheme } from '../../types/design';
-import SmartNumberInput from '../ui/SmartNumberInput';
 
 interface PreviewCanvasProps {
   canvasRef?: React.RefObject<HTMLCanvasElement | null>;
@@ -46,10 +45,6 @@ export default function PreviewCanvas({ canvasRef: externalRef }: PreviewCanvasP
     selectedFlowerUid: selectedUid,
     setSelectedFlowerUid: setSelectedUid,
     hoveredFlowerUid,
-    setCanvasRatio,
-    setBgTheme,
-    setBouquetScale,
-    setBouquetRotation,
   } = useDesign();
 
   const currentRatio: CanvasRatio = design.canvasRatio ?? '1:1';
@@ -677,184 +672,6 @@ export default function PreviewCanvas({ canvasRef: externalRef }: PreviewCanvasP
 
   return (
     <div className="preview-canvas-container">
-      {/* Studio Toolbar: Ratio Selector & Studio Themes */}
-      <div className="canvas-studio-toolbar">
-        {/* Ratio Selector */}
-        <div className="canvas-ratio-group">
-          <span className="studio-toolbar-title">Rasio Kanvas:</span>
-          <div className="canvas-ratio-pills">
-            {(Object.keys(CANVAS_RATIO_DIMENSIONS) as CanvasRatio[]).map((r) => {
-              const info = CANVAS_RATIO_DIMENSIONS[r];
-              const isActive = currentRatio === r;
-              return (
-                <button
-                  key={r}
-                  type="button"
-                  className={`ratio-pill-btn ${isActive ? 'active' : ''}`}
-                  onClick={() => setCanvasRatio(r)}
-                  title={`${info.label} (${info.width}x${info.height}px)`}
-                >
-                  <span className="ratio-icon">{info.icon}</span>
-                  <span className="ratio-label">{info.label}</span>
-                  <span className="ratio-sub">{info.subLabel}</span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Background Theme Selector */}
-        <div className="canvas-theme-group">
-          <span className="studio-toolbar-title">Tema Latar:</span>
-          <div className="canvas-theme-swatches">
-            {BACKGROUND_THEMES.map((theme) => {
-              const isActive = currentTheme === theme.id;
-              return (
-                <button
-                  key={theme.id}
-                  type="button"
-                  className={`theme-swatch-pill ${isActive ? 'active' : ''}`}
-                  onClick={() => setBgTheme(theme.id)}
-                  title={theme.name}
-                >
-                  <span
-                    className="theme-swatch-dot"
-                    style={{ backgroundColor: theme.previewColor }}
-                  />
-                  <span className="theme-name">{theme.badge}</span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Bouquet Scale / Size Controller */}
-        <div className="canvas-scale-group">
-          <span className="studio-toolbar-title">Ukuran Buket:</span>
-          <div className="canvas-scale-controls">
-            <button
-              type="button"
-              className="scale-step-btn"
-              onClick={() =>
-                setBouquetScale(
-                  Math.max(0.7, Number(((design.bouquetScale ?? 1.0) - 0.05).toFixed(2))),
-                )
-              }
-              title="Perkecil buket"
-              aria-label="Perkecil buket"
-            >
-              −
-            </button>
-            <input
-              type="range"
-              className="bouquet-scale-range"
-              min={70}
-              max={135}
-              step={1}
-              value={Math.round((design.bouquetScale ?? 1.0) * 100)}
-              onChange={(e) => setBouquetScale(Number(e.target.value) / 100)}
-              aria-label="Atur besar kecilnya buket"
-            />
-            <SmartNumberInput
-              value={Math.round((design.bouquetScale ?? 1.0) * 100)}
-              min={70}
-              max={135}
-              step={1}
-              unit="%"
-              onChange={(val) => setBouquetScale(val / 100)}
-              ariaLabel="Ketik ukuran buket (%)"
-              title="Ketik ukuran buket (%)"
-            />
-            <button
-              type="button"
-              className="scale-step-btn"
-              onClick={() =>
-                setBouquetScale(
-                  Math.min(1.35, Number(((design.bouquetScale ?? 1.0) + 0.05).toFixed(2))),
-                )
-              }
-              title="Perbesar buket"
-              aria-label="Perbesar buket"
-            >
-              +
-            </button>
-            {(design.bouquetScale ?? 1.0) !== 1.0 && (
-              <button
-                type="button"
-                className="scale-reset-chip"
-                onClick={() => setBouquetScale(1.0)}
-                title="Kembalikan ukuran buket ke 100%"
-              >
-                Reset
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Bouquet Rotation Controller */}
-        <div className="canvas-scale-group">
-          <span className="studio-toolbar-title">Putar Buket:</span>
-          <div className="canvas-scale-controls">
-            <button
-              type="button"
-              className="scale-step-btn"
-              onClick={() =>
-                setBouquetRotation(
-                  Math.max(-180, Math.round((design.bouquetRotation ?? 0) - 15)),
-                )
-              }
-              title="Putar kiri 15°"
-              aria-label="Putar kiri"
-            >
-              ↺
-            </button>
-            <input
-              type="range"
-              className="bouquet-scale-range"
-              min={-180}
-              max={180}
-              step={1}
-              value={design.bouquetRotation ?? 0}
-              onChange={(e) => setBouquetRotation(Number(e.target.value))}
-              aria-label="Putar buket"
-            />
-            <SmartNumberInput
-              value={design.bouquetRotation ?? 0}
-              min={-180}
-              max={180}
-              step={1}
-              unit="°"
-              onChange={(val) => setBouquetRotation(val)}
-              ariaLabel="Ketik rotasi buket (°)"
-              title="Ketik rotasi buket (°)"
-            />
-            <button
-              type="button"
-              className="scale-step-btn"
-              onClick={() =>
-                setBouquetRotation(
-                  Math.min(180, Math.round((design.bouquetRotation ?? 0) + 15)),
-                )
-              }
-              title="Putar kanan 15°"
-              aria-label="Putar kanan"
-            >
-              ↻
-            </button>
-            {(design.bouquetRotation ?? 0) !== 0 && (
-              <button
-                type="button"
-                className="scale-reset-chip"
-                onClick={() => setBouquetRotation(0)}
-                title="Kembalikan rotasi buket ke 0°"
-              >
-                Reset
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
-
       {/* Visual Canvas Area */}
       <div
         className={`canvas-wrapper ${isDragOver ? 'canvas-drag-over' : ''}`}
