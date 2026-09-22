@@ -7,6 +7,7 @@ import { getBucketSize } from '../../data/buckets';
 import { FLOWERS } from '../../data/flowers';
 import { PlacedFlower } from '../../types/design';
 import { ArrowUpToLine, ArrowDownToLine, Copy, Trash2, X, Sparkles, SlidersHorizontal } from 'lucide-react';
+import SmartNumberInput from '../ui/SmartNumberInput';
 
 interface SelectionSummaryProps {
   onClose?: () => void;
@@ -175,31 +176,182 @@ export default function SelectionSummary({ onClose }: SelectionSummaryProps) {
               </div>
             </div>
 
-            {/* Slider Ukuran */}
+            {/* Slider & Input Ukuran Bunga */}
             <div className="inspector-section">
               <div className="inspector-slider-header">
                 <span className="inspector-section-label">Ukuran Bunga</span>
-                <span className="inspector-slider-val">{selectedFlower.size ?? 80}px</span>
+                {(selectedFlower.size ?? 80) !== 80 && (
+                  <button
+                    type="button"
+                    className="scale-reset-chip"
+                    onClick={() =>
+                      updateFlower(selectedFlower.uid, {
+                        size: 80,
+                        isManual: true,
+                      })
+                    }
+                    title="Kembalikan ukuran bunga ke default 80px"
+                  >
+                    Reset
+                  </button>
+                )}
               </div>
-              <input
-                type="range"
-                min={40}
-                max={180}
-                step={4}
-                value={selectedFlower.size ?? 80}
-                onChange={(e) =>
-                  updateFlower(selectedFlower.uid, {
-                    size: Number(e.target.value),
-                    isManual: true,
-                  })
-                }
-                className="artisan-slider"
-              />
+              <div className="slider-control-row">
+                <button
+                  type="button"
+                  className="scale-step-btn"
+                  onClick={() =>
+                    updateFlower(selectedFlower.uid, {
+                      size: Math.max(40, (selectedFlower.size ?? 80) - 5),
+                      isManual: true,
+                    })
+                  }
+                  title="Perkecil 5px"
+                >
+                  −
+                </button>
+                <input
+                  type="range"
+                  min={40}
+                  max={180}
+                  step={1}
+                  value={selectedFlower.size ?? 80}
+                  onChange={(e) =>
+                    updateFlower(selectedFlower.uid, {
+                      size: Number(e.target.value),
+                      isManual: true,
+                    })
+                  }
+                  className="artisan-slider"
+                />
+                <SmartNumberInput
+                  value={selectedFlower.size ?? 80}
+                  min={40}
+                  max={180}
+                  step={1}
+                  unit="px"
+                  onChange={(val) =>
+                    updateFlower(selectedFlower.uid, {
+                      size: val,
+                      isManual: true,
+                    })
+                  }
+                  ariaLabel="Ketik ukuran bunga (px)"
+                  title="Ketik ukuran bunga (px)"
+                />
+                <button
+                  type="button"
+                  className="scale-step-btn"
+                  onClick={() =>
+                    updateFlower(selectedFlower.uid, {
+                      size: Math.min(180, (selectedFlower.size ?? 80) + 5),
+                      isManual: true,
+                    })
+                  }
+                  title="Perbesar 5px"
+                >
+                  +
+                </button>
+              </div>
               <div className="inspector-slider-hints">
                 <span>Kecil (40px)</span>
+                <span>Standar (80px / 100%)</span>
                 <span>Besar (180px)</span>
               </div>
             </div>
+
+            {/* Slider & Input Rotasi Bunga */}
+            {(() => {
+              const currentRotDeg = Math.round(
+                (((selectedFlower.customRotation ?? selectedFlower.rotation ?? 0) * 180) / Math.PI),
+              );
+              return (
+                <div className="inspector-section">
+                  <div className="inspector-slider-header">
+                    <span className="inspector-section-label">Rotasi Bunga</span>
+                    {currentRotDeg !== 0 && (
+                      <button
+                        type="button"
+                        className="scale-reset-chip"
+                        onClick={() =>
+                          updateFlower(selectedFlower.uid, {
+                            customRotation: 0,
+                            isManual: true,
+                          })
+                        }
+                        title="Kembalikan rotasi bunga ke 0°"
+                      >
+                        Reset
+                      </button>
+                    )}
+                  </div>
+                  <div className="slider-control-row">
+                    <button
+                      type="button"
+                      className="scale-step-btn"
+                      onClick={() => {
+                        const newDeg = Math.max(-180, currentRotDeg - 15);
+                        updateFlower(selectedFlower.uid, {
+                          customRotation: (newDeg * Math.PI) / 180,
+                          isManual: true,
+                        });
+                      }}
+                      title="Putar kiri 15°"
+                    >
+                      ↺
+                    </button>
+                    <input
+                      type="range"
+                      min={-180}
+                      max={180}
+                      step={1}
+                      value={currentRotDeg}
+                      onChange={(e) =>
+                        updateFlower(selectedFlower.uid, {
+                          customRotation: (Number(e.target.value) * Math.PI) / 180,
+                          isManual: true,
+                        })
+                      }
+                      className="artisan-slider"
+                    />
+                    <SmartNumberInput
+                      value={currentRotDeg}
+                      min={-180}
+                      max={180}
+                      step={1}
+                      unit="°"
+                      onChange={(val) =>
+                        updateFlower(selectedFlower.uid, {
+                          customRotation: (val * Math.PI) / 180,
+                          isManual: true,
+                        })
+                      }
+                      ariaLabel="Ketik rotasi bunga (°)"
+                      title="Ketik rotasi bunga (°)"
+                    />
+                    <button
+                      type="button"
+                      className="scale-step-btn"
+                      onClick={() => {
+                        const newDeg = Math.min(180, currentRotDeg + 15);
+                        updateFlower(selectedFlower.uid, {
+                          customRotation: (newDeg * Math.PI) / 180,
+                          isManual: true,
+                        });
+                      }}
+                      title="Putar kanan 15°"
+                    >
+                      ↻
+                    </button>
+                  </div>
+                  <div className="inspector-slider-hints">
+                    <span>-180°</span>
+                    <span>Tegak (0°)</span>
+                    <span>+180°</span>
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* Quick Action Buttons: Duplikat & Hapus */}
             <div className="inspector-actions-row">

@@ -56,6 +56,9 @@ export interface PlacedFlower {
 export type TextPosition = 'top' | 'center' | 'bottom';
 export type FontWeight = 'normal' | 'bold';
 
+export type CanvasRatio = '9:16' | '4:5' | '1:1' | '3:4';
+export type BackgroundTheme = 'studio-warm' | 'rose-milk' | 'midnight-noir' | 'sage-botanical' | 'kraft-warm';
+
 export interface TextConfig {
   content: string;
   font: string;
@@ -66,10 +69,12 @@ export interface TextConfig {
   opacity: number;
   /** Card visual style: simple = white card, elegant = decorative card */
   cardStyle?: 'simple' | 'elegant';
-  /** Card X position on 600x600 canvas (default: center=300) */
+  /** Card X position on canvas (default: center) */
   cardX?: number;
-  /** Card Y position on 600x600 canvas (default: bottom=540) */
+  /** Card Y position on canvas (default: bottom) */
   cardY?: number;
+  /** Card scale multiplier for manual resizing (default: 1.0) */
+  cardScale?: number;
 }
 
 export interface Final2DProduct {
@@ -89,6 +94,11 @@ export interface DesignState {
   text: TextConfig;
   currentStep: number;
   final2D: Final2DProduct;
+  canvasRatio?: CanvasRatio;
+  bgTheme?: BackgroundTheme;
+  bouquetScale?: number;
+  /** Rotation of the entire bouquet in degrees (default: 0) */
+  bouquetRotation?: number;
 }
 
 export interface DesignContextType {
@@ -117,8 +127,14 @@ export interface DesignContextType {
   /** Hovered flower UID for highlighting buried flowers on canvas */
   hoveredFlowerUid: string | null;
   setHoveredFlowerUid: (uid: string | null) => void;
+  /** Aspect ratio, background theme, bouquet scale and rotation controls */
+  setCanvasRatio: (ratio: CanvasRatio) => void;
+  setBgTheme: (theme: BackgroundTheme) => void;
+  setBouquetScale: (scale: number) => void;
+  setBouquetRotation: (deg: number) => void;
   /** Save 2D Master Product as FINAL */
   saveFinal2D: (imageDataUrl: string, width?: number, height?: number) => void;
   /** Reopen 2D design for editing */
   resetToEdit2D: () => void;
 }
+

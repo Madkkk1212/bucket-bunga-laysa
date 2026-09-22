@@ -1182,16 +1182,316 @@ input, select, textarea { font-family: inherit; }
   overflow: hidden;
 }
 
+.preview-canvas-container {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto;
+}
+
 .preview-canvas {
   display: block;
+  margin: 0 auto;
   max-width: 100%;
-  max-height: calc(100vh - 200px);
+  max-height: min(72vh, 620px);
+  width: auto;
+  height: auto;
+  border-radius: 16px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.12), 0 4px 14px rgba(0, 0, 0, 0.05);
 }
 
 .canvas-wrapper {
   position: relative;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  margin: 0 auto;
+  border-radius: 16px;
+}
+
+/* ─── Studio Toolbar (Ratio & Theme Selector) ─── */
+.canvas-studio-toolbar {
+  width: 100%;
+  max-width: 480px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 10px;
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(12px);
+  padding: 12px 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(139, 90, 60, 0.15);
+  box-shadow: 0 4px 18px rgba(139, 90, 60, 0.06);
+  margin: 0 auto 12px auto;
+}
+
+.canvas-ratio-group,
+.canvas-theme-group {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  width: 100%;
+}
+
+.studio-toolbar-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: #704214;
+  white-space: nowrap;
+}
+
+.canvas-ratio-pills,
+.canvas-theme-swatches {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.ratio-pill-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 11px;
+  border-radius: 20px;
+  background: #F7F2EC;
+  border: 1px solid rgba(139, 90, 60, 0.2);
+  color: #5C3D2E;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.ratio-pill-btn:hover {
+  background: #EFE6DC;
+  transform: translateY(-1px);
+}
+
+.ratio-pill-btn.active {
+  background: #8B5A3C;
+  border-color: #704214;
+  color: #FFFFFF;
+  box-shadow: 0 2px 8px rgba(139, 90, 60, 0.35);
+}
+
+.ratio-sub {
+  font-size: 9.5px;
+  opacity: 0.8;
+  margin-left: 2px;
+}
+
+.canvas-theme-swatches {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.theme-swatch-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  background: #FDFBF8;
+  border: 1.5px solid rgba(139, 90, 60, 0.18);
+  font-size: 11px;
+  font-weight: 600;
+  color: #4A3A31;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.theme-swatch-pill:hover {
+  border-color: #8B5A3C;
+  transform: translateY(-1px);
+}
+
+.theme-swatch-pill.active {
+  background: #FFFDF9;
+  border-color: #B8860B;
+  box-shadow: 0 0 0 2px rgba(184, 134, 11, 0.25);
+  font-weight: 700;
+  color: #8B5A3C;
+}
+
+.theme-swatch-dot {
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.15);
   display: inline-block;
 }
+
+/* ─── Smart Number & Percent Input ─── */
+.smart-number-wrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #FFFFFF;
+  border: 1.5px solid rgba(139, 90, 60, 0.25);
+  border-radius: 8px;
+  padding: 2px 7px;
+  box-shadow: 0 1px 3px rgba(139, 90, 60, 0.08);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.smart-number-wrap:focus-within {
+  border-color: #8B5A3C;
+  box-shadow: 0 0 0 3px rgba(139, 90, 60, 0.16);
+  background: #FFFDFB;
+}
+
+.smart-number-input {
+  width: 44px;
+  border: none;
+  background: transparent;
+  outline: none;
+  text-align: right;
+  font-family: 'Montserrat', Inter, sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  color: #4A3A31;
+  padding: 0;
+  -moz-appearance: textfield;
+}
+
+.smart-number-input::-webkit-outer-spin-button,
+.smart-number-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.smart-number-unit {
+  font-size: 11px;
+  font-weight: 700;
+  color: #8B5A3C;
+  margin-left: 2px;
+  user-select: none;
+}
+
+/* ─── Studio Toolbar Scale & Rotation Controllers ─── */
+.canvas-scale-group {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  width: 100%;
+}
+
+.canvas-scale-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.scale-step-btn {
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  border: 1px solid rgba(139, 90, 60, 0.22);
+  background: #F8F4EF;
+  color: #5C3D2E;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  line-height: 1;
+}
+
+.scale-step-btn:hover {
+  background: #ECE1D3;
+  color: #38241B;
+  border-color: #8B5A3C;
+  transform: translateY(-1px);
+}
+
+.scale-step-btn:active {
+  transform: scale(0.94);
+}
+
+.bouquet-scale-range,
+.artisan-slider {
+  width: 120px;
+  height: 5px;
+  border-radius: 9999px;
+  background: #E8DCCF;
+  appearance: none;
+  outline: none;
+  cursor: pointer;
+}
+
+.bouquet-scale-range::-webkit-slider-thumb,
+.artisan-slider::-webkit-slider-thumb {
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #8B5A3C;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(139, 90, 60, 0.35);
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.bouquet-scale-range::-webkit-slider-thumb:hover,
+.artisan-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+  background: #704214;
+}
+
+.scale-reset-chip {
+  padding: 3px 8px;
+  border-radius: 12px;
+  background: rgba(217, 119, 6, 0.12);
+  border: 1px solid rgba(217, 119, 6, 0.3);
+  color: #B45309;
+  font-size: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  line-height: 1.2;
+}
+
+.scale-reset-chip:hover {
+  background: rgba(217, 119, 6, 0.22);
+  border-color: #D97706;
+}
+
+.slider-control-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.slider-control-row .range-slider,
+.slider-control-row .artisan-slider {
+  flex: 1;
+}
+
+.inspector-slider-hints {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  color: #8C7B70;
+  margin-top: 4px;
+}
+
 
 .canvas-empty-hint {
   position: absolute;
@@ -4572,8 +4872,8 @@ input, select, textarea { font-family: inherit; }
     min-height: 100dvh !important;
   }
   .theme-pink .hero-section {
-    padding: 12px 16px 36px !important;
-    min-height: calc(100dvh - 64px) !important;
+    padding: 76px 16px 36px !important;
+    min-height: 100dvh !important;
     height: auto !important;
     display: flex !important;
     align-items: center !important;
@@ -4863,32 +5163,46 @@ input, select, textarea { font-family: inherit; }
     order: 2 !important;
     width: 100% !important;
     background: #f8f9fa !important;
-    padding: 12px 12px 16px !important;
+    padding: 12px 10px 16px !important;
     display: flex !important;
+    flex-direction: column !important;
     justify-content: center !important;
     align-items: center !important;
+    text-align: center !important;
     border-bottom: 2px solid #edf0f2 !important;
     box-sizing: border-box !important;
   }
-  .canvas-interactive-container {
+  .canvas-interactive-container,
+  .preview-canvas-container {
     width: 100% !important;
-    max-width: min(94vw, 400px) !important;
+    max-width: min(94vw, 420px) !important;
     margin: 0 auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
     gap: 8px !important;
   }
   .canvas-wrapper {
-    width: 100% !important;
-    max-width: min(94vw, 400px) !important;
-    aspect-ratio: 1 / 1 !important;
+    width: auto !important;
+    max-width: min(94vw, 420px) !important;
+    max-height: min(68vh, 480px) !important;
+    margin: 0 auto !important;
+    display: inline-flex !important;
+    justify-content: center !important;
+    align-items: center !important;
     border-radius: 16px !important;
     box-shadow: 0 6px 24px rgba(0,0,0,0.07) !important;
     background: #ffffff !important;
     overflow: hidden !important;
   }
   .preview-canvas {
-    width: 100% !important;
+    max-width: 100% !important;
+    max-height: min(68vh, 480px) !important;
+    width: auto !important;
     height: auto !important;
-    aspect-ratio: 1 / 1 !important;
+    margin: 0 auto !important;
     display: block !important;
     touch-action: none !important;
     border-radius: 16px !important;

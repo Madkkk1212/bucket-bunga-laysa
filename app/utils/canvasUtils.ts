@@ -1,7 +1,125 @@
-import { PlacedFlower, TextConfig, FlowerCategory } from '../types/design';
+import { PlacedFlower, TextConfig, FlowerCategory, CanvasRatio, BackgroundTheme } from '../types/design';
 import { getBucketSize } from '../data/buckets';
 import { getWrapper as getWrapperData } from '../data/wrappers';
 import { getFlowerById } from '../data/flowers';
+
+// ─── Canvas Ratios & Studio Background Themes ────────────────────────────────
+
+export const CANVAS_RATIO_DIMENSIONS: Record<
+  CanvasRatio,
+  { width: number; height: number; label: string; subLabel: string; icon: string }
+> = {
+  '9:16': { width: 540, height: 960, label: 'Snapgram', subLabel: '9 : 16', icon: '📱' },
+  '4:5': { width: 576, height: 720, label: 'Feed IG', subLabel: '4 : 5', icon: '📷' },
+  '1:1': { width: 600, height: 600, label: 'Persegi', subLabel: '1 : 1', icon: '⏹️' },
+  '3:4': { width: 540, height: 720, label: 'Portrait', subLabel: '3 : 4', icon: '🖼️' },
+};
+
+export interface BackgroundThemeDef {
+  id: BackgroundTheme;
+  name: string;
+  badge: string;
+  previewColor: string;
+}
+
+export const BACKGROUND_THEMES: BackgroundThemeDef[] = [
+  { id: 'studio-warm', name: 'Studio Warm Ivory', badge: 'Warm', previewColor: '#F2ECE2' },
+  { id: 'rose-milk', name: 'Rose Velvet Blush', badge: 'Pastel', previewColor: '#FCE4E9' },
+  { id: 'midnight-noir', name: 'Midnight Luxury Noir', badge: 'Dark', previewColor: '#1A1716' },
+  { id: 'sage-botanical', name: 'Sage Botanical Garden', badge: 'Sage', previewColor: '#DFEAE2' },
+  { id: 'kraft-warm', name: 'Artisanal Kraft Paper', badge: 'Kraft', previewColor: '#E8DCBE' },
+];
+
+export function drawCanvasBackground(
+  ctx: CanvasRenderingContext2D,
+  theme: BackgroundTheme = 'studio-warm',
+  width: number,
+  height: number,
+): void {
+  ctx.save();
+  const cx = width / 2;
+  const cy = height / 2;
+
+  if (theme === 'midnight-noir') {
+    // Deep charcoal velvet with subtle warm golden spotlight
+    const grad = ctx.createRadialGradient(cx, cy * 0.9, 40, cx, cy, Math.max(width, height) * 0.75);
+    grad.addColorStop(0, '#262220');
+    grad.addColorStop(0.4, '#181514');
+    grad.addColorStop(1, '#0C0A09');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, width, height);
+
+    // Warm golden spotlight aura behind bouquet
+    const glow = ctx.createRadialGradient(cx, cy * 0.85, 20, cx, cy * 0.85, Math.min(width, height) * 0.6);
+    glow.addColorStop(0, 'rgba(217, 119, 6, 0.16)');
+    glow.addColorStop(0.5, 'rgba(180, 83, 9, 0.06)');
+    glow.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    ctx.fillStyle = glow;
+    ctx.fillRect(0, 0, width, height);
+  } else if (theme === 'rose-milk') {
+    // Gentle romantic blush pink gradient with studio lighting
+    const grad = ctx.createLinearGradient(0, 0, width * 0.25, height);
+    grad.addColorStop(0, '#FFF6F7');
+    grad.addColorStop(0.5, '#FDEBED');
+    grad.addColorStop(1, '#F8DCE1');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, width, height);
+
+    // Soft warm floral vignette
+    const vig = ctx.createRadialGradient(cx, cy, width * 0.35, cx, cy, Math.max(width, height) * 0.7);
+    vig.addColorStop(0, 'rgba(255, 255, 255, 0.35)');
+    vig.addColorStop(1, 'rgba(225, 29, 72, 0.05)');
+    ctx.fillStyle = vig;
+    ctx.fillRect(0, 0, width, height);
+  } else if (theme === 'sage-botanical') {
+    // Fresh organic eucalyptus sage
+    const grad = ctx.createLinearGradient(0, 0, 0, height);
+    grad.addColorStop(0, '#F6F9F7');
+    grad.addColorStop(0.5, '#ECF3EE');
+    grad.addColorStop(1, '#DEEAE2');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, width, height);
+
+    // Warm soft center light
+    const light = ctx.createRadialGradient(cx, cy * 0.85, 30, cx, cy * 0.85, width * 0.65);
+    light.addColorStop(0, 'rgba(255, 255, 255, 0.55)');
+    light.addColorStop(1, 'rgba(20, 83, 45, 0.04)');
+    ctx.fillStyle = light;
+    ctx.fillRect(0, 0, width, height);
+  } else if (theme === 'kraft-warm') {
+    // Artisanal warm kraft & coffee linen
+    const grad = ctx.createLinearGradient(0, 0, width, height);
+    grad.addColorStop(0, '#FBF7F0');
+    grad.addColorStop(0.5, '#F2E8DC');
+    grad.addColorStop(1, '#E6D7C5');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, width, height);
+
+    // Subtle paper border glow
+    const vig = ctx.createRadialGradient(cx, cy, width * 0.3, cx, cy, Math.max(width, height) * 0.7);
+    vig.addColorStop(0, 'rgba(255, 255, 255, 0.45)');
+    vig.addColorStop(1, 'rgba(120, 53, 15, 0.06)');
+    ctx.fillStyle = vig;
+    ctx.fillRect(0, 0, width, height);
+  } else {
+    // 'studio-warm' (default): Elegant soft ivory to cashmere gradient
+    const grad = ctx.createLinearGradient(0, 0, 0, height);
+    grad.addColorStop(0, '#FEFAF7');
+    grad.addColorStop(0.6, '#F7F0E8');
+    grad.addColorStop(1, '#EDE2D4');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, width, height);
+
+    // Studio spotlight overhead
+    const light = ctx.createRadialGradient(cx, cy * 0.6, 50, cx, cy * 0.7, Math.max(width, height) * 0.65);
+    light.addColorStop(0, 'rgba(255, 255, 255, 0.6)');
+    light.addColorStop(1, 'rgba(0, 0, 0, 0.03)');
+    ctx.fillStyle = light;
+    ctx.fillRect(0, 0, width, height);
+  }
+
+  ctx.restore();
+}
 
 // ─── Image Cache ─────────────────────────────────────────────────────────────
 
@@ -66,16 +184,48 @@ export function getBouquetDimensions(
   canvasW: number,
   canvasH: number,
   bucketId = 'bucket-1',
+  bouquetScale = 1.0,
 ): BouquetDimensions {
   void bucketId;
   const centerX = canvasW / 2;
-  // Standard high-res bucket aspect ratio: 1866 x 1954 (~0.955)
-  const targetH = Math.min(canvasH * 0.90, 540);
-  const scale = targetH / 1954;
-  const targetW = Math.round(1866 * scale);
+  const ratioVal = canvasH / canvasW;
+  const bMultiplier = Math.max(0.65, Math.min(1.45, bouquetScale));
+
+  // Adapt target dimensions to ratio so bouquet is well proportioned and unclipped
+  let baseTargetW: number;
+  if (ratioVal >= 1.6) {
+    // 9:16 Snapgram (tall vertical)
+    baseTargetW = Math.round(Math.min(canvasW * 0.94, 520));
+  } else if (ratioVal > 1.1) {
+    // 4:5 or 3:4 portrait
+    baseTargetW = Math.round(Math.min(canvasW * 0.92, 530));
+  } else {
+    // 1:1 square
+    baseTargetW = Math.round(Math.min(canvasW * 0.90, 540));
+  }
+
+  const targetW = Math.round(baseTargetW * bMultiplier);
+  const scale = targetW / 1866;
+  const targetH = Math.round(1954 * scale);
 
   const bucketX = Math.round((canvasW - targetW) / 2);
-  const bucketY = Math.round(canvasH - targetH - 12);
+
+  // Position bouquet in the vertical center of the canvas according to the ratio
+  // The bouquet visual center (including flowers blooming above collar) is at bucketY + targetH * 0.44
+  let bucketY: number;
+  if (ratioVal >= 1.4) {
+    // For tall vertical ratios (Snapgram 9:16, etc.), center bouquet nicely in the middle zone
+    const visualCenterOffset = Math.round(targetH * 0.44);
+    bucketY = Math.round(canvasH / 2 - visualCenterOffset);
+  } else if (ratioVal > 1.1) {
+    // 4:5 or 3:4 portrait
+    const visualCenterOffset = Math.round(targetH * 0.46);
+    bucketY = Math.round(canvasH / 2 - visualCenterOffset);
+  } else {
+    // 1:1 square: centered with slightly more room on top for flower dome
+    bucketY = Math.round((canvasH - targetH) / 2 + 10);
+  }
+
   const bottomY = bucketY + targetH;
 
   // Key landmarks from bucket-1 photo:
@@ -108,9 +258,10 @@ export function drawBouquetBack(
   ctx: CanvasRenderingContext2D,
   bucketId: string,
   wrapperTypeId: string,
+  bouquetScale = 1.0,
 ): BouquetDimensions {
   void wrapperTypeId;
-  const dims = getBouquetDimensions(ctx.canvas.width, ctx.canvas.height, bucketId);
+  const dims = getBouquetDimensions(ctx.canvas.width, ctx.canvas.height, bucketId, bouquetScale);
   const bucket = getBucketSize(bucketId);
   const backSrc = bucket.backImage || `/images/bucket/${bucketId}_back.png`;
   const backImg = imageCache[backSrc] || imageCache['/images/bucket/bucket-1_back.png'];
@@ -668,14 +819,15 @@ export function getCardBounds(
   canvasW = 600,
   canvasH = 600,
 ): CardBounds {
-  const w = 240;
-  const h = 138;
+  const cardScale = Math.max(0.55, Math.min(2.4, textConfig.cardScale ?? 1.0));
+  const w = Math.round(240 * cardScale);
+  const h = Math.round(138 * cardScale);
   const cx = textConfig.cardX ?? (canvasW / 2);
   let cy = textConfig.cardY;
   if (cy === undefined) {
-    if (textConfig.position === 'top') cy = Math.round(canvasH * 0.183);
-    else if (textConfig.position === 'center') cy = Math.round(canvasH * 0.5);
-    else cy = Math.round(canvasH * 0.833);
+    if (textConfig.position === 'top') cy = Math.round(canvasH * 0.16);
+    else if (textConfig.position === 'center') cy = Math.round(canvasH * 0.45);
+    else cy = Math.round(canvasH - h / 2 - (canvasH > canvasW ? 30 : 18));
   }
   return {
     x: Math.round(cx - w / 2),
@@ -707,6 +859,7 @@ export function drawText(
   const canvasH = ctx.canvas.height;
   const bounds = getCardBounds(textConfig, canvasW, canvasH);
   const { x, y, w, h, cx } = bounds;
+  const cardScale = Math.max(0.55, Math.min(2.4, textConfig.cardScale ?? 1.0));
 
   ctx.save();
   ctx.globalAlpha = opacity;
@@ -714,8 +867,8 @@ export function drawText(
   // 1. Paper Drop Shadow
   ctx.save();
   ctx.shadowColor = 'rgba(0, 0, 0, 0.22)';
-  ctx.shadowBlur = 14;
-  ctx.shadowOffsetY = 6;
+  ctx.shadowBlur = Math.round(14 * cardScale);
+  ctx.shadowOffsetY = Math.round(6 * cardScale);
 
   // 2. Card Background & Style
   if (cardStyle === 'elegant') {
@@ -727,35 +880,37 @@ export function drawText(
     ctx.fillStyle = cardGrad;
 
     ctx.beginPath();
-    ctx.roundRect(x, y, w, h, 8);
+    ctx.roundRect(x, y, w, h, Math.round(8 * cardScale));
     ctx.fill();
     ctx.restore(); // end shadow
 
     // Outer Gold Foil Border
     ctx.save();
     ctx.strokeStyle = '#D4AF37';
-    ctx.lineWidth = 1.8;
+    ctx.lineWidth = Math.max(1, 1.8 * cardScale);
     ctx.beginPath();
-    ctx.roundRect(x + 1, y + 1, w - 2, h - 2, 7);
+    ctx.roundRect(x + 1, y + 1, w - 2, h - 2, Math.round(7 * cardScale));
     ctx.stroke();
 
     // Inset Delicate Gold Hairline
     ctx.strokeStyle = 'rgba(212, 175, 55, 0.55)';
-    ctx.lineWidth = 0.8;
+    ctx.lineWidth = Math.max(0.6, 0.8 * cardScale);
     ctx.beginPath();
-    ctx.roundRect(x + 5, y + 5, w - 10, h - 10, 5);
+    ctx.roundRect(x + Math.round(5 * cardScale), y + Math.round(5 * cardScale), w - Math.round(10 * cardScale), h - Math.round(10 * cardScale), Math.round(5 * cardScale));
     ctx.stroke();
 
     // Top Header Ribbon Stamp
-    ctx.font = 'bold 8.5px "Montserrat", sans-serif';
+    const headerFontSz = Math.max(7, Math.round(8.5 * cardScale));
+    ctx.font = `bold ${headerFontSz}px "Montserrat", sans-serif`;
     ctx.fillStyle = '#B8860B';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
-    ctx.fillText('✦  A SPECIAL GIFT FOR YOU  ✦', cx, y + 11);
+    ctx.fillText('✦  A SPECIAL GIFT FOR YOU  ✦', cx, y + Math.round(10 * cardScale));
 
     // Decorative corner accents (dots)
     ctx.fillStyle = '#D4AF37';
-    const inset = 9;
+    const inset = Math.round(9 * cardScale);
+    const dotRadius = Math.max(1.2, 1.8 * cardScale);
     [
       [x + inset, y + inset],
       [x + w - inset, y + inset],
@@ -763,17 +918,19 @@ export function drawText(
       [x + w - inset, y + h - inset],
     ].forEach(([dotX, dotY]) => {
       ctx.beginPath();
-      ctx.arc(dotX, dotY, 1.8, 0, Math.PI * 2);
+      ctx.arc(dotX, dotY, dotRadius, 0, Math.PI * 2);
       ctx.fill();
     });
 
     // Top Gold Florist Card Clip / Pin
+    const clipW = Math.round(14 * cardScale);
+    const clipH = Math.round(8 * cardScale);
     ctx.beginPath();
-    ctx.roundRect(cx - 7, y - 4, 14, 8, 3);
+    ctx.roundRect(cx - clipW / 2, y - Math.round(4 * cardScale), clipW, clipH, Math.round(3 * cardScale));
     ctx.fillStyle = '#E5C058';
     ctx.fill();
     ctx.strokeStyle = '#B8860B';
-    ctx.lineWidth = 1;
+    ctx.lineWidth = Math.max(0.8, 1 * cardScale);
     ctx.stroke();
     ctx.restore();
 
@@ -785,53 +942,57 @@ export function drawText(
     ctx.fillStyle = cardGrad;
 
     ctx.beginPath();
-    ctx.roundRect(x, y, w, h, 8);
+    ctx.roundRect(x, y, w, h, Math.round(8 * cardScale));
     ctx.fill();
     ctx.restore(); // end shadow
 
     // Clean modern border
     ctx.save();
     ctx.strokeStyle = '#CBD5E1';
-    ctx.lineWidth = 1.4;
+    ctx.lineWidth = Math.max(1, 1.4 * cardScale);
     ctx.beginPath();
-    ctx.roundRect(x + 1, y + 1, w - 2, h - 2, 7);
+    ctx.roundRect(x + 1, y + 1, w - 2, h - 2, Math.round(7 * cardScale));
     ctx.stroke();
 
     // Inset subtle line
     ctx.strokeStyle = '#F1F5F9';
-    ctx.lineWidth = 0.8;
+    ctx.lineWidth = Math.max(0.6, 0.8 * cardScale);
     ctx.beginPath();
-    ctx.roundRect(x + 5, y + 5, w - 10, h - 10, 5);
+    ctx.roundRect(x + Math.round(5 * cardScale), y + Math.round(5 * cardScale), w - Math.round(10 * cardScale), h - Math.round(10 * cardScale), Math.round(5 * cardScale));
     ctx.stroke();
 
     // Subtle header badge
-    ctx.font = '600 8.5px "Montserrat", sans-serif';
+    const headerFontSz = Math.max(7, Math.round(8.5 * cardScale));
+    ctx.font = `600 ${headerFontSz}px "Montserrat", sans-serif`;
     ctx.fillStyle = '#64748B';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
-    ctx.fillText('FLOWER MESSAGE', cx, y + 11);
+    ctx.fillText('FLOWER MESSAGE', cx, y + Math.round(10 * cardScale));
 
     // Top Metallic Silver Cardholder Clip
+    const clipW = Math.round(14 * cardScale);
+    const clipH = Math.round(8 * cardScale);
     ctx.beginPath();
-    ctx.roundRect(cx - 7, y - 4, 14, 8, 3);
+    ctx.roundRect(cx - clipW / 2, y - Math.round(4 * cardScale), clipW, clipH, Math.round(3 * cardScale));
     ctx.fillStyle = '#E2E8F0';
     ctx.fill();
     ctx.strokeStyle = '#94A3B8';
-    ctx.lineWidth = 1;
+    ctx.lineWidth = Math.max(0.8, 1 * cardScale);
     ctx.stroke();
     ctx.restore();
   }
 
   // 3. Multi-line Text Content Rendering (Inside the Card)
-  const actualFontSize = Math.max(11, Math.min(20, size || 13));
+  const baseSize = size || 13;
+  const actualFontSize = Math.max(9, Math.min(32, Math.round(baseSize * cardScale)));
   ctx.save();
   ctx.fillStyle = color || '#1E293B';
   ctx.font = `${weight || 'normal'} ${actualFontSize}px '${font || 'Montserrat'}', sans-serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
 
-  const maxTextW = w - 30; // comfortable padding
-  const lineH = Math.round(actualFontSize * 1.36);
+  const maxTextW = w - Math.round(28 * cardScale); // comfortable padding
+  const lineH = Math.round(actualFontSize * 1.34);
 
   // Wrap text respecting explicit newlines (\n)
   const paragraphs = content.split('\n');
@@ -860,9 +1021,9 @@ export function drawText(
   const displayLines = renderedLines.slice(0, 5);
   const totalTextH = displayLines.length * lineH;
 
-  // Center vertically in text area (between y + 24 and y + h - 8)
-  const textAreaTop = y + 24;
-  const textAreaH = h - 32;
+  // Center vertically in text area
+  const textAreaTop = y + Math.round(22 * cardScale);
+  const textAreaH = h - Math.round(30 * cardScale);
   let startY = textAreaTop + (textAreaH - totalTextH) / 2 + lineH / 2;
 
   displayLines.forEach((line) => {

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useCallback } from 'react';
-import { DesignState, DesignContextType, TextConfig, FlowerDef, PlacedFlower } from '../types/design';
+import { DesignState, DesignContextType, TextConfig, FlowerDef, PlacedFlower, CanvasRatio, BackgroundTheme } from '../types/design';
 import { getBucketSize } from '../data/buckets';
 
 const DEFAULT_TEXT: TextConfig = {
@@ -12,6 +12,7 @@ const DEFAULT_TEXT: TextConfig = {
   position: 'bottom',
   weight: 'normal',
   opacity: 1,
+  cardScale: 1.0,
 };
 
 const DEFAULT_DESIGN: DesignState = {
@@ -34,6 +35,10 @@ const DEFAULT_DESIGN: DesignState = {
     height: 600,
     status: 'draft',
   },
+  canvasRatio: '1:1',
+  bgTheme: 'studio-warm',
+  bouquetScale: 1.0,
+  bouquetRotation: 0,
 };
 
 const DesignContext = createContext<DesignContextType | null>(null);
@@ -257,6 +262,32 @@ export function DesignProvider({ children }: { children: React.ReactNode }) {
     }));
   }, []);
 
+  const setCanvasRatio = useCallback((ratio: CanvasRatio) => {
+    setDesign((prev) => ({
+      ...prev,
+      canvasRatio: ratio,
+      // Reset manual coordinates so flowers automatically re-arrange to the new ratio's center bouquet
+      selectedFlowers: prev.selectedFlowers.map((f) => ({
+        ...f,
+        x: undefined,
+        y: undefined,
+        isManual: false,
+      })),
+    }));
+  }, []);
+
+  const setBgTheme = useCallback((theme: BackgroundTheme) => {
+    setDesign((prev) => ({ ...prev, bgTheme: theme }));
+  }, []);
+
+  const setBouquetScale = useCallback((scale: number) => {
+    setDesign((prev) => ({ ...prev, bouquetScale: scale }));
+  }, []);
+
+  const setBouquetRotation = useCallback((deg: number) => {
+    setDesign((prev) => ({ ...prev, bouquetRotation: deg }));
+  }, []);
+
   const value: DesignContextType = {
     design,
     setBucketSize,
@@ -280,6 +311,10 @@ export function DesignProvider({ children }: { children: React.ReactNode }) {
     setSelectedFlowerUid,
     hoveredFlowerUid,
     setHoveredFlowerUid,
+    setCanvasRatio,
+    setBgTheme,
+    setBouquetScale,
+    setBouquetRotation,
     saveFinal2D,
     resetToEdit2D,
   };

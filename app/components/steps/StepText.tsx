@@ -3,6 +3,7 @@
 import { useDesign } from '../../context/DesignContext';
 import NavigationButtons from '../designer/NavigationButtons';
 import { Sparkles, Move, GraduationCap, Heart, RotateCcw } from 'lucide-react';
+import SmartNumberInput from '../ui/SmartNumberInput';
 
 const FONT_OPTIONS = [
   'Montserrat',
@@ -251,24 +252,135 @@ export default function StepText() {
         </select>
       </div>
 
+      {/* Card Scale Slider & Input */}
+      <div className="form-group">
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+          <label htmlFor="card-scale" className="form-label" style={{ marginBottom: 0 }}>
+            Skala Ukuran Kartu
+          </label>
+          {(text.cardScale ?? 1.0) !== 1.0 && (
+            <button
+              type="button"
+              className="scale-reset-chip"
+              onClick={() => setText({ cardScale: 1.0 })}
+              title="Kembalikan ukuran kartu ke 100%"
+            >
+              Reset
+            </button>
+          )}
+        </div>
+        <div className="slider-control-row">
+          <button
+            type="button"
+            className="scale-step-btn"
+            onClick={() =>
+              setText({
+                cardScale: Math.max(0.6, Number(((text.cardScale ?? 1.0) - 0.05).toFixed(2))),
+              })
+            }
+            title="Perkecil 5%"
+          >
+            −
+          </button>
+          <input
+            id="card-scale"
+            type="range"
+            className="range-slider"
+            min={60}
+            max={200}
+            step={1}
+            value={Math.round((text.cardScale ?? 1.0) * 100)}
+            onChange={(e) => setText({ cardScale: Number(e.target.value) / 100 })}
+          />
+          <SmartNumberInput
+            value={Math.round((text.cardScale ?? 1.0) * 100)}
+            min={60}
+            max={200}
+            step={1}
+            unit="%"
+            onChange={(val) => setText({ cardScale: val / 100 })}
+            ariaLabel="Ketik skala ukuran kartu (%)"
+            title="Ketik skala ukuran kartu (%)"
+          />
+          <button
+            type="button"
+            className="scale-step-btn"
+            onClick={() =>
+              setText({
+                cardScale: Math.min(2.0, Number(((text.cardScale ?? 1.0) + 0.05).toFixed(2))),
+              })
+            }
+            title="Perbesar 5%"
+          >
+            +
+          </button>
+        </div>
+        <div className="range-labels">
+          <span>Kompak (60%)</span>
+          <span>Standar (100%)</span>
+          <span>Besar (200%)</span>
+        </div>
+      </div>
+
       {/* Font Size */}
       <div className="form-group">
-        <label htmlFor="text-size" className="form-label">
-          Ukuran Tulisan Kartu <span className="form-value">{text.size || 13}px</span>
-        </label>
-        <input
-          id="text-size"
-          type="range"
-          className="range-slider"
-          min={11}
-          max={20}
-          value={text.size || 13}
-          onChange={(e) => setText({ size: Number(e.target.value) })}
-        />
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+          <label htmlFor="text-size" className="form-label" style={{ marginBottom: 0 }}>
+            Ukuran Tulisan Kartu
+          </label>
+          {(text.size || 13) !== 13 && (
+            <button
+              type="button"
+              className="scale-reset-chip"
+              onClick={() => setText({ size: 13 })}
+              title="Kembalikan ukuran font ke default 13px"
+            >
+              Reset
+            </button>
+          )}
+        </div>
+        <div className="slider-control-row">
+          <button
+            type="button"
+            className="scale-step-btn"
+            onClick={() => setText({ size: Math.max(11, (text.size || 13) - 1) })}
+            title="Perkecil 1px"
+          >
+            −
+          </button>
+          <input
+            id="text-size"
+            type="range"
+            className="range-slider"
+            min={11}
+            max={24}
+            step={1}
+            value={text.size || 13}
+            onChange={(e) => setText({ size: Number(e.target.value) })}
+          />
+          <SmartNumberInput
+            value={text.size || 13}
+            min={11}
+            max={24}
+            step={1}
+            unit="px"
+            onChange={(val) => setText({ size: val })}
+            ariaLabel="Ketik ukuran tulisan kartu (px)"
+            title="Ketik ukuran tulisan kartu (px)"
+          />
+          <button
+            type="button"
+            className="scale-step-btn"
+            onClick={() => setText({ size: Math.min(24, (text.size || 13) + 1) })}
+            title="Perbesar 1px"
+          >
+            +
+          </button>
+        </div>
         <div className="range-labels">
           <span>Kecil (11px)</span>
-          <span>Sedang (15px)</span>
-          <span>Besar (20px)</span>
+          <span>Standar (13px)</span>
+          <span>Besar (24px)</span>
         </div>
       </div>
 
