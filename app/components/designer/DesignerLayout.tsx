@@ -21,6 +21,14 @@ const STEP_TITLES: Record<number, string> = {
   5: 'Unduh Hasil Rangkaian',
 };
 
+const STEP_TITLES_MOBILE: Record<number, string> = {
+  1: 'Pilih Bucket',
+  2: 'Rangkai Bunga',
+  3: 'Kartu Ucapan',
+  4: 'Pratinjau',
+  5: 'Unduh Buket',
+};
+
 export default function DesignerLayout() {
   const { design, setStep, resetToEdit2D } = useDesign();
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -60,11 +68,14 @@ export default function DesignerLayout() {
       <div className="ds-main">
         {/* Top Header Bar */}
         <header className="ds-header">
-          <div className="flex items-center gap-3">
-            <h1 className="ds-header-title">{STEP_TITLES[design.currentStep]}</h1>
+          <div className="ds-header-left">
+            <h1 className="ds-header-title">
+              <span className="ds-title-desktop">{STEP_TITLES[design.currentStep]}</span>
+              <span className="ds-title-mobile">{STEP_TITLES_MOBILE[design.currentStep]}</span>
+            </h1>
             {isFinalOrStep5 && (
-              <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300">
-                PRODUK FINAL
+              <span className="ds-final-badge">
+                FINAL
               </span>
             )}
           </div>
@@ -79,8 +90,8 @@ export default function DesignerLayout() {
                 id="btn-top-atur-bunga"
                 title="Atur susunan bunga, lapisan depan/belakang, ukuran, dan hapus bunga"
               >
-                <SlidersHorizontal size={14} />
-                <span>Atur Bunga</span>
+                <SlidersHorizontal size={13} />
+                <span className="ds-btn-text">Atur Bunga</span>
                 {design.selectedFlowers.length > 0 && (
                   <span className="atur-bunga-count-pill">{design.selectedFlowers.length}</span>
                 )}
@@ -97,33 +108,33 @@ export default function DesignerLayout() {
                 title="Lanjut ke langkah berikutnya"
               >
                 <span>Lanjut</span>
-                <ChevronRight size={14} />
+                <ChevronRight size={13} />
               </button>
             )}
 
-            <Link href="/tutorial" className="ds-header-tutorial-btn" id="nav-btn-tutorial-designer">
-              <BookOpen size={14} />
-              <span>Tutorial</span>
+            <Link href="/tutorial" className="ds-header-tutorial-btn" id="nav-btn-tutorial-designer" title="Panduan Tutorial">
+              <BookOpen size={13} />
+              <span className="ds-btn-text">Tutorial</span>
             </Link>
           </div>
         </header>
 
         {/* Content Area */}
         <div className="ds-content">
-          {/* Step Form Panel */}
+          {/* Step Form Panel: Pemilihan Dulu Semuanya */}
           <section className="ds-step-panel">
             <div className="ds-step-form">{renderStep()}</div>
           </section>
 
-          {/* Canvas Panel */}
-          <section className="ds-canvas-panel">
+          {/* Canvas Panel: Hasil Studio Rangkaian di Bawah */}
+          <section className="ds-canvas-panel" id="studio-canvas-section">
             {/* ─── TOOLBAR KANVAS 2D ─── */}
             <div className="ds-view-tabs flex items-center justify-between">
               {!isFinalOrStep5 ? (
                 <div className="flex items-center justify-between w-full">
                   <span className="text-xs font-bold text-gray-700 uppercase tracking-wide flex items-center gap-1.5">
                     <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                    Studio RANGKAIAN
+                    Studio RANGKAIAN (Hasil Rangkaian)
                   </span>
 
                   {/* Tombol Cepat Atur Bunga di Toolbar Kanvas */}

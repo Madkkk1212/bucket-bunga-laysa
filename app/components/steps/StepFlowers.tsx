@@ -2,9 +2,9 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
-import { Plus, Minus, Search } from 'lucide-react';
+import { Plus, Minus, Search, ChevronDown } from 'lucide-react';
 import { useDesign } from '../../context/DesignContext';
-import { FLOWERS, FLOWER_CATEGORY_LABELS } from '../../data/flowers';
+import { FLOWERS } from '../../data/flowers';
 import { FlowerCategory } from '../../types/design';
 import NavigationButtons from '../designer/NavigationButtons';
 
@@ -77,7 +77,7 @@ export default function StepFlowers() {
         />
       </div>
 
-      {/* ── Flower Grid ── */}
+      {/* ── Flower Grid: 3 Kolom Bersih & Rapi ── */}
       <div className="sf-flower-grid" role="list">
         {filtered.map((flower) => {
           const count = getFlowerCount(flower.id);
@@ -87,7 +87,7 @@ export default function StepFlowers() {
               key={flower.id}
               role="listitem"
               className={`sf-flower-card ${count > 0 ? 'sf-flower-selected' : ''}`}
-              title={flower.description || flower.name}
+              title={flower.name}
               draggable
               onDragStart={(e) => {
                 e.dataTransfer.setData(
@@ -118,9 +118,6 @@ export default function StepFlowers() {
                 )}
               </div>
 
-              <span className={`sf-cat-tag cat-${flower.category}`}>
-                {FLOWER_CATEGORY_LABELS[flower.category] || flower.category}
-              </span>
               <span className="sf-flower-name">{flower.name}</span>
 
               <div className="sf-flower-btns">
@@ -151,6 +148,20 @@ export default function StepFlowers() {
           <p className="sf-no-results">Tidak ada bunga yang cocok 🌾</p>
         )}
       </div>
+
+      {/* Tombol pintasan langsung lihat hasil studio di bawah */}
+      {total > 0 && (
+        <div className="sf-view-studio-wrap">
+          <a
+            href="#studio-canvas-section"
+            className="sf-view-studio-pill"
+            id="btn-scroll-to-studio"
+          >
+            <span>🌸 Lihat Hasil Studio Rangkaian ({total} Bunga)</span>
+            <ChevronDown size={14} />
+          </a>
+        </div>
+      )}
 
       {/* Warning */}
       {total >= max && (
