@@ -1,7 +1,6 @@
 'use client';
 
-import { useEffect, useState, useSyncExternalStore } from 'react';
-import { createPortal } from 'react-dom';
+import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { Sparkles, ArrowRight, Flower2 } from 'lucide-react';
@@ -31,10 +30,17 @@ const GARDEN_STAGES = [
   },
   {
     min: 71,
-    max: 100,
+    max: 99,
     title: 'Mempersiapkan Studio Rangkai...',
     subtitle: 'Menata kertas buket bersayap & pita garis impian Anda',
     icon: '✨',
+  },
+  {
+    min: 100,
+    max: 100,
+    title: 'Selamat Datang di Studio Laysa!',
+    subtitle: 'Membuka lembar kerja rancang buket bunga Anda...',
+    icon: '💐',
   },
 ];
 
@@ -55,24 +61,25 @@ const PETALS = [
   { id: 14, left: '82%', delay: '2.7s', dur: '5.1s', size: 23, emoji: '🌷' },
 ];
 
-const emptySubscribe = () => () => {};
-
 export default function GardenLoadingTransition({
   onFinish,
   autoNavigate = true,
   targetUrl = '/designer',
-  durationMs = 2000,
+  durationMs = 1800,
   standalone = false,
 }: GardenLoadingTransitionProps) {
   const router = useRouter();
-  const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
   const [progress, setProgress] = useState<number>(0);
-  const [isExiting, setIsExiting] = useState<boolean>(false);
 
   useEffect(() => {
     // Prevent background scrolling while loading overlay is active
     const originalOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
+
+    // Pre-warm target route navigation immediately
+    if (autoNavigate && !standalone && targetUrl) {
+      router.prefetch(targetUrl);
+    }
 
     const startTime = performance.now();
     let animId: number;
@@ -83,18 +90,20 @@ export default function GardenLoadingTransition({
 
       // Smooth natural blooming curve
       const easeProgress = 100 * (1 - Math.pow(1 - rawPct / 100, 2.2));
-      setProgress(Math.round(easeProgress));
+      const currentPct = Math.round(easeProgress);
+      setProgress(currentPct);
 
       if (rawPct < 100) {
         animId = requestAnimationFrame(tick);
       } else {
-        setIsExiting(true);
-        setTimeout(() => {
-          if (onFinish) onFinish();
-          if (autoNavigate && !standalone) {
-            router.push(targetUrl);
-          }
-        }, 280);
+        setProgress(100);
+        if (autoNavigate && !standalone) {
+          // Navigate directly while keeping overlay fully solid and visible so home page never flashes
+          router.push(targetUrl);
+        }
+        if (onFinish) {
+          setTimeout(onFinish, 1500);
+        }
       }
     };
 
@@ -110,21 +119,18 @@ export default function GardenLoadingTransition({
     GARDEN_STAGES.find((s) => progress >= s.min && progress <= s.max) || GARDEN_STAGES[0];
 
   const handleSkip = () => {
-    setIsExiting(true);
-    setTimeout(() => {
-      if (onFinish) onFinish();
-      if (autoNavigate && !standalone) {
-        router.push(targetUrl);
-      }
-    }, 120);
+    setProgress(100);
+    if (autoNavigate && !standalone) {
+      router.push(targetUrl);
+    }
+    if (onFinish) {
+      setTimeout(onFinish, 1000);
+    }
   };
 
-  // Ensure portal only runs on the client to avoid SSR hydration mismatches
-  if (!mounted) return null;
-
-  const overlayContent = (
+  return (
     <aside
-      className={`garden-fullscreen-overlay ${isExiting ? 'garden-overlay-exit' : ''}`}
+      className="garden-fullscreen-overlay"
       role="status"
       aria-label="Loading Studio Buket Bunga"
       style={{
@@ -140,6 +146,7 @@ export default function GardenLoadingTransition({
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
+        backgroundColor: '#0f050b',
       }}
     >
       {/* ─── 1. FULL PAGE PANORAMA: ENCHANTED FLOWER GARDEN ─── */}
@@ -234,19 +241,22 @@ export default function GardenLoadingTransition({
 
             <div className="progress-meta-row">
               <span className="progress-quote-text">
-                Menyusun keindahan bunga segar untuk momen istimewa Anda...
+                {progress >= 100
+                  ? 'Studio rancang buket telah siap! Membuka halaman...'
+                  : 'Menyusun keindahan bunga segar untuk momen istimewa Anda...'}
               </span>
               <span className="progress-percentage-val">{progress}%</span>
             </div>
           </div>
 
           {/* Quick Skip Button */}
-          {!standalone && (
+          {!standalone && progress < 100 && (
             <div className="garden-skip-action-wrap">
               <button
                 type="button"
                 className="garden-skip-action-btn"
                 onClick={handleSkip}
+                id="btn-garden-skip-to-studio"
                 title="Langsung Masuk ke Studio Rancang"
               >
                 <span>Langsung Masuk ke Studio</span>
@@ -258,7 +268,5 @@ export default function GardenLoadingTransition({
       </div>
     </aside>
   );
-
-  // Mount directly into document.body outside all local containers
-  return createPortal(overlayContent, document.body);
 }
+

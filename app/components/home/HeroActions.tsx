@@ -1,12 +1,19 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { ArrowRight, BookOpen } from 'lucide-react';
 import GardenLoadingTransition from '../ui/GardenLoadingTransition';
 
 export default function HeroActions() {
+  const router = useRouter();
   const [isStartingGarden, setIsStartingGarden] = useState<boolean>(false);
+
+  // Pre-fetch designer route chunk as soon as home page loads for instant navigation
+  useEffect(() => {
+    router.prefetch('/designer');
+  }, [router]);
 
   return (
     <>
@@ -15,7 +22,10 @@ export default function HeroActions() {
           type="button"
           id="btn-design-hero"
           className="hero-cta"
-          onClick={() => setIsStartingGarden(true)}
+          onClick={() => {
+            setIsStartingGarden(true);
+            router.prefetch('/designer');
+          }}
           aria-label="Mulai merancang buket bunga"
         >
           <span>MULAI RANCANG BUKET</span>
@@ -28,15 +38,15 @@ export default function HeroActions() {
         </Link>
       </div>
 
-      {/* Enchanted Flower Garden Loading Transition Modal */}
+      {/* Enchanted Flower Garden Loading Transition */}
       {isStartingGarden && (
         <GardenLoadingTransition
           autoNavigate={true}
           targetUrl="/designer"
-          durationMs={2200}
-          onFinish={() => setIsStartingGarden(false)}
+          durationMs={1500}
         />
       )}
     </>
   );
 }
+

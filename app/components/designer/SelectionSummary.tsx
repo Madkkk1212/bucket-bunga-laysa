@@ -6,9 +6,13 @@ import { useDesign } from '../../context/DesignContext';
 import { getBucketSize } from '../../data/buckets';
 import { FLOWERS } from '../../data/flowers';
 import { PlacedFlower } from '../../types/design';
-import { ArrowUpToLine, ArrowDownToLine, Copy, Trash2, X, Sparkles } from 'lucide-react';
+import { ArrowUpToLine, ArrowDownToLine, Copy, Trash2, X, Sparkles, SlidersHorizontal } from 'lucide-react';
 
-export default function SelectionSummary() {
+interface SelectionSummaryProps {
+  onClose?: () => void;
+}
+
+export default function SelectionSummary({ onClose }: SelectionSummaryProps) {
   const {
     design,
     updateFlower,
@@ -78,8 +82,23 @@ export default function SelectionSummary() {
       {/* ── Header: Buket Info ── */}
       <div className="artisan-header">
         <div className="artisan-header-main">
-          <span className="artisan-title">Buket Anda</span>
-          <span className="artisan-badge">{placed.length} Bunga</span>
+          <div className="flex items-center gap-2">
+            <SlidersHorizontal size={15} className="text-pink-600" />
+            <span className="artisan-title">Atur Bunga & Buket Anda</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="artisan-badge">{placed.length} Bunga</span>
+            {onClose && (
+              <button
+                type="button"
+                className="artisan-drawer-close-btn"
+                onClick={onClose}
+                aria-label="Tutup menu atur bunga"
+              >
+                <X size={16} />
+              </button>
+            )}
+          </div>
         </div>
         <p className="artisan-subtitle">Buket: {bucket.label}</p>
       </div>
@@ -286,6 +305,18 @@ export default function SelectionSummary() {
           <span>💡 <strong>Tips:</strong> Arahkan mouse ke nomor <code>#1, #2...</code> untuk melihat letak bunganya di buket, lalu klik untuk mengaturnya.</span>
         </div>
       </div>
+
+      {onClose && (
+        <div className="artisan-drawer-footer">
+          <button
+            type="button"
+            className="btn btn-primary artisan-finish-btn"
+            onClick={onClose}
+          >
+            Selesai Mengatur
+          </button>
+        </div>
+      )}
     </aside>
   );
 }

@@ -23,22 +23,23 @@ export default function TutorialPage() {
       <header className="tutorial-topbar">
         <div className="tutorial-topbar-inner">
           <Link href="/" className="tutorial-back-btn" id="btn-tutorial-back">
-            <ArrowLeft size={16} />
+            <ArrowLeft size={15} />
             <span>Beranda</span>
           </Link>
 
-          <Link href="/" className="tutorial-brand">
+          <Link href="/" className="tutorial-brand" aria-label="Beranda Bucket Bunga Laysa">
             <span className="tutorial-brand-icon">
-              <Flower2 size={18} />
+              <Flower2 size={16} />
             </span>
-            <span className="tutorial-brand-title">
-              Bucket Bunga <span className="brand-accent">Laysa</span>
-            </span>
+            <div className="tutorial-brand-text">
+              <span className="tutorial-brand-title">Bucket Bunga</span>
+              <span className="tutorial-brand-accent">Laysa</span>
+            </div>
           </Link>
 
           <Link href="/designer" className="tutorial-top-cta" id="btn-tutorial-start-top">
             <span>Mulai Rancang</span>
-            <ArrowRight size={15} />
+            <ArrowRight size={14} />
           </Link>
         </div>
       </header>

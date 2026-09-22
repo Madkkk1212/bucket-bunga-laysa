@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef } from 'react';
+import { useState, useRef } from 'react';
 import Link from 'next/link';
 import { useDesign } from '../../context/DesignContext';
 import PreviewCanvas from '../designer/PreviewCanvas';
@@ -11,7 +11,7 @@ import StepFlowers from '../steps/StepFlowers';
 import StepText from '../steps/StepText';
 import StepPreview from '../steps/StepPreview';
 import StepDownload from '../steps/StepDownload';
-import { BookOpen, Edit3 } from 'lucide-react';
+import { BookOpen, Edit3, SlidersHorizontal, ChevronRight } from 'lucide-react';
 
 const STEP_TITLES: Record<number, string> = {
   1: 'Pilih Jenis Bucket',
@@ -24,6 +24,7 @@ const STEP_TITLES: Record<number, string> = {
 export default function DesignerLayout() {
   const { design, setStep, resetToEdit2D } = useDesign();
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [isAturBungaOpen, setIsAturBungaOpen] = useState(false);
 
   const isFinalOrStep5 = design.final2D.status === 'final' || design.currentStep === 5;
 
@@ -67,10 +68,44 @@ export default function DesignerLayout() {
               </span>
             )}
           </div>
-          <Link href="/tutorial" className="ds-header-tutorial-btn" id="nav-btn-tutorial-designer">
-            <BookOpen size={15} />
-            Tutorial
-          </Link>
+
+          <div className="ds-header-actions">
+            {/* Tombol Menu Atur Bunga di Atas */}
+            {!isFinalOrStep5 && (
+              <button
+                type="button"
+                className={`ds-header-atur-bunga-btn ${isAturBungaOpen ? 'active' : ''}`}
+                onClick={() => setIsAturBungaOpen(!isAturBungaOpen)}
+                id="btn-top-atur-bunga"
+                title="Atur susunan bunga, lapisan depan/belakang, ukuran, dan hapus bunga"
+              >
+                <SlidersHorizontal size={14} />
+                <span>Atur Bunga</span>
+                {design.selectedFlowers.length > 0 && (
+                  <span className="atur-bunga-count-pill">{design.selectedFlowers.length}</span>
+                )}
+              </button>
+            )}
+
+            {/* Tombol Lanjut di Atas Header */}
+            {design.currentStep < 5 && (
+              <button
+                type="button"
+                className="ds-header-next-btn"
+                onClick={() => setStep(design.currentStep + 1)}
+                id="btn-top-header-next"
+                title="Lanjut ke langkah berikutnya"
+              >
+                <span>Lanjut</span>
+                <ChevronRight size={14} />
+              </button>
+            )}
+
+            <Link href="/tutorial" className="ds-header-tutorial-btn" id="nav-btn-tutorial-designer">
+              <BookOpen size={14} />
+              <span>Tutorial</span>
+            </Link>
+          </div>
         </header>
 
         {/* Content Area */}
@@ -80,16 +115,30 @@ export default function DesignerLayout() {
             <div className="ds-step-form">{renderStep()}</div>
           </section>
 
-          {/* Canvas + Selection Summary */}
+          {/* Canvas Panel */}
           <section className="ds-canvas-panel">
             {/* ─── TOOLBAR KANVAS 2D ─── */}
             <div className="ds-view-tabs flex items-center justify-between">
               {!isFinalOrStep5 ? (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center justify-between w-full">
                   <span className="text-xs font-bold text-gray-700 uppercase tracking-wide flex items-center gap-1.5">
                     <span className="w-2 h-2 rounded-full bg-emerald-500" />
                     Studio RANGKAIAN
                   </span>
+
+                  {/* Tombol Cepat Atur Bunga di Toolbar Kanvas */}
+                  <button
+                    type="button"
+                    className={`ds-canvas-atur-btn ${isAturBungaOpen ? 'active' : ''}`}
+                    onClick={() => setIsAturBungaOpen(!isAturBungaOpen)}
+                    id="btn-canvas-toolbar-atur"
+                  >
+                    <SlidersHorizontal size={13} />
+                    <span>Menu Atur Bunga</span>
+                    {design.selectedFlowers.length > 0 && (
+                      <span className="atur-bunga-count-pill">{design.selectedFlowers.length}</span>
+                    )}
+                  </button>
                 </div>
               ) : (
                 <div className="flex items-center justify-between w-full">
@@ -112,15 +161,11 @@ export default function DesignerLayout() {
               )}
             </div>
 
-            {/* Canvas Row — canvas on left, selection summary on right */}
+            {/* Canvas Row — Full width canvas */}
             <div className="ds-canvas-row">
-              {/* Canvas Area */}
               <div className="ds-canvas-area">
                 <PreviewCanvas canvasRef={canvasRef} />
               </div>
-
-              {/* Selection Summary panel — hanya ditampilkan saat tahap editor 2D */}
-              {!isFinalOrStep5 && <SelectionSummary />}
             </div>
 
             {/* Canvas Caption */}
@@ -132,6 +177,24 @@ export default function DesignerLayout() {
           </section>
         </div>
       </div>
+
+      {/* ─── MODAL / DRAWER ATUR BUNGA (TAMPIL HANYA SAAT DIKLIK) ─── */}
+      {isAturBungaOpen && !isFinalOrStep5 && (
+        <div
+          className="artisan-drawer-backdrop"
+          onClick={() => setIsAturBungaOpen(false)}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Menu Atur Bunga Buket Anda"
+        >
+          <div
+            className="artisan-drawer-container"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <SelectionSummary onClose={() => setIsAturBungaOpen(false)} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
