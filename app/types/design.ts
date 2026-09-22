@@ -64,6 +64,7 @@ export interface PlacedFlower {
   x?: number;
   y?: number;
   size?: number;
+  scale?: number;
   customRotation?: number;
   isManual?: boolean;
 }

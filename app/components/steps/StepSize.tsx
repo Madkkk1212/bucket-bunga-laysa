@@ -29,11 +29,9 @@ export default function StepSize() {
     'bucket-3',
   ]);
 
-  // Modal states: 'type' (pilih jenis: hanya gambar & tulisan) -> 'color' (pilih warna)
+  // Modal state: langsung tampilkan semua jenis bucket (gambar & tulisan)
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
-  const [modalStep, setModalStep] = useState<'type' | 'color'>('type');
-  const [selectedBucketInModal, setSelectedBucketInModal] = useState<string | null>(null);
-  const [selectedColorInModal, setSelectedColorInModal] = useState<string>('bucket-1');
+  const [selectedBucketInModal, setSelectedBucketInModal] = useState<string>('bucket-1');
 
   const currentBucketId = design.bucketSize || 'bucket-1';
 
@@ -51,18 +49,14 @@ export default function StepSize() {
   };
 
   const handleOpenModal = () => {
-    setSelectedBucketInModal(null); // Mulai tanpa seleksi agar tombol Next baru muncul saat diklik
-    setSelectedColorInModal(currentBucketId);
-    setModalStep('type');
+    setSelectedBucketInModal(currentBucketId);
     setIsModalOpen(true);
   };
 
   const handleConfirmModal = () => {
-    handleSelectBucket(selectedColorInModal);
+    handleSelectBucket(selectedBucketInModal);
     setIsModalOpen(false);
   };
-
-  const currentColorBucket = getBucketSize(selectedColorInModal);
 
   return (
     <div className="step-content">
@@ -381,14 +375,10 @@ export default function StepSize() {
             <div className="bucket-modal-header">
               <div>
                 <h3 id="bucket-modal-title" className="bucket-modal-title">
-                  {modalStep === 'type'
-                    ? 'Pilih Model Pembungkus Bucket'
-                    : 'Pilih Warna Pembungkus Bucket'}
+                  Pilih Model Pembungkus Bucket
                 </h3>
                 <p className="bucket-modal-subtitle">
-                  {modalStep === 'type'
-                    ? 'Klik model pembungkus bucket di bawah untuk melanjutkan'
-                    : `Tersedia ${BUCKET_SIZES.length} pilihan warna eksklusif`}
+                  Pilih pembungkus bucket favoritmu dari koleksi Laysa
                 </p>
               </div>
               <button
@@ -401,160 +391,63 @@ export default function StepSize() {
               </button>
             </div>
 
-            {/* ─── STEP 1 POPUP: HANYA GAMBAR DAN TULISANNYA ─── */}
-            {modalStep === 'type' && (
-              <div className="bucket-type-step-body">
-                <div className="bucket-type-list">
+            {/* Modal Body: Langsung Gambar & Tulisan Saja (Semua Jenis Bucket) */}
+            <div className="bucket-catalog-grid">
+              {BUCKET_SIZES.map((b) => {
+                const isSelected = selectedBucketInModal === b.id;
+                return (
                   <div
-                    className={`bucket-type-card ${selectedBucketInModal ? 'selected' : ''}`}
-                    onClick={() => {
-                      setSelectedBucketInModal('korean-origami');
-                      setSelectedColorInModal(currentBucketId);
+                    key={b.id}
+                    className={`bucket-catalog-card ${isSelected ? 'selected' : ''}`}
+                    onClick={() => setSelectedBucketInModal(b.id)}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        setSelectedBucketInModal(b.id);
+                      }
                     }}
                   >
-                    <div className="bucket-type-img-frame">
-                      <Image
-                        src="/images/bucket/bucket-1.png"
-                        alt="Korean Origami Signature Wrap"
-                        width={130}
-                        height={140}
-                        className="bucket-type-img"
-                      />
-                      {selectedBucketInModal && (
-                        <span className="bucket-type-check-badge">
-                          <Check size={14} strokeWidth={3} />
-                        </span>
-                      )}
-                    </div>
-
-                    <div className="bucket-type-text">
-                      <h4 className="bucket-type-title">Korean Origami Signature Wrap</h4>
-                    </div>
-                  </div>
-                </div>
-
-                {/* ─── TOMBOL NEXT (BARU MUNCUL SAAT DIKLIK) ─── */}
-                {selectedBucketInModal ? (
-                  <div className="bucket-modal-footer-single">
-                    <button
-                      type="button"
-                      className="btn btn-primary bucket-modal-next-btn"
-                      onClick={() => setModalStep('color')}
-                    >
-                      <span>Lanjut: Pilih Warna Pembungkus</span>
-                      <ChevronRight size={16} />
-                    </button>
-                  </div>
-                ) : (
-                  <div className="bucket-type-prompt-hint">
-                    <span>👆 Klik model pembungkus di atas untuk memunculkan tombol Next</span>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* ─── STEP 2 POPUP: 1 FOTO DI TENGAH + PILIHAN WARNA & SELESAI ─── */}
-            {modalStep === 'color' && (
-              <div className="bucket-color-step-body">
-                {/* Tombol kembali ke pilihan jenis */}
-                <div className="bucket-modal-back-bar">
-                  <button
-                    type="button"
-                    className="bucket-modal-back-btn"
-                    onClick={() => setModalStep('type')}
-                  >
-                    <ChevronLeft size={14} />
-                    <span>Kembali ke Model</span>
-                  </button>
-                </div>
-
-                <div className="bucket-color-step-scrollable">
-                  {/* 1 Foto Saja di Tengah (Dinamis berubah sesuai warna terpilih) */}
-                  <div className="bucket-modal-hero-showcase">
-                    <div className="bucket-modal-hero-frame">
-                      {currentColorBucket.image ? (
+                    <div className="bucket-catalog-img-frame">
+                      {b.image ? (
                         <Image
-                          key={currentColorBucket.id}
-                          src={currentColorBucket.image}
-                          alt={currentColorBucket.label}
-                          width={140}
-                          height={150}
-                          className="bucket-modal-hero-img"
+                          src={b.image}
+                          alt={b.label}
+                          width={72}
+                          height={78}
+                          className="bucket-catalog-img"
                           style={{
-                            filter: `drop-shadow(0 10px 22px rgba(0,0,0,0.2)) ${currentColorBucket.cssFilter || ''}`,
+                            filter: `drop-shadow(0 4px 10px rgba(0,0,0,0.16)) ${b.cssFilter || ''}`,
                           }}
                         />
                       ) : (
                         <div className="size-bucket-icon" />
                       )}
-                      {currentColorBucket.tag && (
-                        <span className="bucket-modal-hero-tag">{currentColorBucket.tag}</span>
-                      )}
                     </div>
 
-                    <div className="bucket-modal-hero-info">
-                      <div className="bucket-modal-hero-title-row">
-                        <span
-                          className="bucket-modal-hero-dot"
-                          style={{ backgroundColor: currentColorBucket.colorHex || '#8B5A3C' }}
-                        />
-                        <h4 className="bucket-modal-hero-name">{currentColorBucket.label}</h4>
-                      </div>
-                      <p className="bucket-modal-hero-desc">{currentColorBucket.description}</p>
-                    </div>
-                  </div>
+                    <h4 className="bucket-catalog-name">{b.label}</h4>
 
-                  {/* Menu Warna-warnanya (Palette Swatches) */}
-                  <div className="bucket-modal-palette-section">
-                    <div className="bucket-modal-palette-header">
-                      <span className="bucket-modal-palette-title">
-                        Pilih Warna Pembungkus ({BUCKET_SIZES.length} Warna):
+                    {isSelected && (
+                      <span className="bucket-catalog-check">
+                        <Check size={14} strokeWidth={3} />
                       </span>
-                      <span className="bucket-modal-palette-hint">
-                        Klik warna untuk mengganti 1 foto di atas & kanvas
-                      </span>
-                    </div>
-
-                    <div className="bucket-palette-grid">
-                      {BUCKET_SIZES.map((b) => {
-                        const isSelected = selectedColorInModal === b.id;
-                        return (
-                          <button
-                            key={b.id}
-                            type="button"
-                            className={`bucket-palette-btn ${isSelected ? 'active' : ''}`}
-                            onClick={() => setSelectedColorInModal(b.id)}
-                          >
-                            <span
-                              className="bucket-palette-swatch-circle"
-                              style={{ backgroundColor: b.colorHex || '#8B5A3C' }}
-                            />
-                            <span className="bucket-palette-label">{b.label.replace('Korean ', '')}</span>
-                            {isSelected && (
-                              <span className="bucket-palette-check">
-                                <Check size={12} strokeWidth={3} />
-                              </span>
-                            )}
-                          </button>
-                        );
-                      })}
-                    </div>
+                    )}
                   </div>
-                </div>
+                );
+              })}
+            </div>
 
-                {/* Modal Footer: Selesai */}
-                <div className="bucket-modal-footer">
-                  <button
-                    type="button"
-                    className="btn btn-primary bucket-modal-done-btn"
-                    onClick={handleConfirmModal}
-                  >
-                    <Check size={16} />
-                    <span>Selesai & Pasang ke Buket</span>
-                  </button>
-                </div>
-              </div>
-            )}
+            {/* Modal Footer: Selesai & Pasang ke Buket */}
+            <div className="bucket-modal-footer">
+              <button
+                type="button"
+                className="btn btn-primary bucket-modal-done-btn"
+                onClick={handleConfirmModal}
+              >
+                <Check size={16} />
+                <span>Selesai & Pasang ke Buket</span>
+              </button>
+            </div>
           </div>
         </div>
       </ModalPortal>

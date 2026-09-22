@@ -19,29 +19,29 @@ export default function HomePage() {
       <div className="floral-frame-decor" aria-hidden="true">
         {/* Top-Left Floral Cluster */}
         <div className="decor-flower decor-tl-1">
-          <Image src="/images/flowers/rose_pink.png" alt="" width={130} height={130} priority />
+          <Image src="/images/flowers/rose_pink.png" alt="" width={130} height={130} loading="lazy" sizes="(max-width: 768px) 70px, 130px" />
         </div>
         <div className="decor-flower decor-tl-2">
-          <Image src="/images/flowers/babysbreath_white.png" alt="" width={95} height={95} priority />
+          <Image src="/images/flowers/babysbreath_white.png" alt="" width={95} height={95} loading="lazy" sizes="(max-width: 768px) 50px, 95px" />
         </div>
         <div className="decor-flower decor-tl-3">
-          <Image src="/images/flowers/eucalyptus.png" alt="" width={110} height={110} priority />
+          <Image src="/images/flowers/eucalyptus.png" alt="" width={110} height={110} loading="lazy" sizes="(max-width: 768px) 60px, 110px" />
         </div>
 
         {/* Top-Right Floral Cluster */}
         <div className="decor-flower decor-tr-1">
-          <Image src="/images/flowers/hydrangea_pink.png" alt="" width={140} height={140} priority />
+          <Image src="/images/flowers/hydrangea_pink.png" alt="" width={140} height={140} loading="lazy" sizes="(max-width: 768px) 75px, 140px" />
         </div>
         <div className="decor-flower decor-tr-2">
-          <Image src="/images/flowers/lily_pink.png" alt="" width={105} height={105} priority />
+          <Image src="/images/flowers/lily_pink.png" alt="" width={105} height={105} loading="lazy" sizes="(max-width: 768px) 55px, 105px" />
         </div>
 
         {/* Bottom-Left Floral Cluster */}
         <div className="decor-flower decor-bl-1">
-          <Image src="/images/flowers/tulip_pink.png" alt="" width={120} height={120} priority />
+          <Image src="/images/flowers/tulip_pink.png" alt="" width={120} height={120} loading="lazy" sizes="(max-width: 768px) 65px, 120px" />
         </div>
         <div className="decor-flower decor-bl-2">
-          <Image src="/images/flowers/ranunculus_pink.png" alt="" width={100} height={100} priority />
+          <Image src="/images/flowers/ranunculus_pink.png" alt="" width={100} height={100} loading="lazy" sizes="(max-width: 768px) 50px, 100px" />
         </div>
 
         {/* Floating Petals Drifting in the Air */}
@@ -93,6 +93,8 @@ export default function HomePage() {
                 width={640}
                 height={640}
                 priority
+                fetchPriority="high"
+                sizes="(max-width: 640px) 320px, (max-width: 1024px) 480px, 640px"
                 className="hero-bouquet-img"
               />
             </div>

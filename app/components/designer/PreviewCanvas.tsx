@@ -53,7 +53,15 @@ export default function PreviewCanvas({ canvasRef: externalRef }: PreviewCanvasP
     CANVAS_RATIO_DIMENSIONS[currentRatio] || CANVAS_RATIO_DIMENSIONS['1:1'];
 
   const [dragState, setDragState] = useState<DragState | null>(null);
-  const showGuide = true;
+  
+  // Status selesai / final (Step 3 ucapan, Step 4 pratinjau, Step 5 unduh, atau status final)
+  const isFinished = design.currentStep >= 3 || design.final2D.status === 'final';
+
+  // Bulatan "Area Kantung Bunga (Bebas Geser)" HANYA muncul saat buket masih kosong
+  // sebagai panduan awal peletakan. Begitu bunga sudah ditaruh atau sudah selesai,
+  // bulatan panduan ini otomatis dihilangkan agar rangkaian buket bersih sempurna.
+  const showGuide = !isFinished && design.selectedFlowers.length === 0;
+  
   const [cursorStyle, setCursorStyle] = useState<string>('default');
   const [isDragOver, setIsDragOver] = useState<boolean>(false);
 
@@ -203,9 +211,9 @@ export default function PreviewCanvas({ canvasRef: externalRef }: PreviewCanvasP
 
     ctx.restore(); // end bouquet rotation transform
 
-    // 5. Draw interactive selection handles if a flower is selected
+    // 5. Draw interactive selection handles if a flower is selected (hanya saat belum final/selesai)
     // NOTE: handles drawn in screen space — need to apply rotation offset to positions
-    if (selectedUid) {
+    if (selectedUid && !isFinished) {
       const selectedItem = items.find((it) => it.flower.uid === selectedUid);
       if (selectedItem) {
         const cos = Math.cos(bouquetRotRad);
@@ -222,8 +230,8 @@ export default function PreviewCanvas({ canvasRef: externalRef }: PreviewCanvasP
       }
     }
 
-    // 5b. Beacon glow ring for hovered flower (from sidebar picker)
-    if (hoveredFlowerUid && hoveredFlowerUid !== selectedUid) {
+    // 5b. Beacon glow ring for hovered flower (from sidebar picker - hanya saat belum selesai)
+    if (hoveredFlowerUid && hoveredFlowerUid !== selectedUid && !isFinished) {
       const hovItem = items.find((it) => it.flower.uid === hoveredFlowerUid);
       if (hovItem) {
         const cos2 = Math.cos(bouquetRotRad);
@@ -264,11 +272,12 @@ export default function PreviewCanvas({ canvasRef: externalRef }: PreviewCanvasP
     if (design.text.content && design.text.content.trim()) {
       const b = getCardBounds(design.text, canvasW, canvasH);
       const isCardActive =
-        isDraggingCard ||
-        isCardHovered ||
-        isCardSelected ||
-        design.currentStep === 3 ||
-        dragState?.mode === 'scale-card';
+        !isFinished &&
+        (isDraggingCard ||
+          isCardHovered ||
+          isCardSelected ||
+          design.currentStep === 3 ||
+          dragState?.mode === 'scale-card');
 
       if (isCardActive) {
         ctx.save();
@@ -329,7 +338,9 @@ export default function PreviewCanvas({ canvasRef: externalRef }: PreviewCanvasP
     design,
     canvasRef,
     showGuide,
+    isFinished,
     selectedUid,
+    currentRatio,
     hoveredFlowerUid,
     isDraggingCard,
     isCardHovered,
@@ -573,8 +584,9 @@ export default function PreviewCanvas({ canvasRef: externalRef }: PreviewCanvasP
         updateFlower(selectedUid, { customRotation: newRot });
       } else if (dragState.mode === 'scale') {
         const dist = Math.hypot(flMouseX - dragState.origX, flMouseY - dragState.origY);
-        const newSize = Math.max(45, Math.min(170, Math.round(dist * 2)));
-        updateFlower(selectedUid, { size: newSize });
+        const newSize = Math.max(45, Math.min(180, Math.round(dist * 2)));
+        const newScale = Number((newSize / 92).toFixed(2));
+        updateFlower(selectedUid, { size: newSize, scale: newScale });
       }
       return;
     }

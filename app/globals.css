@@ -2066,293 +2066,97 @@ body.modal-backdrop-blur-active .ds-root {
   flex-shrink: 0;
 }
 
-/* ─── Modal Popup Bucket (Progressive 2-Step Wizard) ─── */
+/* ─── Modal Popup Bucket (Langsung Tampilkan Koleksi Gambar & Tulisan) ─── */
 .bucket-wizard-modal-container {
-  max-width: 520px;
+  max-width: 560px;
   max-height: min(88vh, 640px);
   display: flex;
   flex-direction: column;
 }
 
-/* Step 1: Hanya Gambar dan Tulisannya */
-.bucket-type-step-body {
-  padding: 16px 20px;
-  flex: 1;
-  overflow-y: auto;
-}
-
-.bucket-type-list {
-  display: flex;
-  flex-direction: column;
+.bucket-catalog-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
   gap: 12px;
+  padding: 16px 20px;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
 }
 
-.bucket-type-card {
+@media (max-width: 560px) {
+  .bucket-catalog-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+    padding: 12px 16px;
+  }
+}
+
+.bucket-catalog-card {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 14px 16px;
+  gap: 14px;
+  padding: 12px 14px;
   border-radius: 16px;
   border: 2px solid #e7e5e4;
   background: #ffffff;
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  position: relative;
   text-align: left;
-}
-
-.bucket-type-card:hover {
-  border-color: #f472b6;
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(219, 39, 119, 0.12);
-}
-
-.bucket-type-card.selected {
-  border-color: #db2777;
-  background: #fffbfe;
-  box-shadow: 0 0 0 3px rgba(219, 39, 119, 0.2);
-}
-
-.bucket-type-img-frame {
   position: relative;
-  width: 96px;
-  height: 104px;
+}
+
+.bucket-catalog-card:hover {
+  border-color: #8B5A3C;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(139, 90, 60, 0.12);
+}
+
+.bucket-catalog-card.selected {
+  border-color: #8B5A3C;
+  background: #FDFBF8;
+  box-shadow: 0 0 0 2.5px rgba(139, 90, 60, 0.25);
+}
+
+.bucket-catalog-img-frame {
+  position: relative;
+  width: 76px;
+  height: 82px;
   display: flex;
   align-items: center;
   justify-content: center;
   background: radial-gradient(circle at center, #ffffff 0%, #faf6f0 100%);
-  border-radius: 14px;
+  border-radius: 12px;
   border: 1px solid #ebd9c8;
   flex-shrink: 0;
 }
 
-.bucket-type-img {
-  width: 86px;
-  height: 92px;
+.bucket-catalog-img {
+  width: 68px;
+  height: 74px;
   object-fit: contain;
-  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.15));
 }
 
-.bucket-type-check-badge {
-  position: absolute;
-  top: -6px;
-  right: -6px;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background: #db2777;
-  color: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 2px 6px rgba(219, 39, 119, 0.4);
-}
-
-.bucket-type-text {
-  flex: 1;
-}
-
-.bucket-type-title {
-  font-size: 16px;
+.bucket-catalog-name {
+  font-size: 13.5px;
   font-weight: 700;
   color: #1f2937;
+  flex: 1;
+  line-height: 1.3;
   margin: 0;
 }
 
-.bucket-type-desc {
-  font-size: 12px;
-  color: #6b7280;
-  line-height: 1.35;
-  margin: 0 0 6px 0;
-}
-
-.bucket-type-sub {
-  font-size: 10.5px;
-  font-weight: 600;
-  color: #8b5a3c;
-  background: #fdf8f4;
-  border: 1px solid rgba(139, 90, 60, 0.2);
-  padding: 2px 8px;
-  border-radius: 6px;
-  display: inline-block;
-}
-
-.bucket-type-prompt-hint {
-  padding: 14px 20px;
-  text-align: center;
-  font-size: 11.5px;
-  font-weight: 600;
-  color: #8b5a3c;
-  background: #fdfaf7;
-  border-radius: 12px;
-  margin-top: 14px;
-}
-
-.bucket-modal-footer-single {
-  padding: 14px 20px;
-  border-top: 1px solid #f0ece6;
-  background: #FDFBF8;
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 14px;
-  animation: modalFadeIn 0.2s ease-out;
-}
-
-.bucket-modal-next-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 22px;
-  font-size: 13px;
-  font-weight: 700;
-  border-radius: 14px;
-  box-shadow: 0 4px 14px rgba(219, 39, 119, 0.28);
-}
-
-/* Step 2: Pilih Warna */
-.bucket-color-step-body {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  min-height: 0;
-  overflow: hidden;
-  animation: modalFadeIn 0.22s ease-out;
-}
-
-.bucket-modal-back-bar {
-  flex-shrink: 0;
-  padding: 8px 20px;
-  background: #FDFBF8;
-  border-bottom: 1px solid #f0ece6;
-}
-
-.bucket-modal-back-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 11px;
-  font-weight: 700;
-  color: #8b5a3c;
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  padding: 4px 8px;
-  border-radius: 6px;
-  transition: all 0.15s ease;
-}
-
-.bucket-modal-back-btn:hover {
-  background: #f7efe6;
-  color: #4a2810;
-}
-
-.bucket-color-step-scrollable {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-}
-
-.bucket-modal-hero-showcase {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 12px 20px 10px;
-  background: radial-gradient(circle at center, #ffffff 0%, #fdf8f4 100%);
-  border-bottom: 1px solid #f0ece6;
-  text-align: center;
-}
-
-.bucket-modal-hero-frame {
-  position: relative;
-  width: 124px;
-  height: 132px;
+.bucket-catalog-check {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #8B5A3C;
+  color: #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #ffffff;
-  border-radius: 18px;
-  border: 1.5px solid #ebd9c8;
-  box-shadow: 0 6px 20px rgba(139, 90, 60, 0.1);
-  margin-bottom: 8px;
-}
-
-.bucket-modal-hero-img {
-  width: 104px;
-  height: 114px;
-  object-fit: contain;
-  transition: transform 0.2s ease;
-}
-
-.bucket-modal-hero-frame:hover .bucket-modal-hero-img {
-  transform: scale(1.06);
-}
-
-.bucket-modal-hero-tag {
-  position: absolute;
-  top: -8px;
-  right: -8px;
-  padding: 3px 9px;
-  border-radius: 12px;
-  background: #fef3c7;
-  color: #78350f;
-  border: 1px solid #fde68a;
-  font-size: 10px;
-  font-weight: 700;
-}
-
-.bucket-modal-hero-info {
-  width: 100%;
-}
-
-.bucket-modal-hero-title-row {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  margin-bottom: 3px;
-}
-
-.bucket-modal-hero-dot {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  border: 1px solid rgba(0,0,0,0.15);
-}
-
-.bucket-modal-hero-name {
-  font-size: 14.5px;
-  font-weight: 700;
-  color: #1c1917;
-  margin: 0;
-}
-
-.bucket-modal-hero-desc {
-  font-size: 11px;
-  color: #78716c;
-  margin: 2px 0 0;
-}
-
-.bucket-modal-palette-section {
-  padding: 12px 20px 16px;
-  background: #FFFFFF;
-}
-
-.bucket-modal-palette-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 8px;
-}
-
-.bucket-modal-palette-title {
-  font-size: 12px;
-  font-weight: 700;
-  color: #374151;
-}
-
-.bucket-modal-palette-hint {
-  font-size: 10.5px;
-  color: #9ca3af;
+  flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(139, 90, 60, 0.35);
 }
 
 .bucket-modal-footer {
@@ -2370,16 +2174,618 @@ body.modal-backdrop-blur-active .ds-root {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 9px 22px;
-  font-size: 13px;
+  padding: 10px 24px;
+  font-size: 13.5px;
   font-weight: 700;
   border-radius: 12px;
 }
 
-@media (max-width: 640px) {
-  .bucket-palette-grid {
-    grid-template-columns: 1fr;
+@keyframes slideInFromRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
   }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideUpBottom {
+  from {
+    transform: translateY(100%);
+    opacity: 0.6;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* ─── Menu Atur Bunga (Desktop: Sidebar Kanan • Mobile: Bottom Sheet Docking) ─── */
+.ds-atur-bunga-sidebar {
+  width: 360px !important;
+  max-width: 100% !important;
+  flex-shrink: 0 !important;
+  background: #ffffff !important;
+  border-left: 1.5px solid #ebd9c8 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  height: 100% !important;
+  overflow: hidden !important;
+  box-shadow: -4px 0 20px rgba(139, 90, 60, 0.08) !important;
+  animation: slideInFromRight 0.22s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  z-index: 20 !important;
+}
+
+.mobile-drawer-handle-bar {
+  display: none !important;
+}
+
+.ds-mobile-atur-bunga-container {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  /* Di Mobile: Sembunyikan sidebar kanan yang menutupi layar */
+  .ds-atur-bunga-sidebar {
+    display: none !important;
+  }
+
+  /* Tampilkan kontrol bunga di bawah tulisan kanvas (Sangat Simpel & Tidak Menutupi Kanvas) */
+  .ds-mobile-atur-bunga-container {
+    display: block !important;
+    width: 100% !important;
+    padding: 0 10px 14px !important;
+    box-sizing: border-box !important;
+  }
+
+  .mobile-flower-toolbar {
+    background: #ffffff !important;
+    border: 1.5px solid #ebd9c8 !important;
+    border-radius: 16px !important;
+    padding: 10px 12px !important;
+    box-shadow: 0 4px 16px rgba(139, 90, 60, 0.08) !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Baris 1: Chip Daftar Bunga Horizontal */
+  .m-chips-wrapper {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    width: 100% !important;
+    overflow: hidden !important;
+  }
+
+  .m-chips-label {
+    display: flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    color: #4b5563 !important;
+    flex-shrink: 0 !important;
+  }
+
+  .m-chips-list {
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: none !important;
+    padding: 2px 0 !important;
+    flex: 1 !important;
+  }
+  .m-chips-list::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  .m-toolbar-close-btn {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 24px !important;
+    height: 24px !important;
+    min-width: 24px !important;
+    border-radius: 50% !important;
+    background: #fdf2f8 !important;
+    border: 1px solid #fbcfe8 !important;
+    color: #be185d !important;
+    cursor: pointer !important;
+    flex-shrink: 0 !important;
+    margin-left: 2px !important;
+    transition: all 0.15s ease !important;
+  }
+  .m-toolbar-close-btn:hover,
+  .m-toolbar-close-btn:active {
+    background: #db2777 !important;
+    color: #ffffff !important;
+    border-color: #db2777 !important;
+  }
+
+  .m-flower-chip {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+    padding: 4px 8px !important;
+    background: #fdfaf7 !important;
+    border: 1px solid #ebd9c8 !important;
+    border-radius: 20px !important;
+    cursor: pointer !important;
+    flex-shrink: 0 !important;
+    transition: all 0.15s ease !important;
+  }
+
+  .m-flower-chip:hover {
+    background: #f7efe6 !important;
+    border-color: #d8c2ad !important;
+  }
+
+  .m-flower-chip.active {
+    background: #fff5f8 !important;
+    border-color: #ec4899 !important;
+    box-shadow: 0 0 0 1.5px rgba(236, 72, 153, 0.25) !important;
+  }
+
+  .m-chip-num {
+    font-size: 10px !important;
+    font-weight: 700 !important;
+    color: #9ca3af !important;
+  }
+  .m-flower-chip.active .m-chip-num {
+    color: #ec4899 !important;
+  }
+
+  .m-chip-emoji {
+    font-size: 12px !important;
+    line-height: 1 !important;
+  }
+
+  .m-chip-name {
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    color: #374151 !important;
+    white-space: nowrap !important;
+  }
+  .m-flower-chip.active .m-chip-name {
+    color: #be185d !important;
+    font-weight: 700 !important;
+  }
+
+  /* Baris 2: Controls Toolbar Super Simpel */
+  .m-controls-row {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 8px !important;
+    padding-top: 8px !important;
+    border-top: 1px dashed #f0ece6 !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .m-active-info {
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    min-width: 0 !important;
+    flex: 1 !important;
+  }
+
+  .m-active-thumb {
+    width: 28px !important;
+    height: 28px !important;
+    min-width: 28px !important;
+    border-radius: 7px !important;
+    background: #faf7f2 !important;
+    border: 1px solid #ebd9c8 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    overflow: hidden !important;
+    flex-shrink: 0 !important;
+  }
+
+  .m-active-name {
+    font-size: 11.5px !important;
+    font-weight: 700 !important;
+    color: #1f2937 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  .m-actions-group {
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .m-action-subgroup {
+    display: flex !important;
+    align-items: center !important;
+    gap: 3px !important;
+  }
+
+  .m-btn-icon {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 3px !important;
+    padding: 5px 7px !important;
+    border-radius: 8px !important;
+    border: 1px solid #e5e7eb !important;
+    background: #ffffff !important;
+    color: #4b5563 !important;
+    font-size: 10.5px !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+    transition: all 0.15s ease !important;
+  }
+  .m-btn-icon:hover {
+    background: #f3f4f6 !important;
+    color: #111827 !important;
+  }
+  .m-btn-txt {
+    font-size: 10px !important;
+  }
+
+  .m-divider {
+    width: 1px !important;
+    height: 18px !important;
+    background: #e5e7eb !important;
+    flex-shrink: 0 !important;
+  }
+
+  .m-scale-subgroup {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 2px !important;
+    background: #f8fafc !important;
+    padding: 2px 4px !important;
+    border-radius: 8px !important;
+    border: 1px solid #e2e8f0 !important;
+  }
+
+  .m-btn-scale {
+    width: 22px !important;
+    height: 22px !important;
+    min-width: 22px !important;
+    border: none !important;
+    background: #ffffff !important;
+    border-radius: 5px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    color: #4b5563 !important;
+    cursor: pointer !important;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.06) !important;
+  }
+  .m-btn-scale:hover {
+    background: #fce7f3 !important;
+    color: #be185d !important;
+  }
+
+  .m-scale-val {
+    font-size: 10.5px !important;
+    font-weight: 700 !important;
+    color: #1f2937 !important;
+    min-width: 28px !important;
+    text-align: center !important;
+  }
+
+  .m-btn-delete {
+    width: 26px !important;
+    height: 26px !important;
+    min-width: 26px !important;
+    border-radius: 7px !important;
+    border: 1px solid #fee2e2 !important;
+    background: #ffffff !important;
+    color: #ef4444 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    cursor: pointer !important;
+    transition: all 0.15s ease !important;
+  }
+  .m-btn-delete:hover {
+    background: #fee2e2 !important;
+    color: #dc2626 !important;
+  }
+}
+
+.simple-atur-panel {
+  display: flex !important;
+  flex-direction: column !important;
+  background: #ffffff !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.simple-atur-header {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 14px 16px !important;
+  background: #fdfaf7 !important;
+  border-bottom: 1.5px solid #f0ece6 !important;
+  flex-shrink: 0 !important;
+}
+
+.simple-atur-title-wrap {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+.simple-atur-title {
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  color: #1f2937 !important;
+}
+
+.simple-atur-count-pill {
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  color: #db2777 !important;
+  background: #fdf2f8 !important;
+  border: 1px solid #fbcfe8 !important;
+  padding: 2px 8px !important;
+  border-radius: 12px !important;
+}
+
+.simple-atur-close-btn {
+  width: 28px !important;
+  height: 28px !important;
+  border-radius: 50% !important;
+  border: 1px solid #e7e5e4 !important;
+  background: #ffffff !important;
+  color: #78716c !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+}
+
+.simple-atur-close-btn:hover {
+  background: #fee2e2 !important;
+  color: #dc2626 !important;
+  border-color: #fca5a5 !important;
+}
+
+.simple-atur-body {
+  flex: 1 !important;
+  min-height: 0 !important;
+  overflow-y: auto !important;
+  padding: 12px 14px !important;
+}
+
+.simple-atur-empty {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 36px 16px !important;
+  text-align: center !important;
+}
+
+.simple-atur-list {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 12px !important;
+  width: 100% !important;
+}
+
+/* ── Kartu Bunga 2 Baris: Rapi, Lapang & Tidak Menutupi Teks/Gambar ── */
+.simple-flower-card {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 0 !important;
+  padding: 12px 14px !important;
+  background: #ffffff !important;
+  border: 1.5px solid #f0ece6 !important;
+  border-radius: 14px !important;
+  transition: all 0.18s ease !important;
+  cursor: pointer !important;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03) !important;
+  box-sizing: border-box !important;
+  width: 100% !important;
+}
+
+.simple-flower-card:hover {
+  background: #fdfaf7 !important;
+  border-color: #ebd9c8 !important;
+  box-shadow: 0 3px 10px rgba(139, 90, 60, 0.08) !important;
+}
+
+.simple-flower-card.selected {
+  background: #fff8fa !important;
+  border-color: #ec4899 !important;
+  box-shadow: 0 0 0 2px rgba(236, 72, 153, 0.2), 0 4px 12px rgba(219, 39, 119, 0.08) !important;
+}
+
+/* Baris 1: Header Bunga (Nomor, Thumbnail, Nama, Tombol Hapus) */
+.flower-card-top-row {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  width: 100% !important;
+  gap: 10px !important;
+}
+
+.flower-card-identity {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  min-width: 0 !important;
+  flex: 1 !important;
+}
+
+.flower-card-number {
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  color: #78716c !important;
+  background: #f5f5f4 !important;
+  border: 1px solid #e7e5e4 !important;
+  border-radius: 6px !important;
+  padding: 2px 6px !important;
+  flex-shrink: 0 !important;
+  line-height: 1 !important;
+}
+
+.flower-card-thumb {
+  width: 38px !important;
+  height: 38px !important;
+  min-width: 38px !important;
+  border-radius: 10px !important;
+  background: #faf7f2 !important;
+  border: 1.5px solid #ebd9c8 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-shrink: 0 !important;
+  overflow: hidden !important;
+}
+
+.flower-card-meta {
+  display: flex !important;
+  flex-direction: column !important;
+  min-width: 0 !important;
+  flex: 1 !important;
+}
+
+.flower-card-name {
+  font-size: 13.5px !important;
+  font-weight: 700 !important;
+  color: #1f2937 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  line-height: 1.3 !important;
+}
+
+.flower-card-sub {
+  font-size: 11px !important;
+  color: #8b5a3c !important;
+  font-weight: 500 !important;
+  line-height: 1.2 !important;
+  margin-top: 2px !important;
+}
+
+.flower-card-delete-btn {
+  width: 28px !important;
+  height: 28px !important;
+  min-width: 28px !important;
+  border-radius: 8px !important;
+  border: 1px solid #f3f4f6 !important;
+  background: #ffffff !important;
+  color: #9ca3af !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+  flex-shrink: 0 !important;
+}
+
+.flower-card-delete-btn:hover {
+  background: #fee2e2 !important;
+  color: #ef4444 !important;
+  border-color: #fca5a5 !important;
+}
+
+/* Baris 2: Controls Toolbar (Lapisan & Skala) */
+.flower-card-bottom-row {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 8px !important;
+  width: 100% !important;
+  margin-top: 10px !important;
+  padding-top: 9px !important;
+  border-top: 1px dashed #e7e5e4 !important;
+  box-sizing: border-box !important;
+}
+
+.flower-card-layer-group {
+  display: flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+}
+
+.flower-card-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 4px !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  border: 1px solid #e7e5e4 !important;
+  border-radius: 8px !important;
+  background: #ffffff !important;
+  color: #4b5563 !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+  padding: 4px 8px !important;
+  white-space: nowrap !important;
+}
+
+.flower-card-btn:hover {
+  background: #f5f5f4 !important;
+  color: #1c1917 !important;
+  border-color: #d6d3d1 !important;
+}
+
+.flower-card-btn.layer-btn:hover {
+  background: #eef2ff !important;
+  color: #4338ca !important;
+  border-color: #c7d2fe !important;
+}
+
+.flower-card-scale-group {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 3px !important;
+  background: #f8fafc !important;
+  padding: 2px 4px !important;
+  border-radius: 8px !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+.flower-card-scale-btn {
+  width: 22px !important;
+  height: 22px !important;
+  min-width: 22px !important;
+  border: none !important;
+  background: #ffffff !important;
+  border-radius: 6px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  color: #475569 !important;
+  cursor: pointer !important;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05) !important;
+  transition: all 0.15s ease !important;
+}
+
+.flower-card-scale-btn:hover {
+  background: #fce7f3 !important;
+  color: #be185d !important;
+}
+
+.flower-card-scale-val {
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  color: #475569 !important;
+  min-width: 34px !important;
+  text-align: center !important;
 }
 
 /* ─── Flower Color Menu Modal (Blurred Backdrop) ─── */

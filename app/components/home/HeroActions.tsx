@@ -26,7 +26,7 @@ export default function HeroActions() {
         <ArrowRight size={18} />
       </button>
 
-      <Link href="/tutorial" id="btn-tutorial-hero" className="hero-btn-tutorial">
+      <Link href="/tutorial" id="btn-tutorial-hero" className="hero-btn-tutorial" aria-label="Lihat panduan tutorial merangkai buket">
         <BookOpen size={16} />
         <span>TUTORIAL</span>
       </Link>

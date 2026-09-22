@@ -1,28 +1,29 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Montserrat, Playfair_Display, Cormorant_Garamond, Great_Vibes } from 'next/font/google';
 import './globals.css';
 
 const montserrat = Montserrat({
   subsets: ['latin'],
-  weight: ['300', '400', '500', '600', '700', '800'],
+  weight: ['400', '500', '600', '700'],
   variable: '--font-montserrat',
   display: 'swap',
+  preload: true,
 });
 
 const playfair = Playfair_Display({
   subsets: ['latin'],
   weight: ['600', '700'],
-  style: ['normal', 'italic'],
   variable: '--font-playfair',
   display: 'swap',
+  preload: false,
 });
 
 const cormorant = Cormorant_Garamond({
   subsets: ['latin'],
   weight: ['600', '700'],
-  style: ['normal', 'italic'],
   variable: '--font-cormorant',
   display: 'swap',
+  preload: false,
 });
 
 const greatVibes = Great_Vibes({
@@ -30,7 +31,15 @@ const greatVibes = Great_Vibes({
   weight: ['400'],
   variable: '--font-great-vibes',
   display: 'swap',
+  preload: false,
 });
+
+export const viewport: Viewport = {
+  themeColor: '#be185d',
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
+};
 
 export const metadata: Metadata = {
   title: 'BucketBunga — Rancang Buket Bunga Impian Anda',
@@ -48,6 +57,9 @@ export const metadata: Metadata = {
     ],
   },
   manifest: '/site.webmanifest',
+  verification: {
+    google: 'google707247af897599f6',
+  },
   openGraph: {
     title: 'BucketBunga — Rancang Buket Bunga Impian Anda',
     description: 'Rancang buket bunga impianmu dengan sentuhan artisan florist.',

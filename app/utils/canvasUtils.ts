@@ -345,7 +345,7 @@ export function computeFlowerRenderItems(
         flower: f,
         x: Math.round(f.x),
         y: Math.round(f.y),
-        sz: Math.round(f.size ?? 92),
+        sz: Math.round((f.size ?? 92) * (f.scale ?? 1)),
         rot: f.customRotation ?? f.rotation ?? 0,
         zIndex: f.zIndex ?? 10,
       });
@@ -373,7 +373,7 @@ export function computeFlowerRenderItems(
       flower: g,
       x: anc.x,
       y: anc.y,
-      sz: anc.sz,
+      sz: Math.round(anc.sz * (g.scale ?? 1)),
       rot: anc.rot,
       zIndex: g.zIndex ?? anc.zIndex,
     });
@@ -397,7 +397,7 @@ export function computeFlowerRenderItems(
       flower: fl,
       x: anc.x,
       y: anc.y,
-      sz: anc.sz,
+      sz: Math.round(anc.sz * (fl.scale ?? 1)),
       rot: anc.rot,
       zIndex: fl.zIndex ?? anc.zIndex,
     });
@@ -514,7 +514,7 @@ export function computeFlowerRenderItems(
         flower: f,
         x: slot.x,
         y: slot.y,
-        sz: slot.sz,
+        sz: Math.round(slot.sz * (f.scale ?? 1)),
         rot: slot.rot,
         zIndex: f.zIndex ?? slot.zIndex,
       });

@@ -6,12 +6,12 @@ import { useDesign } from '../../context/DesignContext';
 import PreviewCanvas from '../designer/PreviewCanvas';
 import DesignerSidebar from '../designer/DesignerSidebar';
 import SelectionSummary from '../designer/SelectionSummary';
+import MobileFlowerToolbar from '../designer/MobileFlowerToolbar';
 import StepSize from '../steps/StepSize';
 import StepFlowers from '../steps/StepFlowers';
 import StepText from '../steps/StepText';
 import StepPreview from '../steps/StepPreview';
 import StepDownload from '../steps/StepDownload';
-import ModalPortal from '../ui/ModalPortal';
 import { BookOpen, Edit3, SlidersHorizontal, ChevronRight } from 'lucide-react';
 
 const STEP_TITLES: Record<number, string> = {
@@ -87,12 +87,21 @@ export default function DesignerLayout() {
               <button
                 type="button"
                 className={`ds-header-atur-bunga-btn ${isAturBungaOpen ? 'active' : ''}`}
-                onClick={() => setIsAturBungaOpen(!isAturBungaOpen)}
+                onClick={() => {
+                  const next = !isAturBungaOpen;
+                  setIsAturBungaOpen(next);
+                  if (next && typeof window !== 'undefined' && window.innerWidth <= 768) {
+                    setTimeout(() => {
+                      const section = document.getElementById('mobile-atur-bunga-section') || document.getElementById('studio-canvas-section');
+                      if (section) section.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                    }, 60);
+                  }
+                }}
                 id="btn-top-atur-bunga"
                 title="Atur susunan bunga, lapisan depan/belakang, ukuran, dan hapus bunga"
               >
                 <SlidersHorizontal size={13} />
-                <span className="ds-btn-text">Atur Bunga</span>
+                <span className="ds-btn-text">{isAturBungaOpen ? 'Tutup Atur' : 'Atur Bunga'}</span>
                 {design.selectedFlowers.length > 0 && (
                   <span className="atur-bunga-count-pill">{design.selectedFlowers.length}</span>
                 )}
@@ -142,11 +151,20 @@ export default function DesignerLayout() {
                   <button
                     type="button"
                     className={`ds-canvas-atur-btn ${isAturBungaOpen ? 'active' : ''}`}
-                    onClick={() => setIsAturBungaOpen(!isAturBungaOpen)}
+                    onClick={() => {
+                      const next = !isAturBungaOpen;
+                      setIsAturBungaOpen(next);
+                      if (next && typeof window !== 'undefined' && window.innerWidth <= 768) {
+                        setTimeout(() => {
+                          const section = document.getElementById('mobile-atur-bunga-section') || document.getElementById('studio-canvas-section');
+                          if (section) section.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                        }, 60);
+                      }
+                    }}
                     id="btn-canvas-toolbar-atur"
                   >
                     <SlidersHorizontal size={13} />
-                    <span>Menu Atur Bunga</span>
+                    <span>{isAturBungaOpen ? 'Tutup Atur Bunga' : 'Menu Atur Bunga'}</span>
                     {design.selectedFlowers.length > 0 && (
                       <span className="atur-bunga-count-pill">{design.selectedFlowers.length}</span>
                     )}
@@ -173,11 +191,18 @@ export default function DesignerLayout() {
               )}
             </div>
 
-            {/* Canvas Row — Full width canvas */}
+            {/* Canvas Row — canvas + menu atur bunga side-by-side di kanan */}
             <div className="ds-canvas-row">
-              <div className="ds-canvas-area">
+              <div className={`ds-canvas-area ${isAturBungaOpen ? 'has-mobile-drawer' : ''}`}>
                 <PreviewCanvas canvasRef={canvasRef} />
               </div>
+
+              {/* ─── MENU ATUR BUNGA (DESKTOP: SIDEBAR KANAN • MOBILE: BOTTOM SHEET DOCKING) ─── */}
+              {isAturBungaOpen && !isFinalOrStep5 && (
+                <aside className="ds-atur-bunga-sidebar" id="atur-bunga-sidebar-section">
+                  <SelectionSummary onClose={() => setIsAturBungaOpen(false)} />
+                </aside>
+              )}
             </div>
 
             {/* Canvas Caption */}
@@ -186,30 +211,16 @@ export default function DesignerLayout() {
                 ? '✨ Desain Buket berstatus FINAL • Siap diunduh dalam resolusi tinggi HD'
                 : 'Geser, atur posisi, rotasi, dan susun bunga Anda secara bebas pada kanvas 2D'}
             </p>
+
+            {/* ─── MOBILE: KONTROL ATUR BUNGA DI BAWAH TULISAN DENGAN ICON KECIL SIMPEL ─── */}
+            {isAturBungaOpen && !isFinalOrStep5 && design.selectedFlowers.length > 0 && (
+              <div className="ds-mobile-atur-bunga-container" id="mobile-atur-bunga-section">
+                <MobileFlowerToolbar onClose={() => setIsAturBungaOpen(false)} />
+              </div>
+            )}
           </section>
         </div>
       </div>
-
-      {/* ─── MODAL / DRAWER ATUR BUNGA (TAMPIL HANYA SAAT DIKLIK) ─── */}
-      <ModalPortal
-        isOpen={isAturBungaOpen && !isFinalOrStep5}
-        onClose={() => setIsAturBungaOpen(false)}
-      >
-        <div
-          className="artisan-drawer-backdrop"
-          onClick={() => setIsAturBungaOpen(false)}
-          role="dialog"
-          aria-modal="true"
-          aria-label="Menu Atur Bunga Buket Anda"
-        >
-          <div
-            className="artisan-drawer-container"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <SelectionSummary onClose={() => setIsAturBungaOpen(false)} />
-          </div>
-        </div>
-      </ModalPortal>
     </div>
   );
 }
