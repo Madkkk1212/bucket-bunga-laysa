@@ -1630,16 +1630,18 @@ input, select, textarea { font-family: inherit; }
 }
 
 .size-options-clean {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
   margin-bottom: var(--sp-lg);
 }
 .size-card-clean {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 16px;
-  padding: 12px 18px;
+  text-align: center;
+  gap: 8px;
+  padding: 12px 6px 10px;
   border: 2px solid #f1f3f5;
   border-radius: 16px;
   background: #fff;
@@ -1647,7 +1649,7 @@ input, select, textarea { font-family: inherit; }
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   width: 100%;
   box-sizing: border-box;
-  text-align: left;
+  position: relative;
 }
 .size-card-clean:hover {
   border-color: #f472b6;
@@ -1661,28 +1663,32 @@ input, select, textarea { font-family: inherit; }
   box-shadow: 0 6px 22px rgba(219, 39, 119, 0.18);
 }
 .size-card-clean-visual {
-  width: 72px;
-  height: 76px;
+  width: 64px;
+  height: 68px;
   flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 .size-card-clean-info {
-  flex: 1;
+  width: 100%;
   min-width: 0;
 }
 .size-card-clean-name {
-  font-size: 15px;
+  font-size: 11.5px;
   font-weight: 700;
   color: #1e1b4b;
   display: block;
+  line-height: 1.25;
 }
 .size-card-clean-check {
-  flex-shrink: 0;
+  position: absolute;
+  top: 6px;
+  right: 6px;
 }
 .check-badge-active {
-  width: 24px;
+  width: 18px;
+  height: 18px;
   height: 24px;
   border-radius: 50%;
   background: #db2777;
@@ -4367,6 +4373,70 @@ input, select, textarea { font-family: inherit; }
   transform: translateY(-1px);
 }
 
+/* ── Flower Pagination Bar (3 Baris x 3 Kolom) ── */
+.sf-pagination-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 14px 4px;
+  gap: 8px;
+}
+.sf-page-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  color: #4b5563;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+.sf-page-btn:hover:not(:disabled) {
+  border-color: #ec4899;
+  color: #db2777;
+  background: #fdf2f8;
+}
+.sf-page-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+.sf-page-dots {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.sf-page-dot-btn {
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  font-size: 11.5px;
+  font-weight: 700;
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  color: #6b7280;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+.sf-page-dot-btn:hover:not(.active) {
+  border-color: #fbcfe8;
+  color: #db2777;
+  background: #fdf2f8;
+}
+.sf-page-dot-btn.active {
+  background: #db2777;
+  border-color: #db2777;
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(219, 39, 119, 0.28);
+}
+
 .sf-flower-card {
   display: flex;
   flex-direction: column;
@@ -4979,7 +5049,28 @@ input, select, textarea { font-family: inherit; }
 
 @media (max-width: 480px) {
   .sf-flower-grid {
-    grid-template-columns: repeat(2, 1fr) !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 6px !important;
+  }
+  .sf-flower-card {
+    padding: 6px 3px 5px !important;
+    border-radius: 10px !important;
+  }
+  .sf-flower-img-wrap {
+    width: 44px !important;
+    height: 44px !important;
+  }
+  .sf-flower-name {
+    font-size: 10px !important;
+    margin: 2px 0 2px !important;
+    line-height: 1.15 !important;
+  }
+  .sf-btn {
+    width: 26px !important;
+    height: 26px !important;
+    min-width: 26px !important;
+    min-height: 26px !important;
+    font-size: 13px !important;
   }
   .theme-pink .hero-title {
     font-size: 32px !important;
