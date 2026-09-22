@@ -1,0 +1,55 @@
+import { BucketSize } from '../types/design';
+
+export const BUCKET_SIZES: BucketSize[] = [
+  {
+    id: 'bucket-1',
+    label: 'Korean Noir Signature',
+    description: 'Buket wrap hitam matte bersayap origami & pita garis hitam-putih persis referensi',
+    image: '/images/bucket/bucket-1.png',
+    backImage: '/images/bucket/bucket-1_back.png',
+    frontImage: '/images/bucket/bucket-1_front.png',
+    diameter: 35,
+    height: 45,
+    unit: 'cm',
+    capacity: '5 - 25 Bunga (Lush Volume)',
+    maxFlowers: 25,
+    canvasWidth: 500,
+    canvasHeight: 520,
+    tag: 'Signature Referensi',
+  },
+  {
+    id: 'bucket-2',
+    label: 'Korean Golden Kraft',
+    description: 'Buket wrap cokelat kraft keemasan hangat bersayap origami & pita garis elegan',
+    image: '/images/bucket/bucket-2.png',
+    backImage: '/images/bucket/bucket-2_back.png',
+    frontImage: '/images/bucket/bucket-2_front.png',
+    diameter: 35,
+    height: 45,
+    unit: 'cm',
+    capacity: '5 - 25 Bunga (Lush Volume)',
+    maxFlowers: 25,
+    canvasWidth: 500,
+    canvasHeight: 520,
+    tag: 'Klasik Kraft',
+  },
+  {
+    id: 'bucket-3',
+    label: 'Korean Pastel Rose',
+    description: 'Buket wrap pink pastel lembut romantis bersayap origami & pita garis elegan',
+    image: '/images/bucket/bucket-3.png',
+    backImage: '/images/bucket/bucket-3_back.png',
+    frontImage: '/images/bucket/bucket-3_front.png',
+    diameter: 35,
+    height: 45,
+    unit: 'cm',
+    capacity: '5 - 25 Bunga (Lush Volume)',
+    maxFlowers: 25,
+    canvasWidth: 500,
+    canvasHeight: 520,
+    tag: 'Romantis',
+  },
+];
+
+export const getBucketSize = (id: string): BucketSize =>
+  BUCKET_SIZES.find((b) => b.id === id) ?? BUCKET_SIZES[0];
