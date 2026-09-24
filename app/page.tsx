@@ -1,13 +1,13 @@
 import type { Metadata } from 'next';
 import Image from 'next/image';
 import { Sparkles } from 'lucide-react';
-import Navbar from './components/layout/Navbar';
-import HeroActions from './components/home/HeroActions';
+import Navbar from '@/components/layout/Navbar';
+import HeroActions from '@/components/home/HeroActions';
 
 export const metadata: Metadata = {
-  title: 'Bucket Bunga Laysa — Rancang Buket Bunga Impian Anda',
+  title: 'Bucket Bunga Laysa — Bikin Buket Bunga Online & Hadiah Virtual Gratis',
   description:
-    'Atelier bunga eksklusif. Rancang dan sesuaikan buket bunga cantik dengan kendali bebas, kartu ucapan pribadi, dan ekspor desain beresolusi tinggi.',
+    'Rancang buket bunga virtual interaktif gratis untuk Ulang Tahun, Wisuda, Sidang Skripsi, Sahabat, dan Pacar LDR. Susun 30+ bunga aesthetic, tulis kartu ucapan, dan unduh gambar HD seketika.',
 };
 
 export default function HomePage() {

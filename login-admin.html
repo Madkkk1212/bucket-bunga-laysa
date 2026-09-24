@@ -1,0 +1,1101 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lingora - Admin Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            background: #eef4fb;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            color: #1a1a2e;
+        }
+
+        /* Container utama */
+        .dashboard {
+            width: 1400px;
+            max-width: 100%;
+            background: #ffffff;
+            border-radius: 24px;
+            display: grid;
+            grid-template-columns: 240px 1fr 300px;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(100, 130, 200, 0.15);
+            min-height: 850px;
+        }
+
+        /* ===== SIDEBAR KIRI ===== */
+        .sidebar {
+            padding: 30px 20px;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid #f0f3f8;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 35px;
+            padding-left: 5px;
+        }
+
+        .logo-icon {
+            font-size: 2rem;
+        }
+
+        .logo-text h1 {
+            font-size: 1.3rem;
+            font-weight: 800;
+            color: #1a1a2e;
+            line-height: 1;
+        }
+
+        .logo-text p {
+            font-size: 0.7rem;
+            color: #8a94a6;
+            font-weight: 500;
+        }
+
+        .nav-menu {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            flex: 1;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 12px 16px;
+            border-radius: 12px;
+            color: #6b7280;
+            font-weight: 500;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+        }
+
+        .nav-item i {
+            font-size: 1rem;
+            width: 20px;
+        }
+
+        .nav-item:hover {
+            background: #f5f7fb;
+            color: #1a1a2e;
+        }
+
+        .nav-item.active {
+            background: #e8f1ff;
+            color: #1d6ff2;
+            font-weight: 600;
+        }
+
+        /* Kartu Upgrade */
+        .upgrade-card {
+            background: #eef4ff;
+            border-radius: 16px;
+            padding: 18px;
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .upgrade-card i {
+            color: #f5a623;
+            font-size: 1.5rem;
+            margin-bottom: 8px;
+        }
+
+        .upgrade-card h4 {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: #1a1a2e;
+            margin-bottom: 5px;
+        }
+
+        .upgrade-card p {
+            font-size: 0.75rem;
+            color: #6b7280;
+            margin-bottom: 12px;
+            line-height: 1.4;
+        }
+
+        .btn-upgrade {
+            width: 100%;
+            padding: 10px;
+            background: #1d6ff2;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .btn-upgrade:hover {
+            background: #1558c7;
+        }
+
+        /* Profil Bawah */
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 5px;
+            margin-top: 20px;
+            border-top: 1px solid #f0f3f8;
+        }
+
+        .user-avatar {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #ffd89b, #ff9a76);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.2rem;
+        }
+
+        .user-info {
+            flex: 1;
+        }
+
+        .user-info h4 {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: #1a1a2e;
+        }
+
+        .user-info p {
+            font-size: 0.75rem;
+            color: #8a94a6;
+        }
+
+        .user-profile .settings {
+            color: #8a94a6;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+
+        /* ===== KONTEN TENGAH ===== */
+        .main-content {
+            padding: 30px 35px;
+            overflow-y: auto;
+        }
+
+        /* Search Bar */
+        .top-bar {
+            margin-bottom: 25px;
+            position: relative;
+        }
+
+        .top-bar i {
+            position: absolute;
+            left: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #a0aec0;
+        }
+
+        .top-bar input {
+            width: 100%;
+            padding: 14px 20px 14px 50px;
+            border: none;
+            background: #f5f7fb;
+            border-radius: 30px;
+            font-size: 0.9rem;
+            outline: none;
+            color: #1a1a2e;
+            transition: 0.2s;
+        }
+
+        .top-bar input:focus {
+            background: #eef1f8;
+            box-shadow: 0 0 0 3px rgba(29, 111, 242, 0.1);
+        }
+
+        /* Hero Banner */
+        .hero-banner {
+            background: linear-gradient(135deg, #cbe2fb 0%, #a5c9f5 100%);
+            border-radius: 20px;
+            padding: 35px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            position: relative;
+            overflow: hidden;
+            min-height: 230px;
+        }
+
+        .hero-banner::before {
+            content: '';
+            position: absolute;
+            bottom: -20px;
+            left: -20px;
+            right: -20px;
+            height: 60px;
+            background: rgba(255,255,255,0.15);
+            border-radius: 50%;
+        }
+
+        .hero-text {
+            flex: 1;
+            z-index: 2;
+        }
+
+        .hero-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255,255,255,0.7);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #1a1a2e;
+            margin-bottom: 15px;
+        }
+
+        .hero-tag i {
+            color: #ff6b6b;
+        }
+
+        .hero-text h1 {
+            font-size: 2rem;
+            font-weight: 800;
+            color: #1a1a2e;
+            line-height: 1.2;
+            margin-bottom: 8px;
+        }
+
+        .hero-text h1 span {
+            color: #1d6ff2;
+        }
+
+        .hero-text p {
+            font-size: 0.95rem;
+            color: #3d4a5c;
+            margin-bottom: 20px;
+            max-width: 300px;
+        }
+
+        .btn-hero {
+            background: #1d6ff2;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 30px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: 0.2s;
+            box-shadow: 0 6px 15px rgba(29, 111, 242, 0.3);
+        }
+
+        .btn-hero:hover {
+            background: #1558c7;
+            transform: translateY(-2px);
+        }
+
+        .hero-illustration {
+            font-size: 7rem;
+            z-index: 2;
+            line-height: 1;
+            transform: scaleX(-1);
+        }
+
+        /* Section Titles */
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .section-header h2 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #1a1a2e;
+        }
+
+        .section-header a {
+            font-size: 0.8rem;
+            color: #1d6ff2;
+            font-weight: 600;
+            text-decoration: none;
+        }
+
+        /* Continue Learning Card */
+        .continue-card {
+            background: #eef4ff;
+            border-radius: 18px;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .continue-thumb {
+            width: 100px;
+            height: 80px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #f5a623, #f76b1c);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2.5rem;
+            flex-shrink: 0;
+        }
+
+        .continue-info {
+            flex: 1;
+        }
+
+        .continue-info h3 {
+            font-size: 1rem;
+            font-weight: 700;
+            color: #1a1a2e;
+            margin-bottom: 4px;
+        }
+
+        .continue-info p {
+            font-size: 0.8rem;
+            color: #6b7280;
+            margin-bottom: 10px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #d6e4fa;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            width: 60%;
+            background: #1d6ff2;
+            border-radius: 10px;
+            transition: width 0.5s;
+        }
+
+        .continue-actions {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .progress-text {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #1d6ff2;
+        }
+
+        .btn-start {
+            background: #1d6ff2;
+            color: white;
+            border: none;
+            padding: 10px 22px;
+            border-radius: 30px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: 0.2s;
+        }
+
+        .btn-start:hover {
+            background: #1558c7;
+        }
+
+        /* Build Your Skills */
+        .skills-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-bottom: 30px;
+        }
+
+        .skill-card {
+            padding: 15px;
+            border-radius: 14px;
+            cursor: pointer;
+            transition: 0.2s;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .skill-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+        }
+
+        .skill-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1rem;
+            color: white;
+        }
+
+        .skill-card h4 {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: #1a1a2e;
+        }
+
+        .skill-card p {
+            font-size: 0.7rem;
+            color: #6b7280;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        /* Warna skill card */
+        .skill-1 { background: #f0e8ff; }
+        .skill-1 .skill-icon { background: #8b5cf6; }
+
+        .skill-2 { background: #ffe8ec; }
+        .skill-2 .skill-icon { background: #f43f5e; }
+
+        .skill-3 { background: #e0f7ea; }
+        .skill-3 .skill-icon { background: #22c55e; }
+
+        .skill-4 { background: #fff3e0; }
+        .skill-4 .skill-icon { background: #f59e0b; }
+
+        /* Popular Languages */
+        .languages-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+        }
+
+        .lang-card {
+            background: #f9fafc;
+            border: 1px solid #f0f3f8;
+            border-radius: 14px;
+            padding: 12px 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .lang-card:hover {
+            background: #eef4ff;
+            border-color: #d6e4fa;
+            transform: translateY(-3px);
+        }
+
+        .lang-flag {
+            font-size: 1.6rem;
+            margin-bottom: 6px;
+        }
+
+        .lang-card h4 {
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: #1a1a2e;
+            margin-bottom: 2px;
+        }
+
+        .lang-card p {
+            font-size: 0.7rem;
+            color: #8a94a6;
+        }
+
+        /* ===== SIDEBAR KANAN ===== */
+        .right-sidebar {
+            padding: 30px 25px;
+            border-left: 1px solid #f0f3f8;
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+            overflow-y: auto;
+        }
+
+        /* Top Stats */
+        .top-stats {
+            display: flex;
+            justify-content: flex-end;
+            gap: 15px;
+            margin-bottom: 5px;
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: 700;
+            font-size: 0.95rem;
+            color: #1a1a2e;
+        }
+
+        .stat-item i.fa-fire {
+            color: #f59e0b;
+        }
+
+        .stat-item i.fa-gem {
+            color: #1d6ff2;
+        }
+
+        /* Daily Goal */
+        .daily-goal {
+            background: #f9fafc;
+            border-radius: 18px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .daily-goal h3 {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: #1a1a2e;
+            margin-bottom: 15px;
+            text-align: left;
+        }
+
+        .goal-circle {
+            width: 140px;
+            height: 140px;
+            margin: 0 auto 15px;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .goal-circle svg {
+            transform: rotate(-90deg);
+            width: 140px;
+            height: 140px;
+        }
+
+        .goal-circle .bg-circle {
+            fill: none;
+            stroke: #e5eaf3;
+            stroke-width: 10;
+        }
+
+        .goal-circle .progress-circle {
+            fill: none;
+            stroke: #1d6ff2;
+            stroke-width: 10;
+            stroke-linecap: round;
+            stroke-dasharray: 377;
+            stroke-dashoffset: 113; /* 70% progress */
+        }
+
+        .goal-circle .goal-text {
+            position: absolute;
+            text-align: center;
+        }
+
+        .goal-circle .goal-text .fire {
+            font-size: 1.3rem;
+            color: #f59e0b;
+        }
+
+        .goal-circle .goal-text h2 {
+            font-size: 1.4rem;
+            font-weight: 800;
+            color: #1a1a2e;
+        }
+
+        .goal-circle .goal-text p {
+            font-size: 0.7rem;
+            color: #8a94a6;
+            font-weight: 500;
+        }
+
+        .days-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 6px;
+            margin-top: 10px;
+        }
+
+        .day-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .day-item span {
+            font-size: 0.65rem;
+            color: #8a94a6;
+            font-weight: 600;
+        }
+
+        .day-check {
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 0.7rem;
+        }
+
+        .day-check.done {
+            background: #1d6ff2;
+            color: white;
+        }
+
+        .day-check.pending {
+            background: #e5eaf3;
+            color: #a0aec0;
+        }
+
+        /* Leaderboard */
+        .leaderboard h3 {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: #1a1a2e;
+            margin-bottom: 15px;
+        }
+
+        .leader-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 10px;
+            border-radius: 12px;
+            margin-bottom: 5px;
+            transition: 0.2s;
+        }
+
+        .leader-item:hover {
+            background: #f5f7fb;
+        }
+
+        .leader-item.highlight {
+            background: #eef4ff;
+        }
+
+        .leader-rank {
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: #8a94a6;
+            width: 20px;
+            text-align: center;
+        }
+
+        .leader-item:nth-child(2) .leader-rank { color: #f59e0b; }
+        .leader-item:nth-child(3) .leader-rank { color: #a0aec0; }
+        .leader-item:nth-child(4) .leader-rank { color: #cd7f32; }
+
+        .leader-avatar {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1rem;
+            background: #f0f3f8;
+            flex-shrink: 0;
+        }
+
+        .leader-name {
+            flex: 1;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #1a1a2e;
+        }
+
+        .leader-crown {
+            font-size: 0.9rem;
+        }
+
+        /* Promo Card */
+        .promo-card {
+            background: linear-gradient(135deg, #1d6ff2, #4f9bff);
+            border-radius: 18px;
+            padding: 20px;
+            color: white;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .promo-card::before {
+            content: '🎁';
+            position: absolute;
+            bottom: -10px;
+            right: -10px;
+            font-size: 5rem;
+            opacity: 0.3;
+        }
+
+        .promo-card h4 {
+            font-size: 0.9rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+            line-height: 1.3;
+            position: relative;
+            z-index: 2;
+        }
+
+        .promo-card p {
+            font-size: 0.75rem;
+            opacity: 0.9;
+            margin-bottom: 12px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .promo-progress {
+            width: 100%;
+            height: 6px;
+            background: rgba(255,255,255,0.3);
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+            z-index: 2;
+        }
+
+        .promo-progress-fill {
+            height: 100%;
+            width: 60%;
+            background: white;
+            border-radius: 10px;
+        }
+
+        .promo-text {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 6px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            position: relative;
+            z-index: 2;
+        }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .dashboard {
+                grid-template-columns: 200px 1fr 260px;
+            }
+        }
+
+        @media (max-width: 1000px) {
+            .dashboard {
+                grid-template-columns: 1fr;
+                height: auto;
+            }
+            .sidebar, .right-sidebar {
+                display: none;
+            }
+            .main-content {
+                padding: 20px;
+            }
+            .skills-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .languages-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="dashboard">
+        <!-- ===== SIDEBAR KIRI ===== -->
+        <aside class="sidebar">
+            <div class="logo">
+                <div class="logo-icon">🐦</div>
+                <div class="logo-text">
+                    <h1>Lingora</h1>
+                    <p>Learn • Practice • Speak</p>
+                </div>
+            </div>
+
+            <nav class="nav-menu">
+                <a href="#" class="nav-item active">
+                    <i class="fa-solid fa-house"></i> Home
+                </a>
+                <a href="#" class="nav-item">
+                    <i class="fa-solid fa-book-open"></i> Learn
+                </a>
+                <a href="#" class="nav-item">
+                    <i class="fa-solid fa-pen"></i> Practice
+                </a>
+                <a href="#" class="nav-item">
+                    <i class="fa-solid fa-trophy"></i> Challenges
+                </a>
+                <a href="#" class="nav-item">
+                    <i class="fa-solid fa-chart-simple"></i> Progress
+                </a>
+                <a href="#" class="nav-item">
+                    <i class="fa-solid fa-users"></i> Friends
+                </a>
+                <a href="#" class="nav-item">
+                    <i class="fa-solid fa-bookmark"></i> Library
+                </a>
+            </nav>
+
+            <div class="upgrade-card">
+                <i class="fa-solid fa-crown"></i>
+                <h4>Lingora Plus</h4>
+                <p>Unlock all languages, stories and offline learning</p>
+                <button class="btn-upgrade">Upgrade</button>
+            </div>
+
+            <div class="user-profile">
+                <div class="user-avatar">👨‍💼</div>
+                <div class="user-info">
+                    <h4>Alex</h4>
+                    <p>Level 12</p>
+                </div>
+                <i class="fa-solid fa-gear settings"></i>
+            </div>
+        </aside>
+
+        <!-- ===== KONTEN TENGAH ===== -->
+        <main class="main-content">
+            <!-- Search -->
+            <div class="top-bar">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" placeholder="Search languages, lessons...">
+            </div>
+
+            <!-- Hero Banner -->
+            <div class="hero-banner">
+                <div class="hero-text">
+                    <div class="hero-tag">
+                        <i class="fa-solid fa-globe"></i> Learning Spanish
+                        <i class="fa-solid fa-chevron-right" style="font-size:0.6rem;"></i>
+                    </div>
+                    <h1>Good morning,<br><span>Alex!</span> 👋</h1>
+                    <p>One lesson closer to your next adventure!</p>
+                    <button class="btn-hero">
+                        Continue Learning <i class="fa-solid fa-arrow-right"></i>
+                    </button>
+                </div>
+                <div class="hero-illustration">🐧</div>
+            </div>
+
+            <!-- Continue Learning -->
+            <div class="section-header">
+                <h2>Continue Learning</h2>
+                <a href="#">See All</a>
+            </div>
+
+            <div class="continue-card">
+                <div class="continue-thumb">🏛️</div>
+                <div class="continue-info">
+                    <h3>Travel Basics</h3>
+                    <p>Unit 2 • Lesson 3</p>
+                    <div class="progress-bar">
+                        <div class="progress-fill"></div>
+                    </div>
+                </div>
+                <div class="continue-actions">
+                    <span class="progress-text">60%</span>
+                    <button class="btn-start">
+                        <i class="fa-solid fa-play"></i> Start
+                    </button>
+                </div>
+            </div>
+
+            <!-- Build Your Skills -->
+            <div class="section-header">
+                <h2>Build Your Skills</h2>
+            </div>
+
+            <div class="skills-grid">
+                <div class="skill-card skill-1">
+                    <div class="skill-icon"><i class="fa-solid fa-headphones"></i></div>
+                    <h4>Listening</h4>
+                    <p>12 lessons <i class="fa-solid fa-arrow-right"></i></p>
+                </div>
+                <div class="skill-card skill-2">
+                    <div class="skill-icon"><i class="fa-solid fa-microphone"></i></div>
+                    <h4>Speaking</h4>
+                    <p>10 lessons <i class="fa-solid fa-arrow-right"></i></p>
+                </div>
+                <div class="skill-card skill-3">
+                    <div class="skill-icon"><i class="fa-solid fa-book"></i></div>
+                    <h4>Vocabulary</h4>
+                    <p>24 lessons <i class="fa-solid fa-arrow-right"></i></p>
+                </div>
+                <div class="skill-card skill-4">
+                    <div class="skill-icon"><i class="fa-solid fa-puzzle-piece"></i></div>
+                    <h4>Grammar</h4>
+                    <p>18 lessons <i class="fa-solid fa-arrow-right"></i></p>
+                </div>
+            </div>
+
+            <!-- Popular Languages -->
+            <div class="section-header">
+                <h2>Popular Languages</h2>
+                <a href="#">See All</a>
+            </div>
+
+            <div class="languages-grid">
+                <div class="lang-card">
+                    <div class="lang-flag">🇪🇸</div>
+                    <h4>Spanish</h4>
+                    <p>4.8 ★</p>
+                </div>
+                <div class="lang-card">
+                    <div class="lang-flag">🇫🇷</div>
+                    <h4>French</h4>
+                    <p>4.9 ★</p>
+                </div>
+                <div class="lang-card">
+                    <div class="lang-flag">🇯🇵</div>
+                    <h4>Japanese</h4>
+                    <p>4.9 ★</p>
+                </div>
+                <div class="lang-card">
+                    <div class="lang-flag">🇩🇪</div>
+                    <h4>German</h4>
+                    <p>4.8 ★</p>
+                </div>
+                <div class="lang-card">
+                    <div class="lang-flag">🇮🇹</div>
+                    <h4>Italian</h4>
+                    <p>4.8 ★</p>
+                </div>
+            </div>
+        </main>
+
+        <!-- ===== SIDEBAR KANAN ===== -->
+        <aside class="right-sidebar">
+            <!-- Top Stats -->
+            <div class="top-stats">
+                <div class="stat-item">
+                    <i class="fa-solid fa-fire"></i> 12
+                </div>
+                <div class="stat-item">
+                    <i class="fa-solid fa-gem"></i> 750
+                </div>
+            </div>
+
+            <!-- Daily Goal -->
+            <div class="daily-goal">
+                <h3>Your Daily Goal</h3>
+                <div class="goal-circle">
+                    <svg viewBox="0 0 140 140">
+                        <circle class="bg-circle" cx="70" cy="70" r="60"></circle>
+                        <circle class="progress-circle" cx="70" cy="70" r="60"></circle>
+                    </svg>
+                    <div class="goal-text">
+                        <div class="fire">🔥</div>
+                        <h2>15 / 20 min</h2>
+                        <p>Today</p>
+                    </div>
+                </div>
+
+                <div class="days-row">
+                    <div class="day-item">
+                        <div class="day-check done"><i class="fa-solid fa-check"></i></div>
+                        <span>Mon</span>
+                    </div>
+                    <div class="day-item">
+                        <div class="day-check done"><i class="fa-solid fa-check"></i></div>
+                        <span>Tue</span>
+                    </div>
+                    <div class="day-item">
+                        <div class="day-check done"><i class="fa-solid fa-check"></i></div>
+                        <span>Wed</span>
+                    </div>
+                    <div class="day-item">
+                        <div class="day-check done"><i class="fa-solid fa-check"></i></div>
+                        <span>Thu</span>
+                    </div>
+                    <div class="day-item">
+                        <div class="day-check pending"></div>
+                        <span>Fri</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Leaderboard -->
+            <div class="leaderboard">
+                <h3>Leaderboard</h3>
+
+                <div class="leader-item">
+                    <div class="leader-rank">1</div>
+                    <div class="leader-avatar">👨</div>
+                    <div class="leader-name">Sophie</div>
+                    <div class="leader-crown">👑</div>
+                </div>
+
+                <div class="leader-item highlight">
+                    <div class="leader-rank">2</div>
+                    <div class="leader-avatar">👨‍💼</div>
+                    <div class="leader-name">You</div>
+                </div>
+
+                <div class="leader-item">
+                    <div class="leader-rank">3</div>
+                    <div class="leader-avatar">👦</div>
+                    <div class="leader-name">Daniel</div>
+                </div>
+
+                <div class="leader-item">
+                    <div class="leader-rank">4</div>
+                    <div class="leader-avatar">👩</div>
+                    <div class="leader-name">Maya</div>
+                </div>
+
+                <div class="leader-item">
+                    <div class="leader-rank">5</div>
+                    <div class="leader-avatar">🧑</div>
+                    <div class="leader-name">Liam</div>
+                </div>
+            </div>
+
+            <!-- Promo Card -->
+            <div class="promo-card">
+                <h4>Complete 5 more lessons to unlock</h4>
+                <p>Travel Stories Pack</p>
+                <div class="promo-progress">
+                    <div class="promo-progress-fill"></div>
+                </div>
+                <div class="promo-text">
+                    <span>Progress</span>
+                    <span>3 / 5</span>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+</body>
+</html>

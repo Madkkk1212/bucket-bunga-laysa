@@ -1,0 +1,996 @@
+/* =========================================================================
+   LAYSA STUDIO — ADMIN DASHBOARD & LOGIN CSS
+   Diadaptasi langsung dari desain login-admin.html
+   Modern, Clean White, Soft Blue Background (#eef4fb), & Poppins Typography
+   ========================================================================= */
+
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
+
+:root {
+  --font-family: 'Poppins', system-ui, -apple-system, sans-serif;
+  --bg-body: #eef4fb;
+  --bg-card: #ffffff;
+  --bg-subtle: #f5f7fb;
+  --bg-blue-light: #eef4ff;
+  --bg-blue-active: #e8f1ff;
+  --primary: #1d6ff2;
+  --primary-hover: #1558c7;
+  --text-dark: #1a1a2e;
+  --text-muted: #6b7280;
+  --text-dim: #8a94a6;
+  --border: #f0f3f8;
+  --border-input: #e2e8f0;
+  --shadow-main: 0 20px 60px rgba(100, 130, 200, 0.15);
+  --shadow-card: 0 4px 15px rgba(0, 0, 0, 0.04);
+  --radius-lg: 24px;
+  --radius-md: 16px;
+  --radius-sm: 12px;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-family);
+}
+
+.vault-wrapper {
+  background: var(--bg-body);
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: stretch;
+  padding: 20px 24px;
+  color: var(--text-dark);
+}
+
+/* ═════════════════════════════════════════════════════════════
+   1. LOGIN VIEW DARI LOGINUI.HTML (SPLIT CARD + LUXURY BOUQUET)
+   ═════════════════════════════════════════════════════════════ */
+.loginui-page-wrapper {
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 24px 16px;
+  position: relative;
+  background-color: #f3f6fb;
+  background-image: 
+    radial-gradient(circle at 10% 20%, rgba(255, 126, 41, 0.06) 0%, transparent 45%),
+    radial-gradient(circle at 90% 80%, rgba(29, 111, 242, 0.06) 0%, transparent 45%),
+    url('/images/login_bouquet.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  box-sizing: border-box;
+}
+
+.loginui-page-wrapper::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(248, 250, 253, 0.85);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+/* Container Utama sesuai loginui.html */
+.loginui-page-wrapper .container {
+  position: relative;
+  z-index: 10;
+  width: 900px;
+  max-width: 100%;
+  min-height: 550px;
+  background-color: #ffffff;
+  border-radius: 30px;
+  display: flex;
+  overflow: hidden;
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.12), 0 2px 6px rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+}
+
+/* Bagian Kiri (Gambar) sesuai loginui.html */
+.loginui-page-wrapper .left-panel {
+  width: 50%;
+  position: relative;
+  background-image: url('/images/login_bouquet.jpg');
+  background-size: cover;
+  background-position: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 36px 32px;
+  box-sizing: border-box;
+}
+
+.loginui-page-wrapper .left-panel::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(to bottom, rgba(15, 23, 42, 0.65) 0%, rgba(15, 23, 42, 0.15) 55%, rgba(15, 23, 42, 0.65) 100%);
+}
+
+.loginui-page-wrapper .brand-top {
+  position: relative;
+  z-index: 2;
+}
+
+.loginui-page-wrapper .brand-text {
+  position: relative;
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 1.25rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+}
+
+.loginui-page-wrapper .brand-tagline {
+  position: relative;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 0.8rem;
+  font-weight: 400;
+  letter-spacing: 0.5px;
+  margin-top: 4px;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.4);
+}
+
+.loginui-page-wrapper .brand-bottom-badge {
+  position: relative;
+  z-index: 2;
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 14px;
+  padding: 12px 16px;
+  color: #ffffff;
+  font-size: 0.78rem;
+  line-height: 1.4;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+/* Bagian Kanan (Form) sesuai loginui.html */
+.loginui-page-wrapper .right-panel {
+  width: 50%;
+  padding: 50px 48px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background-color: #ffffff;
+  box-sizing: border-box;
+}
+
+.loginui-page-wrapper .right-header {
+  width: 100%;
+  margin-bottom: 24px;
+  text-align: left;
+}
+
+.loginui-page-wrapper .right-header h2 {
+  font-size: 1.55rem;
+  font-weight: 700;
+  color: #1a1a2e;
+  line-height: 1.2;
+}
+
+.loginui-page-wrapper .right-header p {
+  font-size: 0.85rem;
+  color: #6b7280;
+  margin-top: 6px;
+  line-height: 1.5;
+}
+
+.loginui-page-wrapper .form-group {
+  width: 100%;
+  margin-bottom: 20px;
+  text-align: left;
+}
+
+.loginui-page-wrapper .password-container {
+  position: relative;
+  width: 100%;
+}
+
+.loginui-page-wrapper .password-container input {
+  width: 100%;
+  padding: 15px 48px 15px 20px;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  font-size: 0.92rem;
+  outline: none;
+  transition: all 0.3s;
+  color: #333;
+  background-color: #fbfcfe;
+  box-sizing: border-box;
+}
+
+.loginui-page-wrapper .password-container input:focus {
+  border-color: #ff7e29;
+  background-color: #ffffff;
+  box-shadow: 0 0 0 4px rgba(255, 126, 41, 0.15);
+}
+
+.loginui-page-wrapper .password-container input::placeholder {
+  color: #aaa;
+}
+
+.loginui-page-wrapper .toggle-password {
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #aaa;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s;
+  user-select: none;
+  background: none;
+  border: none;
+  padding: 0;
+}
+
+.loginui-page-wrapper .toggle-password:hover {
+  color: #ff7e29;
+}
+
+/* Tombol Orange sesuai loginui.html */
+.loginui-page-wrapper .btn-submit {
+  width: 100%;
+  padding: 15px;
+  background-color: #ff7e29;
+  border: none;
+  border-radius: 50px;
+  color: white;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 10px;
+  transition: 0.3s;
+  box-shadow: 0 4px 15px rgba(255, 126, 41, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.loginui-page-wrapper .btn-submit:hover:not(:disabled) {
+  background-color: #e66a1a;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(230, 106, 26, 0.38);
+}
+
+.loginui-page-wrapper .btn-submit:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.loginui-page-wrapper .login-alert {
+  width: 100%;
+  padding: 11px 14px;
+  border-radius: 10px;
+  font-size: 0.82rem;
+  font-weight: 500;
+  margin-bottom: 18px;
+  background: #fff1f2;
+  color: #e11d48;
+  border: 1px solid #ffe4e6;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-sizing: border-box;
+}
+
+.loginui-page-wrapper .back-link {
+  display: inline-block;
+  margin-top: 24px;
+  font-size: 0.82rem;
+  color: #8a94a6;
+  text-decoration: none;
+  transition: color 0.2s;
+  font-weight: 500;
+}
+
+.loginui-page-wrapper .back-link:hover {
+  color: #ff7e29;
+}
+
+/* Responsive sesuai loginui.html */
+@media (max-width: 768px) {
+  .loginui-page-wrapper .container {
+    flex-direction: column;
+    width: 94%;
+    min-height: auto;
+    border-radius: 20px;
+  }
+  .loginui-page-wrapper .left-panel {
+    width: 100%;
+    height: 180px;
+    padding: 24px;
+  }
+  .loginui-page-wrapper .brand-bottom-badge {
+    display: none;
+  }
+  .loginui-page-wrapper .right-panel {
+    width: 100%;
+    padding: 36px 24px;
+  }
+}
+
+/* ═════════════════════════════════════════════════════════════
+   2. DASHBOARD VIEW (PERSIS GRID LOGIN-ADMIN.HTML)
+   ═════════════════════════════════════════════════════════════ */
+.dashboard-main {
+  width: 100%;
+  max-width: 1600px;
+  background: #ffffff;
+  border-radius: var(--radius-lg);
+  display: grid;
+  grid-template-columns: 240px 1fr; /* default; overridden by inline style */
+  overflow: hidden;
+  box-shadow: var(--shadow-main);
+  min-height: calc(100vh - 40px);
+}
+
+/* ─── SIDEBAR KIRI ─── */
+.adm-sidebar {
+  padding: 30px 20px;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--border);
+}
+
+.adm-logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 35px;
+  padding-left: 5px;
+}
+
+.adm-logo-icon {
+  font-size: 1.8rem;
+}
+
+.adm-logo-text h1 {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--text-dark);
+  line-height: 1.1;
+}
+
+.adm-logo-text p {
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  font-weight: 600;
+}
+
+.adm-nav-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+}
+
+.adm-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 16px;
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  font-weight: 500;
+  font-size: 0.88rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: none;
+  border: none;
+  width: 100%;
+  text-align: left;
+}
+
+.adm-nav-item i, .adm-nav-item svg {
+  font-size: 1rem;
+  width: 20px;
+  flex-shrink: 0;
+}
+
+.adm-nav-item:hover {
+  background: var(--bg-subtle);
+  color: var(--text-dark);
+}
+
+.adm-nav-item.active {
+  background: var(--bg-blue-active);
+  color: var(--primary);
+  font-weight: 600;
+}
+
+.adm-info-card {
+  background: var(--bg-blue-light);
+  border-radius: var(--radius-md);
+  padding: 18px;
+  margin-top: 20px;
+  text-align: center;
+}
+
+.adm-info-card h4 {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--text-dark);
+  margin-bottom: 4px;
+}
+
+.adm-info-card p {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+  margin-bottom: 12px;
+}
+
+.adm-btn-site {
+  width: 100%;
+  padding: 9px;
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 0.82rem;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: 0.2s;
+}
+
+.adm-btn-site:hover {
+  background: var(--primary-hover);
+}
+
+.adm-user-profile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 6px 4px;
+  margin-top: 20px;
+  border-top: 1px solid var(--border);
+}
+
+.adm-user-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #ffd89b, #ff9a76);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 1.15rem;
+}
+
+.adm-user-info {
+  flex: 1;
+}
+
+.adm-user-info h4 {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--text-dark);
+  line-height: 1.2;
+}
+
+.adm-user-info p {
+  font-size: 0.72rem;
+  color: var(--text-dim);
+}
+
+.adm-logout-btn {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 6px;
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+
+.adm-logout-btn:hover {
+  color: #ef4444;
+  background: #fef2f2;
+}
+
+/* ─── KONTEN TENGAH ─── */
+.adm-main-content {
+  padding: 30px 35px;
+  overflow-y: auto;
+}
+
+/* Search bar atas */
+.adm-top-bar {
+  margin-bottom: 24px;
+  position: relative;
+}
+
+.adm-top-bar svg {
+  position: absolute;
+  left: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-dim);
+}
+
+.adm-top-bar input {
+  width: 100%;
+  padding: 13px 20px 13px 50px;
+  border: 1px solid transparent;
+  background: var(--bg-subtle);
+  border-radius: 30px;
+  font-size: 0.9rem;
+  outline: none;
+  color: var(--text-dark);
+  transition: 0.2s;
+}
+
+.adm-top-bar input:focus {
+  background: #ffffff;
+  border-color: #cbd5e1;
+  box-shadow: 0 0 0 3px rgba(29, 111, 242, 0.1);
+}
+
+/* Hero Banner khas login-admin.html */
+.adm-hero-banner {
+  background: linear-gradient(135deg, #cbe2fb 0%, #a5c9f5 100%);
+  border-radius: 20px;
+  padding: 32px 30px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 28px;
+  position: relative;
+  overflow: hidden;
+}
+
+.adm-hero-banner::before {
+  content: '';
+  position: absolute;
+  bottom: -20px;
+  left: -20px;
+  right: -20px;
+  height: 60px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 50%;
+}
+
+.adm-hero-text {
+  flex: 1;
+  z-index: 2;
+}
+
+.adm-hero-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.7);
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-dark);
+  margin-bottom: 12px;
+}
+
+.adm-hero-text h1 {
+  font-size: 1.85rem;
+  font-weight: 800;
+  color: var(--text-dark);
+  line-height: 1.2;
+  margin-bottom: 6px;
+}
+
+.adm-hero-text h1 span {
+  color: var(--primary);
+}
+
+.adm-hero-text p {
+  font-size: 0.9rem;
+  color: #3d4a5c;
+  margin-bottom: 18px;
+  max-width: 460px;
+  line-height: 1.45;
+}
+
+.adm-hero-illustration {
+  font-size: 5.5rem;
+  z-index: 2;
+  line-height: 1;
+}
+
+/* Stats Kartu Khas login-admin.html */
+.adm-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  margin-bottom: 28px;
+}
+
+.adm-stat-card {
+  padding: 18px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.adm-stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-card);
+}
+
+.adm-stat-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 1.2rem;
+  color: white;
+  flex-shrink: 0;
+}
+
+.adm-stat-info h4 {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: var(--text-dark);
+  line-height: 1.1;
+}
+
+.adm-stat-info p {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-weight: 500;
+  margin-top: 3px;
+}
+
+.card-theme-purple { background: #f0e8ff; }
+.card-theme-purple .adm-stat-icon { background: #8b5cf6; }
+
+.card-theme-rose { background: #ffe8ec; }
+.card-theme-rose .adm-stat-icon { background: #f43f5e; }
+
+.card-theme-green { background: #e0f7ea; }
+.card-theme-green .adm-stat-icon { background: #22c55e; }
+
+.card-theme-amber { background: #fff3e0; }
+.card-theme-amber .adm-stat-icon { background: #f59e0b; }
+
+/* Panel Konten Putih Bersih */
+.adm-card {
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 24px;
+  margin-bottom: 24px;
+}
+
+/* Form Card — dirancang selaras dengan tema modern Laysa Studio */
+.adm-form-card {
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 0;
+  margin-bottom: 24px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(100, 130, 200, 0.06);
+  transition: box-shadow 0.2s;
+}
+
+.adm-form-card:hover {
+  box-shadow: 0 8px 30px rgba(100, 130, 200, 0.1);
+}
+
+.adm-form-card-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px 26px;
+  background: linear-gradient(135deg, #f8faff 0%, #edf3fc 100%);
+  border-bottom: 1px solid var(--border);
+}
+
+.adm-form-card-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #1d6ff2, #1558c7);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 4px 14px rgba(29, 111, 242, 0.25);
+}
+
+.adm-form-card > form {
+  padding: 24px 26px;
+}
+
+/* Global Form Elements */
+.vault-input-label,
+.adm-form-card .vault-input-label {
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  margin-bottom: 7px;
+  display: block;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.vault-input-field,
+.adm-form-card .vault-input-field {
+  width: 100%;
+  box-sizing: border-box;
+  border-radius: 12px;
+  border: 1.5px solid var(--border-input);
+  background: #fbfcfe;
+  padding: 12px 16px;
+  font-size: 0.9rem;
+  color: var(--text-dark);
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.vault-input-field:focus,
+.adm-form-card .vault-input-field:focus {
+  border-color: var(--primary);
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(29, 111, 242, 0.12);
+}
+
+/* Tombol Submit Utama Form */
+.vault-btn-submit-main {
+  background: linear-gradient(135deg, #1d6ff2 0%, #1558c7 100%);
+  color: #ffffff;
+  border: none;
+  border-radius: 12px;
+  padding: 12px 26px;
+  font-weight: 700;
+  font-size: 0.9rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 4px 14px rgba(29, 111, 242, 0.28);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.vault-btn-submit-main:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(29, 111, 242, 0.38);
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+}
+
+.vault-btn-submit-main:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Tombol Acak Kode */
+.adm-btn-random {
+  padding: 0 16px;
+  background: #eef4ff;
+  color: var(--primary);
+  border: 1.5px solid #d6e4fa;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 0.82rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.adm-btn-random:hover {
+  background: var(--primary);
+  color: #ffffff;
+  border-color: var(--primary);
+}
+
+.adm-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 18px;
+}
+
+.adm-card-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-dark);
+}
+
+.adm-card-sub {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+/* Tabel Bersih Khas SaaS */
+.adm-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.adm-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+  text-align: left;
+}
+
+.adm-table th {
+  background: var(--bg-subtle);
+  color: var(--text-muted);
+  font-weight: 600;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.adm-table td {
+  padding: 13px 16px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-dark);
+  vertical-align: middle;
+}
+
+.adm-table tr:hover td {
+  background: #fbfcfe;
+}
+
+.adm-code-tag {
+  font-family: monospace;
+  font-weight: 700;
+  font-size: 0.85rem;
+  background: var(--bg-blue-light);
+  color: var(--primary);
+  padding: 4px 8px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ─── SIDEBAR KANAN (310px) ─── */
+.adm-right-sidebar {
+  padding: 30px 25px;
+  border-left: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  overflow-y: auto;
+}
+
+/* Kartu Ringkasan Promo Khas login-admin.html */
+.adm-promo-card {
+  background: linear-gradient(135deg, #1d6ff2, #4f9bff);
+  border-radius: 18px;
+  padding: 22px;
+  color: white;
+  position: relative;
+  overflow: hidden;
+}
+
+.adm-promo-card::before {
+  content: '🏷️';
+  position: absolute;
+  bottom: -10px;
+  right: -10px;
+  font-size: 4.5rem;
+  opacity: 0.2;
+}
+
+.adm-promo-card h4 {
+  font-size: 0.92rem;
+  font-weight: 700;
+  margin-bottom: 4px;
+  position: relative;
+  z-index: 2;
+}
+
+.adm-promo-card p {
+  font-size: 0.78rem;
+  opacity: 0.9;
+  margin-bottom: 14px;
+  position: relative;
+  z-index: 2;
+}
+
+.adm-promo-price-tag {
+  font-size: 1.6rem;
+  font-weight: 800;
+  margin-bottom: 4px;
+  position: relative;
+  z-index: 2;
+}
+
+.adm-promo-badge {
+  display: inline-block;
+  background: rgba(255, 255, 255, 0.25);
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  margin-bottom: 12px;
+  position: relative;
+  z-index: 2;
+}
+
+/* Modal Popup */
+.adm-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(26, 26, 46, 0.45);
+  backdrop-filter: blur(4px);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.adm-modal-card {
+  width: 100%;
+  max-width: 580px;
+  max-height: 85vh;
+  overflow-y: auto;
+  background: #ffffff;
+  border-radius: var(--radius-md);
+  padding: 28px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+}
+
+/* Responsif */
+@media (max-width: 1200px) {
+  .dashboard-main {
+    /* 3-col handled by inline style; shrink sidebar col */
+  }
+}
+
+@media (max-width: 1000px) {
+  .dashboard-main {
+    grid-template-columns: 1fr !important;
+    min-height: auto;
+  }
+  .adm-sidebar, .adm-right-sidebar {
+    display: none;
+  }
+  .adm-main-content {
+    padding: 20px;
+  }
+  .adm-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
