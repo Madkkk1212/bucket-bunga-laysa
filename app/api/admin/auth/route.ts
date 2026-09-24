@@ -19,15 +19,15 @@ function getClientIp(req: NextRequest): string {
 
 // ── GET: Cek status autentikasi sesi saat ini ──
 export async function GET(req: NextRequest) {
-  const adminKey = process.env.ADMIN_SECRET_KEY || 'laysa-admin-s3cr3t-k3y-2026-buket';
+  const adminKey = process.env.ADMIN_SECRET_KEY;
   const cookieKey = req.cookies.get('laysa_admin_key')?.value;
   const sessionToken = req.cookies.get('laysa_admin_session')?.value;
   const headerKey = req.headers.get('x-admin-key');
 
-  const isValidSession =
-    cookieKey === adminKey ||
-    headerKey === adminKey ||
-    verifyAdminSession(sessionToken);
+  // Jika key tidak dikonfigurasi, anggap tidak terautentikasi
+  const isValidSession = adminKey
+    ? (cookieKey === adminKey || headerKey === adminKey || verifyAdminSession(sessionToken))
+    : false;
 
   return NextResponse.json({
     authenticated: isValidSession,
@@ -94,7 +94,8 @@ export async function POST(req: NextRequest) {
     // 3. Berhasil: Reset catatan kegagalan & terbitkan sesi
     recordLoginSuccess(ip);
     const { token, maxAgeSeconds } = createAdminSession();
-    const adminKey = process.env.ADMIN_SECRET_KEY || 'laysa-admin-s3cr3t-k3y-2026-buket';
+    // ADMIN_SECRET_KEY sudah divalidasi wajib ada di lib/adminAuth.ts saat startup
+    const adminKey = process.env.ADMIN_SECRET_KEY!;
 
     const res = NextResponse.json({
       success: true,

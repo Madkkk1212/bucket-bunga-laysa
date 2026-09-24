@@ -52,7 +52,10 @@ function getClientIpFromReq(req: NextRequest): string {
 }
 
 function isAdminAuthenticated(req: NextRequest): boolean {
-  const adminKey = process.env.ADMIN_SECRET_KEY || 'laysa-admin-s3cr3t-k3y-2026-buket';
+  const adminKey = process.env.ADMIN_SECRET_KEY;
+
+  // Jika ADMIN_SECRET_KEY tidak dikonfigurasi, tolak semua akses admin
+  if (!adminKey) return false;
 
   // Cek cookie HttpOnly yang dipasang server saat login
   const cookieKey = req.cookies.get('laysa_admin_key')?.value;
@@ -65,13 +68,9 @@ function isAdminAuthenticated(req: NextRequest): boolean {
   // HAPUS: query parameter admin_key — rentan tercatat di server log/referer header
   // Jika butuh akses darurat, gunakan header x-admin-key saja.
 
-  // Izinkan di development HANYA jika key belum pernah dikonfigurasi sama sekali
-  if (!process.env.ADMIN_SECRET_KEY && process.env.NODE_ENV === 'development') {
-    return true;
-  }
-
   return false;
 }
+
 
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;

@@ -4,8 +4,27 @@ import crypto from 'crypto';
 // LAYSA STUDIO — EXPERT ADMIN AUTHENTICATION ENGINE
 // ════════════════════════════════════════════════════════════
 
-const ADMIN_SECRET = process.env.ADMIN_SECRET_KEY || 'laysa-admin-s3cr3t-k3y-2026-buket';
-const ADMIN_PIN = process.env.ADMIN_PIN || 'admin123';
+// ── Validasi wajib environment variable saat module dimuat ──
+// Aplikasi TIDAK BOLEH berjalan dengan credential default/lemah.
+// Jika variabel ini tidak ada, throw error saat startup (bukan per-request).
+if (!process.env.ADMIN_SECRET_KEY) {
+  throw new Error(
+    '[FATAL] ADMIN_SECRET_KEY environment variable is not set. ' +
+    'Application cannot start without a valid admin secret key. ' +
+    'Set ADMIN_SECRET_KEY in your .env.local (development) or hosting platform (production).'
+  );
+}
+
+if (!process.env.ADMIN_PIN) {
+  throw new Error(
+    '[FATAL] ADMIN_PIN environment variable is not set. ' +
+    'Application cannot start without a valid admin PIN. ' +
+    'Set ADMIN_PIN in your .env.local (development) or hosting platform (production).'
+  );
+}
+
+const ADMIN_SECRET = process.env.ADMIN_SECRET_KEY;
+const ADMIN_PIN = process.env.ADMIN_PIN;
 const SESSION_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000; // 7 Hari masa aktif sesi
 
 // ── Rate Limiter untuk Mencegah Brute-force Login ──
@@ -72,12 +91,8 @@ export function verifyAdminCredential(input: string): boolean {
   if (!input || typeof input !== 'string') return false;
   const clean = input.trim();
 
-  const validTargets = [
-    ADMIN_PIN,
-    ADMIN_SECRET,
-    'admin123',
-    'laysa123',
-  ].filter(Boolean);
+  // Hanya terima credential dari environment variable (tidak ada fallback hardcoded)
+  const validTargets = [ADMIN_PIN, ADMIN_SECRET].filter(Boolean);
 
   const inputHash = crypto.createHash('sha256').update(clean).digest();
 
