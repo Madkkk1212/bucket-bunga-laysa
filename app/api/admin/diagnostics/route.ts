@@ -84,7 +84,7 @@ export async function GET() {
       'IMPORTANT: Run this SQL to allow multi-device on same WiFi: ALTER TABLE code_devices DROP CONSTRAINT IF EXISTS code_devices_code_id_ip_address_key;'
     );
     result.fix_needed.push(
-      'IMPORTANT: Disable RLS if not done: ALTER TABLE code_devices DISABLE ROW LEVEL SECURITY;'
+      'Security: Pastikan RLS aktif dan dibatasi ke service_role (lihat migration 008).'
     );
 
     result.sql_to_run = `
@@ -93,9 +93,8 @@ ALTER TABLE code_devices DROP CONSTRAINT IF EXISTS code_devices_code_id_ip_addre
 ALTER TABLE code_devices ADD COLUMN IF NOT EXISTS device_id TEXT;
 ALTER TABLE code_devices ADD COLUMN IF NOT EXISTS is_owner BOOLEAN DEFAULT FALSE;
 CREATE INDEX IF NOT EXISTS idx_code_devices_device_id ON code_devices(device_id);
-ALTER TABLE code_devices DISABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Service role full access on code_devices" ON code_devices;
-DROP POLICY IF EXISTS "Allow all on code_devices" ON code_devices;
+ALTER TABLE code_devices ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Service role only - all code_devices" ON public.code_devices FOR ALL TO service_role USING (true) WITH CHECK (true);
 ALTER TABLE access_codes ADD COLUMN IF NOT EXISTS max_devices INTEGER DEFAULT 5;
 UPDATE access_codes SET max_devices = 5 WHERE max_devices IS NULL;
     `.trim();

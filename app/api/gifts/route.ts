@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabase, isSupabaseConfigured } from '@/lib/supabaseClient';
+import { getAdminClient } from '@/utils/supabase/admin';
 
 export async function POST(req: Request) {
   try {
@@ -26,8 +27,9 @@ export async function POST(req: Request) {
       views: 0,
     };
 
-    if (isSupabaseConfigured && supabase) {
-      const { error } = await supabase.from('digital_gifts').insert({
+    const dbClient = getAdminClient() || supabase;
+    if (isSupabaseConfigured && dbClient) {
+      const { error } = await dbClient.from('digital_gifts').insert({
         id: uniqueId,
         sender_name: giftRecord.senderName,
         recipient_name: giftRecord.recipientName,

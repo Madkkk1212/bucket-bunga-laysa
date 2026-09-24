@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabase, isSupabaseConfigured } from '@/lib/supabaseClient';
+import { getAdminClient } from '@/utils/supabase/admin';
 
 export async function GET(
   req: Request,
@@ -15,8 +16,10 @@ export async function GET(
       );
     }
 
-    if (isSupabaseConfigured && supabase) {
-      const { data, error } = await supabase
+    const dbClient = getAdminClient() || supabase;
+
+    if (isSupabaseConfigured && dbClient) {
+      const { data, error } = await dbClient
         .from('digital_gifts')
         .select('id, sender_name, recipient_name, message, music_track, design_data, views_count, created_at')
         .eq('id', id)
@@ -25,8 +28,8 @@ export async function GET(
       if (error) {
         console.error('[Supabase Fetch Gift Error]:', error.message);
       } else if (data) {
-        // Increment view count asynchronously
-        supabase
+        // Increment view count asynchronously via service role
+        dbClient
           .from('digital_gifts')
           .update({ views_count: (data.views_count || 0) + 1 })
           .eq('id', id)
