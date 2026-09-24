@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getSupabase } from '@/lib/supabaseClient';
+import { getAdminClient } from '@/utils/supabase/admin';
 
 // Fallback in-memory list jika Supabase belum terhubung
 let localCodes = [
@@ -41,8 +41,10 @@ export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const codeId = searchParams.get('devices_for'); // ?devices_for=<code_id>
+    const page = Math.max(0, parseInt(searchParams.get('page') || '0', 10));
+    const pageSize = 50;
 
-    const supabase = getSupabase();
+    const supabase = getAdminClient();
 
     // Sub-endpoint: ambil daftar device untuk 1 kode
     if (codeId && supabase) {
@@ -55,7 +57,7 @@ export async function GET(req: Request) {
 
       const { data, error } = await supabase
         .from('code_devices')
-        .select('*')
+        .select('id, code_id, code, ip_address, device_id, user_agent, user_name, is_owner, first_seen_at, last_seen_at')
         .eq('code_id', codeId)
         .order('first_seen_at', { ascending: true }); // Pendaftar pertama di posisi paling atas
 
@@ -74,12 +76,16 @@ export async function GET(req: Request) {
       return NextResponse.json({ success: true, devices: [] });
     }
 
-    // Main: ambil semua kode + jumlah device
+    // Main: ambil semua kode + jumlah device (dengan pagination)
     if (supabase) {
-      const { data, error } = await supabase
+      const from = page * pageSize;
+      const to = from + pageSize - 1;
+
+      const { data, error, count } = await supabase
         .from('access_codes')
-        .select('*, code_devices(count)')
-        .order('created_at', { ascending: false });
+        .select('id, code, is_active, max_uses, max_devices, used_count, used_by_name, claimed_at, notes, created_at, code_devices(count)', { count: 'exact' })
+        .order('created_at', { ascending: false })
+        .range(from, to);
 
       if (!error && data) {
         // Flatten device_count dari nested aggregate
@@ -88,23 +94,24 @@ export async function GET(req: Request) {
           device_count: row.code_devices?.[0]?.count ?? 0,
           code_devices: undefined,
         }));
-        return NextResponse.json({ success: true, codes });
+        return NextResponse.json({ success: true, codes, total: count, page, pageSize });
       }
 
       // Fallback query tanpa join jika tabel code_devices belum ada
-      const { data: simpleData, error: simpleError } = await supabase
+      const { data: simpleData, error: simpleError, count: simpleCount } = await supabase
         .from('access_codes')
-        .select('*')
-        .order('created_at', { ascending: false });
+        .select('id, code, is_active, max_uses, max_devices, used_count, used_by_name, claimed_at, notes, created_at', { count: 'exact' })
+        .order('created_at', { ascending: false })
+        .range(from, to);
 
       if (!simpleError && simpleData) {
-        return NextResponse.json({ success: true, codes: simpleData });
+        return NextResponse.json({ success: true, codes: simpleData, total: simpleCount, page, pageSize });
       }
 
       console.error('[Admin GET Error]:', error?.message);
     }
 
-    return NextResponse.json({ success: true, codes: localCodes, fallback: true });
+    return NextResponse.json({ success: true, codes: localCodes, total: localCodes.length, page: 0, pageSize, fallback: true });
   } catch (err: any) {
     return NextResponse.json({ success: false, message: err.message }, { status: 500 });
   }
@@ -124,7 +131,7 @@ export async function POST(req: Request) {
     }
 
     const cleanCode = rawCode.trim().toUpperCase().replace(/\s+/g, '-');
-    const supabase = getSupabase();
+    const supabase = getAdminClient();
 
     if (supabase) {
       const payload: Record<string, any> = {
@@ -185,7 +192,7 @@ export async function PATCH(req: Request) {
       return NextResponse.json({ success: false, message: 'ID kode diperlukan.' }, { status: 400 });
     }
 
-    const supabase = getSupabase();
+    const supabase = getAdminClient();
 
     // ── Hapus 1 device dari daftar ──
     if (action === 'remove_device' && device_id) {
@@ -283,7 +290,7 @@ export async function DELETE(req: Request) {
       return NextResponse.json({ success: false, message: 'ID kode diperlukan.' }, { status: 400 });
     }
 
-    const supabase = getSupabase();
+    const supabase = getAdminClient();
     if (supabase) {
       const { error } = await supabase.from('access_codes').delete().eq('id', id);
       if (!error) {

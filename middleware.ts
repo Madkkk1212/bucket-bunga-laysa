@@ -12,6 +12,7 @@ import type { NextRequest } from 'next/server';
 // 4. /api/settings/* (writes)  → Wajib otentikasi admin
 // 5. /api/clean-* dsb          → Wajib otentikasi admin
 // 6. /api/verify-code          → Publik, rate limiting 30 req / 60 detik
+// 7. Vault page itself         → Session check di middleware (cookie-based)
 // ════════════════════════════════════════════════════════════
 
 const PROTECTED_API_PATHS = [
@@ -61,9 +62,8 @@ function isAdminAuthenticated(req: NextRequest): boolean {
   const headerKey = req.headers.get('x-admin-key');
   if (headerKey && headerKey === adminKey) return true;
 
-  // Cek query parameter darurat
-  const queryKey = req.nextUrl.searchParams.get('admin_key');
-  if (queryKey && queryKey === adminKey) return true;
+  // HAPUS: query parameter admin_key — rentan tercatat di server log/referer header
+  // Jika butuh akses darurat, gunakan header x-admin-key saja.
 
   // Izinkan di development HANYA jika key belum pernah dikonfigurasi sama sekali
   if (!process.env.ADMIN_SECRET_KEY && process.env.NODE_ENV === 'development') {

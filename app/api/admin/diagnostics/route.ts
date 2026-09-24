@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getSupabase } from '@/lib/supabaseClient';
+import { getAdminClient } from '@/utils/supabase/admin';
 
 /**
  * GET /api/admin/diagnostics
@@ -19,7 +19,7 @@ export async function GET() {
   };
 
   try {
-    const supabase = getSupabase();
+    const supabase = getAdminClient();
 
     if (!supabase) {
       result.supabase.connected = false;

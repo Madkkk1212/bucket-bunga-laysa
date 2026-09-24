@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getSupabase } from '@/lib/supabaseClient';
+import { getAdminClient } from '@/utils/supabase/admin';
 
 const FALLBACK_MASTER_CODES = [
   'LAYSA-VIP',
@@ -41,7 +42,7 @@ export async function POST(req: Request) {
     const cleanName = (typeof rawName === 'string' ? rawName.trim() : '');
     const clientIp = getClientIp(req);
     const userAgent = req.headers.get('user-agent') || '';
-    const supabaseClient = getSupabase();
+    const supabaseClient = getAdminClient() || getSupabase();
 
     // ── Verifikasi dengan Supabase ──
     if (supabaseClient) {
@@ -75,7 +76,7 @@ export async function POST(req: Request) {
             try {
               const { data } = await supabaseClient
                 .from('code_devices')
-                .select('*')
+                .select('id, code_id, device_id, ip_address, user_name, is_owner, user_agent, first_seen_at, last_seen_at')
                 .eq('code_id', codeData.id)
                 .eq('device_id', deviceId)
                 .maybeSingle();
@@ -90,7 +91,7 @@ export async function POST(req: Request) {
             try {
               const { data } = await supabaseClient
                 .from('code_devices')
-                .select('*')
+                .select('id, code_id, device_id, ip_address, user_name, is_owner, user_agent, first_seen_at, last_seen_at')
                 .eq('code_id', codeData.id)
                 .eq('ip_address', clientIp)
                 .maybeSingle();

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
 import { getSupabase } from '@/lib/supabaseClient';
+import { getAdminClient } from '@/utils/supabase/admin';
 
 export interface PricingConfig {
   basePrice: number;       // Harga Asli / Normal (cth: 15.000)
@@ -94,7 +95,7 @@ export async function GET() {
       try {
         const { data, error } = await supabase
           .from('pricing_settings')
-          .select('*')
+          .select('base_price, is_promo_active, custom_promo_price, promo_label, updated_at')
           .eq('id', 'default')
           .maybeSingle();
 
@@ -102,7 +103,7 @@ export async function GET() {
           currentConfig = {
             basePrice: data.base_price ?? currentConfig.basePrice,
             isPromoActive: data.is_promo_active ?? currentConfig.isPromoActive,
-            promoPrice: data.custom_promo_price ?? data.promo_price ?? currentConfig.promoPrice,
+            promoPrice: data.custom_promo_price ?? currentConfig.promoPrice,
             promoLabel: data.promo_label ?? currentConfig.promoLabel,
             updatedAt: data.updated_at ?? currentConfig.updatedAt,
           };
@@ -122,11 +123,10 @@ export async function GET() {
 // 2. POST: Simpan harga langsung tanpa perlu hitung persen (Admin Only)
 export async function POST(req: Request) {
   try {
-    // Defense-in-depth: cek admin key langsung di handler (Header, Cookie, atau Query)
+    // Defense-in-depth: cek admin key langsung di handler (Header atau HttpOnly Cookie)
     const adminKey = process.env.ADMIN_SECRET_KEY;
     if (adminKey) {
       const headerKey = req.headers.get('x-admin-key');
-      const urlKey = new URL(req.url).searchParams.get('admin_key');
       const cookieHeader = req.headers.get('cookie') || '';
       const cookieKey = cookieHeader
         .split(';')
@@ -136,7 +136,6 @@ export async function POST(req: Request) {
 
       const isAuthorized =
         headerKey === adminKey ||
-        urlKey === adminKey ||
         cookieKey === adminKey;
 
       if (!isAuthorized) {
@@ -160,8 +159,8 @@ export async function POST(req: Request) {
     // Simpan ke local file
     writeLocalConfig(newConfig);
 
-    // Simpan ke Supabase jika ada
-    const supabase = getSupabase();
+    // Simpan ke Supabase jika ada (pakai admin client untuk bypass RLS service_role)
+    const supabase = getAdminClient() || getSupabase();
     if (supabase) {
       try {
         await supabase

@@ -18,7 +18,7 @@ export async function GET(
     if (isSupabaseConfigured && supabase) {
       const { data, error } = await supabase
         .from('digital_gifts')
-        .select('*')
+        .select('id, sender_name, recipient_name, message, music_track, design_data, views_count, created_at')
         .eq('id', id)
         .maybeSingle();
 
