@@ -1,8 +1,9 @@
 'use client';
 
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useRef } from 'react';
 import { DesignState, DesignContextType, TextConfig, FlowerDef, PlacedFlower, CanvasRatio, BackgroundTheme, FlowerCountVariant } from '../types/design';
 import { getBucketSize } from '../data/buckets';
+import { FLOWERS } from '../data/flowers';
 
 const DEFAULT_TEXT: TextConfig = {
   content: '',
@@ -40,7 +41,7 @@ function createDefaultDesign(): DesignState {
     bgTheme: 'studio-warm',
     bouquetScale: 1.0,
     bouquetRotation: 0,
-    flowerPlacementMode: 'inside',
+    flowerPlacementMode: 'front',
     bucketOffset: { x: 0, y: 0 },
     targetFlowerCount: 25,
   };
@@ -64,6 +65,28 @@ export function getOrCreateDeviceId(): string {
 
 export function DesignProvider({ children }: { children: React.ReactNode }) {
   const [design, setDesign] = useState<DesignState>(createDefaultDesign);
+  // ─── UNDO HISTORY STACK ─────────────────────────────────────────────────
+  const historyRef = useRef<DesignState[]>([]);
+  const MAX_HISTORY = 30;
+
+  // Wrap setDesign to push to history before each change
+  const setDesignWithHistory = useCallback((updater: DesignState | ((prev: DesignState) => DesignState)) => {
+    setDesign((prev) => {
+      // Save current state to history
+      historyRef.current = [prev, ...historyRef.current].slice(0, MAX_HISTORY);
+      return typeof updater === 'function' ? updater(prev) : updater;
+    });
+  }, []);
+
+  const undo = useCallback(() => {
+    if (historyRef.current.length === 0) return;
+    const [prev, ...rest] = historyRef.current;
+    historyRef.current = rest;
+    setDesign(prev);
+  }, []);
+
+  const canUndo = historyRef.current.length > 0;
+
   const [selectedFlowerUid, setSelectedFlowerUid] = useState<string | null>(null);
   const [hoveredFlowerUid, setHoveredFlowerUid] = useState<string | null>(null);
   const [isPremiumUnlocked, setIsPremiumUnlocked] = useState<boolean>(false);
@@ -209,7 +232,7 @@ export function DesignProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const addFlower = useCallback((flower: FlowerDef) => {
-    setDesign((prev) => {
+    setDesignWithHistory((prev) => {
       const maxLimit = prev.targetFlowerCount ?? 50;
       if (prev.selectedFlowers.length >= maxLimit) return prev;
 
@@ -220,7 +243,7 @@ export function DesignProvider({ children }: { children: React.ReactNode }) {
         category: flower.category,
         order: prev.selectedFlowers.length + 1,
         zIndex: prev.selectedFlowers.length + 1,
-        angle: 0, // will be computed on render
+        angle: 0,
         radius: 60 + Math.random() * 30,
         rotation: (Math.random() - 0.5) * 0.4,
         stemVariation: (Math.random() - 0.5) * 0.2,
@@ -231,7 +254,7 @@ export function DesignProvider({ children }: { children: React.ReactNode }) {
         selectedFlowers: [...prev.selectedFlowers, newFlower],
       };
     });
-  }, []);
+  }, [setDesignWithHistory]);
 
   const addFlowerAtPosition = useCallback((flower: FlowerDef, x: number, y: number) => {
     setDesign((prev) => {
@@ -257,21 +280,21 @@ export function DesignProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const removeFlowerByType = useCallback((flowerId: string) => {
-    setDesign((prev) => {
+    setDesignWithHistory((prev) => {
       const idx = [...prev.selectedFlowers].reverse().findIndex((f) => f.flowerId === flowerId);
       if (idx === -1) return prev;
       const realIdx = prev.selectedFlowers.length - 1 - idx;
       const newFlowers = prev.selectedFlowers.filter((_, i) => i !== realIdx);
       return { ...prev, selectedFlowers: newFlowers };
     });
-  }, []);
+  }, [setDesignWithHistory]);
 
   const removeFlowerByUid = useCallback((uid: string) => {
-    setDesign((prev) => ({
+    setDesignWithHistory((prev) => ({
       ...prev,
       selectedFlowers: prev.selectedFlowers.filter((f) => f.uid !== uid),
     }));
-  }, []);
+  }, [setDesignWithHistory]);
 
   const updateFlower = useCallback((uid: string, updates: Partial<PlacedFlower>) => {
     setDesign((prev) => ({
@@ -466,7 +489,7 @@ export function DesignProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const toggleFlowerLayer = useCallback((uid: string) => {
-    setDesign((prev) => ({
+    setDesignWithHistory((prev) => ({
       ...prev,
       selectedFlowers: prev.selectedFlowers.map((f) => {
         if (f.uid !== uid) return f;
@@ -475,7 +498,48 @@ export function DesignProvider({ children }: { children: React.ReactNode }) {
         return { ...f, layer: next };
       }),
     }));
+  }, [setDesignWithHistory]);
+
+  const clearAllFlowers = useCallback(() => {
+    setDesign((prev) => ({
+      ...prev,
+      selectedFlowers: [],
+    }));
   }, []);
+
+  const randomizeFlowers = useCallback(() => {
+    setDesign((prev) => {
+      const targetCount = prev.targetFlowerCount ?? 25;
+      const available = FLOWERS.filter((f) => !f.isPremium || isPremiumUnlocked);
+      const shuffled = [...available].sort(() => Math.random() - 0.5);
+      // Pick 3-5 harmonious species
+      const speciesCount = Math.min(shuffled.length, Math.max(3, Math.min(5, Math.ceil(targetCount / 5))));
+      const chosenSpecies = shuffled.slice(0, speciesCount);
+
+      const newFlowers: PlacedFlower[] = [];
+      for (let i = 0; i < targetCount; i++) {
+        const species = chosenSpecies[i % chosenSpecies.length];
+        newFlowers.push({
+          uid: `${species.id}_rnd_${Date.now()}_${i}_${Math.random().toString(36).slice(2, 6)}`,
+          flowerId: species.id,
+          imageUrl: species.imageUrl,
+          category: species.category,
+          order: i + 1,
+          zIndex: (i + 1) * 2,
+          angle: 0,
+          radius: 50 + Math.random() * 40,
+          rotation: (Math.random() - 0.5) * 0.4,
+          stemVariation: (Math.random() - 0.5) * 0.2,
+          isManual: false,
+        });
+      }
+
+      return {
+        ...prev,
+        selectedFlowers: newFlowers,
+      };
+    });
+  }, [isPremiumUnlocked]);
 
   const value: DesignContextType = {
     design,
@@ -515,6 +579,10 @@ export function DesignProvider({ children }: { children: React.ReactNode }) {
     premiumUserName,
     unlockPremium,
     revokePremium,
+    randomizeFlowers,
+    clearAllFlowers,
+    undo,
+    canUndo,
   };
 
   return <DesignContext.Provider value={value}>{children}</DesignContext.Provider>;

@@ -1,0 +1,1779 @@
+/* ====================================================
+   MOBILE DASHBOARD & STUDIO DESIGN SYSTEM
+   Pixel-perfect styling for /designer mobile experience
+   ==================================================== */
+
+/* --------- GLOBAL MOBILE LOCK: STRICT ZERO HORIZONTAL SCROLL --------- */
+html, body {
+  max-width: 100vw !important;
+  overflow-x: hidden !important;
+  touch-action: pan-y;
+  overscroll-behavior-x: none;
+}
+
+/* --------- BASE CONTAINER --------- */
+.mb-root {
+  min-height: 100vh;
+  background-color: #F8F9FE;
+  padding-bottom: 110px;
+  color: #1E293B;
+  user-select: none;
+  -webkit-user-select: none;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  overflow-x: hidden;
+}
+
+.mb-container {
+  max-width: 440px;
+  margin: 0 auto;
+  padding: 16px 16px 24px;
+}
+
+/* Toast Notification */
+.mb-toast {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(15, 23, 42, 0.94);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  color: #FFFFFF;
+  padding: 10px 18px;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 600;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.28);
+  animation: mbSlideDown 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  white-space: nowrap;
+}
+
+@keyframes mbSlideDown {
+  from { opacity: 0; transform: translate(-50%, -10px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+/* 1. Header */
+.mb-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 0 14px;
+}
+
+.mb-header-sub {
+  font-size: 13px;
+  font-weight: 600;
+  color: #6366F1;
+  letter-spacing: -0.2px;
+  margin-bottom: 2px;
+}
+
+.mb-header-title {
+  font-size: 26px;
+  font-weight: 900;
+  color: #3730A3;
+  line-height: 1.15;
+  letter-spacing: -0.5px;
+}
+
+.mb-header-btn-grid {
+  width: 44px;
+  height: 44px;
+  border-radius: 16px;
+  background: #FFFFFF;
+  border: 1px solid rgba(99, 102, 241, 0.18);
+  color: #4F46E5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 16px rgba(79, 70, 229, 0.08);
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.mb-header-btn-grid:active {
+  transform: scale(0.94);
+}
+
+/* 2. Hero Gradient Card */
+.mb-hero-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 26px;
+  background: linear-gradient(135deg, #4F46E5 0%, #5D54F2 50%, #7C3AED 100%);
+  padding: 22px 20px;
+  color: #FFFFFF;
+  box-shadow: 0 16px 36px -8px rgba(79, 70, 229, 0.42);
+  margin-top: 4px;
+}
+
+.mb-hero-aura-1 {
+  position: absolute;
+  top: -48px;
+  right: -48px;
+  width: 176px;
+  height: 176px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.12);
+  filter: blur(28px);
+  pointer-events: none;
+}
+
+.mb-hero-aura-2 {
+  position: absolute;
+  bottom: -32px;
+  left: -32px;
+  width: 144px;
+  height: 144px;
+  border-radius: 9999px;
+  background: rgba(168, 85, 247, 0.25);
+  filter: blur(24px);
+  pointer-events: none;
+}
+
+.mb-hero-content {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.mb-hero-left {
+  max-width: 62%;
+}
+
+.mb-hero-tag-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.mb-hero-tag {
+  font-size: 11px;
+  font-weight: 700;
+  color: #C7D2FE;
+  letter-spacing: 0.5px;
+}
+
+.mb-hero-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 9999px;
+  background: #34D399;
+  box-shadow: 0 0 8px #34D399;
+  display: inline-block;
+}
+
+.mb-hero-greeting {
+  margin-top: 8px;
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 1.3;
+  color: #FFFFFF;
+  cursor: pointer;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  transition: opacity 0.15s ease;
+}
+
+.mb-hero-greeting:active {
+  opacity: 0.8;
+}
+
+.mb-hero-sub {
+  margin-top: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(238, 242, 255, 0.9);
+}
+
+.mb-hero-controls {
+  margin-top: 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.mb-hero-count-text {
+  font-size: 15px;
+  font-weight: 800;
+  color: #FFFFFF;
+}
+
+.mb-hero-dropdown-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #FFFFFF;
+  color: #4338CA;
+  border-radius: 9999px;
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border: none;
+  cursor: pointer;
+  transition: transform 0.15s ease, background-color 0.15s ease;
+}
+
+.mb-hero-dropdown-btn:active {
+  transform: scale(0.95);
+  background: #EEF2FF;
+}
+
+.mb-hero-bouquet-wrap {
+  position: relative;
+  margin-right: -8px;
+  margin-top: -6px;
+  width: 125px;
+  height: 135px;
+  flex-shrink: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s ease;
+}
+
+.mb-hero-bouquet-wrap:active {
+  transform: scale(0.95);
+}
+
+.mb-hero-bouquet-img {
+  object-fit: contain;
+  filter: drop-shadow(0 14px 22px rgba(0, 0, 0, 0.28));
+  animation: mbFloat 3.5s ease-in-out infinite;
+}
+
+@keyframes mbFloat {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-6px) rotate(1.5deg); }
+}
+
+/* 3. Section Titles */
+.mb-section {
+  margin-top: 24px;
+}
+
+.mb-section-title {
+  font-size: 16px;
+  font-weight: 800;
+  color: #1E293B;
+  letter-spacing: -0.2px;
+}
+
+.mb-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.mb-section-link {
+  font-size: 13px;
+  font-weight: 700;
+  color: #4F46E5;
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.mb-section-link:active {
+  opacity: 0.7;
+}
+
+/* 4. Menu Informasi (8 Icons Grid) */
+.mb-menu-grid {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+.mb-menu-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: #FFFFFF;
+  border: 1px solid #F1F5F9;
+  border-radius: 20px;
+  padding: 10px 4px 10px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
+  cursor: pointer;
+  transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.mb-menu-item:active {
+  transform: scale(0.93);
+}
+
+.mb-menu-icon-box {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s ease;
+}
+
+.mb-menu-label {
+  margin-top: 7px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #334155;
+  letter-spacing: -0.1px;
+}
+
+/* Icon box themes */
+.mb-icon-bunga     { background: #EEF2FF; color: #4F46E5; }
+.mb-icon-buket     { background: #FFF1F2; color: #E11D48; }
+.mb-icon-kartu     { background: #FEF3C7; color: #D97706; }
+.mb-icon-kapasitas { background: #ECFDF5; color: #059669; }
+.mb-icon-suasana   { background: #FDF4FF; color: #C026D3; }
+.mb-icon-acak      { background: #ECFEFF; color: #0891B2; }
+.mb-icon-wa        { background: #F5F3FF; color: #7C3AED; }
+.mb-icon-ekspor    { background: #FFF1F2; color: #F43F5E; }
+
+/* 5. Notifikasi Banner */
+.mb-notif-card {
+  margin-top: 12px;
+  background: #FFFFFF;
+  border: 1px solid #F1F5F9;
+  border-radius: 18px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
+  position: relative;
+}
+
+.mb-notif-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.mb-notif-bar {
+  width: 4px;
+  height: 34px;
+  border-radius: 9999px;
+  background: #10B981;
+  flex-shrink: 0;
+}
+
+.mb-notif-heading {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #0F172A;
+  margin-bottom: 2px;
+}
+
+.mb-notif-body {
+  font-size: 11.5px;
+  color: #64748B;
+  line-height: 1.35;
+}
+
+.mb-notif-close {
+  width: 28px;
+  height: 28px;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #94A3B8;
+  background: none;
+  border: none;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.mb-notif-close:hover {
+  background: #F1F5F9;
+  color: #475569;
+}
+
+/* 6. Live Canvas Preview Section */
+.mb-canvas-card {
+  margin-top: 12px;
+  background: #FFFFFF;
+  border: 1px solid rgba(79, 70, 229, 0.18);
+  border-radius: 24px;
+  padding: 14px;
+  box-shadow: 0 8px 24px rgba(79, 70, 229, 0.07);
+}
+
+.mb-canvas-wrapper {
+  position: relative;
+  width: 100%;
+  max-width: 350px;
+  aspect-ratio: 1 / 1;
+  margin: 0 auto;
+  border-radius: 18px;
+  background: #FEFAF7;
+  overflow: hidden;
+}
+
+.mb-canvas-actions {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #F1F5F9;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.mb-canvas-btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 9px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
+
+.mb-canvas-btn:active {
+  transform: scale(0.95);
+}
+
+.mb-canvas-btn-model {
+  background: #F1F5F9;
+  color: #334155;
+}
+
+.mb-canvas-btn-acak {
+  background: #EEF2FF;
+  color: #4F46E5;
+}
+
+.mb-canvas-btn-studio {
+  background: #4F46E5;
+  color: #FFFFFF;
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);
+}
+
+/* 7. Bottom Navigation Bar */
+.mb-bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 999;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 1px solid #F1F5F9;
+  padding: 8px 16px;
+  padding-bottom: max(10px, env(safe-area-inset-bottom));
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.05);
+}
+
+.mb-nav-container {
+  max-width: 440px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+}
+
+.mb-nav-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 12px;
+  background: none;
+  border: none;
+  color: #64748B;
+  cursor: pointer;
+  position: relative;
+  transition: color 0.15s ease, transform 0.15s ease;
+}
+
+.mb-nav-btn:active {
+  transform: scale(0.92);
+}
+
+.mb-nav-btn.active {
+  color: #4F46E5;
+}
+
+.mb-nav-indicator {
+  width: 24px;
+  height: 3px;
+  border-radius: 9999px;
+  background: #4F46E5;
+  margin-bottom: 6px;
+}
+
+.mb-nav-badge {
+  position: absolute;
+  top: -2px;
+  right: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 16px;
+  min-width: 16px;
+  padding: 0 4px;
+  border-radius: 9999px;
+  background: #F43F5E;
+  color: #FFFFFF;
+  font-size: 9px;
+  font-weight: 900;
+  box-shadow: 0 2px 6px rgba(244, 63, 94, 0.4);
+}
+
+/* ------------------------------------------------------------------------------------------------------------------------------------------------------------
+   8. UNIFIED MODALS (NATIVE BOTTOM-SHEET STYLES)
+   ------------------------------------------------------------------------------------------------------------------------------------------------------------ */
+
+.ms-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  animation: msFadeIn 0.2s ease-out;
+}
+
+@keyframes msFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.ms-sheet {
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  max-height: 88vh;
+  background: #FFFFFF;
+  border-top-left-radius: 28px;
+  border-top-right-radius: 28px;
+  box-shadow: 0 -16px 40px rgba(0, 0, 0, 0.25);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: msSlideUp 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes msSlideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+.ms-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid #F1F5F9;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+
+.ms-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.ms-icon-badge {
+  width: 40px;
+  height: 40px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.ms-icon-flower { background: #EEF2FF; color: #4F46E5; }
+.ms-icon-bucket { background: #FFF1F2; color: #E11D48; }
+.ms-icon-card   { background: #FEF3C7; color: #D97706; }
+.ms-icon-theme  { background: #FDF4FF; color: #C026D3; }
+.ms-icon-share  { background: #F5F3FF; color: #7C3AED; }
+
+.ms-title {
+  font-size: 16px;
+  font-weight: 800;
+  color: #0F172A;
+  line-height: 1.2;
+}
+
+.ms-subtitle {
+  font-size: 12px;
+  color: #64748B;
+  margin-top: 2px;
+}
+
+.ms-close-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 9999px;
+  background: #F1F5F9;
+  border: none;
+  color: #64748B;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.ms-close-btn:active {
+  background: #E2E8F0;
+  color: #1E293B;
+}
+
+.ms-body {
+  padding: 12px 12px;
+  overflow-y: auto;
+  overflow-x: hidden !important;
+  overscroll-behavior-x: none;
+  -webkit-overflow-scrolling: touch;
+  flex: 1;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.ms-footer {
+  padding: 12px 14px;
+  border-top: 1px solid #F1F5F9;
+  background: #FAFAFA;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-shrink: 0;
+  width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+  padding-bottom: max(14px, env(safe-area-inset-bottom));
+}
+
+/* Category Filter Chips */
+.ms-chip-row {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 4px;
+  scrollbar-width: none;
+  width: 100%;
+  box-sizing: border-box;
+  -webkit-overflow-scrolling: touch;
+}
+.ms-chip-row::-webkit-scrollbar { display: none; }
+
+.ms-chip {
+  padding: 6px 12px;
+  border-radius: 9999px;
+  font-size: 11.5px;
+  font-weight: 700;
+  background: #F1F5F9;
+  color: #475569;
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+
+.ms-chip-active {
+  background: #4F46E5 !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 2px 8px rgba(79, 70, 229, 0.28);
+}
+
+.ms-chip-active-rose {
+  background: #E11D48 !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 2px 8px rgba(225, 29, 72, 0.28);
+}
+
+/* Search Box */
+.ms-search-box {
+  position: relative;
+  margin-bottom: 10px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.ms-search-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 9px 12px 9px 36px;
+  border-radius: 12px;
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  font-size: 12.5px;
+  color: #1E293B;
+  outline: none;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.ms-search-input:focus {
+  border-color: #6366F1;
+  background: #FFFFFF;
+}
+
+.ms-search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #94A3B8;
+  pointer-events: none;
+}
+
+/* Progress bar quota */
+.ms-progress-track {
+  height: 5px;
+  width: 100%;
+  background: #F1F5F9;
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+
+.ms-progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #4F46E5, #ec4899);
+  transition: width 0.3s ease;
+}
+
+/* --------- FLOWER CATALOG GRID (STRICT ZERO HORIZONTAL OVERFLOW) --------- */
+.ms-flower-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 8px !important;
+  width: 100% !important;
+  box-sizing: border-box;
+}
+
+.ms-flower-card {
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  padding: 8px 6px !important;
+  border-radius: 14px !important;
+  background: #FFFFFF;
+  border: 1.5px solid #F1F5F9;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+  min-width: 0 !important;
+  width: 100% !important;
+  box-sizing: border-box;
+  overflow: hidden !important;
+  transition: all 0.15s ease;
+}
+
+.ms-flower-card-active {
+  border-color: #A5B4FC !important;
+  background: #F5F7FF !important;
+}
+
+.ms-flower-thumb {
+  width: 38px !important;
+  height: 38px !important;
+  min-width: 38px !important;
+  min-height: 38px !important;
+  border-radius: 10px !important;
+  background: #F8FAFC;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  overflow: hidden !important;
+  flex-shrink: 0 !important;
+  border: 1px solid rgba(0, 0, 0, 0.04);
+}
+
+.ms-flower-img {
+  width: 32px !important;
+  height: 32px !important;
+  object-fit: contain !important;
+}
+
+.ms-flower-info {
+  flex: 1 !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+}
+
+.ms-flower-name {
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  color: #1E293B !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  display: block !important;
+  width: 100% !important;
+  line-height: 1.2 !important;
+}
+
+.ms-flower-sub {
+  font-size: 9.5px !important;
+  color: #64748B !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  display: block !important;
+  margin-top: 1px !important;
+}
+
+.ms-flower-counter {
+  display: flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  margin-top: 4px !important;
+}
+
+.ms-btn-counter {
+  width: 22px !important;
+  height: 22px !important;
+  border-radius: 6px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border: none !important;
+  cursor: pointer !important;
+  flex-shrink: 0 !important;
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
+
+.ms-btn-counter:active {
+  transform: scale(0.9);
+}
+
+.ms-btn-minus {
+  background: #F1F5F9;
+  color: #475569;
+}
+.ms-btn-minus:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.ms-btn-plus {
+  background: #4F46E5;
+  color: #FFFFFF;
+}
+.ms-btn-plus:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.ms-counter-value {
+  font-size: 11px !important;
+  font-weight: 800 !important;
+  color: #1E293B !important;
+  min-width: 14px !important;
+  text-align: center !important;
+}
+
+/* --------- BUCKET MODEL GRID (STRICT ZERO HORIZONTAL OVERFLOW) --------- */
+.ms-bucket-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 8px !important;
+  width: 100% !important;
+  box-sizing: border-box;
+}
+
+.ms-bucket-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 8px;
+  border-radius: 16px;
+  background: #FFFFFF;
+  border: 1.5px solid #F1F5F9;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: left;
+  min-width: 0 !important;
+  width: 100% !important;
+  box-sizing: border-box;
+  overflow: hidden !important;
+}
+
+.ms-bucket-card:active {
+  transform: scale(0.97);
+}
+
+.ms-bucket-card-selected {
+  border-color: #E11D48 !important;
+  background: #FFF5F7 !important;
+  box-shadow: 0 4px 14px rgba(225, 29, 72, 0.12) !important;
+}
+
+.ms-bucket-check-badge {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 20px;
+  height: 20px;
+  border-radius: 9999px;
+  background: #E11D48;
+  color: #FFFFFF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 6px rgba(225, 29, 72, 0.35);
+  z-index: 5;
+}
+
+.ms-bucket-thumb {
+  width: 100%;
+  height: 94px;
+  border-radius: 12px;
+  background: #F8FAFC;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  margin-bottom: 6px;
+  box-sizing: border-box;
+}
+
+.ms-bucket-img {
+  width: auto !important;
+  max-width: 100% !important;
+  height: 84px !important;
+  object-fit: contain;
+}
+
+.ms-bucket-info {
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.ms-bucket-label {
+  font-size: 11.5px;
+  font-weight: 800;
+  color: #1E293B;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+}
+
+.ms-bucket-tag {
+  font-size: 9.5px;
+  color: #64748B;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+  margin-top: 1px;
+}
+
+.ms-bucket-badge {
+  display: inline-block;
+  margin-top: 4px;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: #F1F5F9;
+  font-size: 8.5px;
+  font-weight: 700;
+  color: #475569;
+}
+
+/* --------- CARD EDITOR --------- */
+.ms-card-textarea {
+  width: 100%;
+  border-radius: 16px;
+  border: 1.5px solid #E2E8F0;
+  background: #FFFFFF;
+  padding: 12px 14px;
+  font-size: 13px;
+  color: #1E293B;
+  line-height: 1.5;
+  resize: none;
+  outline: none;
+  min-height: 90px;
+}
+
+.ms-card-textarea:focus {
+  border-color: #D97706;
+}
+
+.ms-preset-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748B;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+
+.ms-preset-btn {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 9999px;
+  background: #FFFBEB;
+  border: 1px solid #FDE68A;
+  color: #B45309;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.ms-preset-btn:active {
+  background: #FEF3C7;
+  transform: scale(0.95);
+}
+
+/* --------- THEME PICKER --------- */
+.ms-theme-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+.ms-theme-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px;
+  border-radius: 18px;
+  background: #FFFFFF;
+  border: 1.5px solid #F1F5F9;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.ms-theme-card:active {
+  transform: scale(0.98);
+}
+
+.ms-theme-card-selected {
+  border-color: #A855F7 !important;
+  background: #FAF5FF !important;
+}
+
+.ms-theme-preview {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  flex-shrink: 0;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08);
+}
+
+/* --------- ACTION BUTTONS IN FOOTER --------- */
+.ms-btn-primary {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 12px 18px;
+  border-radius: 14px;
+  background: #4F46E5;
+  color: #FFFFFF;
+  font-size: 13px;
+  font-weight: 800;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(79, 70, 229, 0.28);
+  transition: all 0.15s ease;
+}
+
+.ms-btn-primary:active {
+  transform: scale(0.97);
+}
+
+.ms-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 12px 16px;
+  border-radius: 14px;
+  background: #F1F5F9;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.ms-btn-secondary:active {
+  transform: scale(0.97);
+}
+
+/* ------------------------------------------------------------------------------------------------------------------------------------------------------------
+   9. PURPOSE-BUILT MOBILE STUDIO VIEW
+   ------------------------------------------------------------------------------------------------------------------------------------------------------------ */
+
+.ms-studio-root {
+  min-height: 100vh;
+  background: #F8F9FE;
+  padding-bottom: 95px;
+  color: #1E293B;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.ms-studio-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid #F1F5F9;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
+}
+
+.ms-studio-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border-radius: 9999px;
+  background: #EEF2FF;
+  color: #4F46E5;
+  font-size: 12px;
+  font-weight: 800;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+.ms-studio-back-btn:active {
+  transform: scale(0.94);
+}
+
+.ms-studio-title-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.ms-studio-title {
+  font-size: 14px;
+  font-weight: 900;
+  color: #1E293B;
+}
+
+.ms-studio-badge {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #4F46E5;
+}
+
+.ms-studio-right-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ms-studio-btn-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  color: #475569;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.ms-studio-btn-icon:active {
+  transform: scale(0.93);
+}
+
+/* Canvas Area */
+.ms-studio-canvas-container {
+  padding: 14px 16px 8px;
+  max-width: 440px;
+  margin: 0 auto;
+}
+
+.ms-studio-canvas-box {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: 24px;
+  background: #FEFAF7;
+  overflow: hidden;
+  box-shadow: 0 12px 36px -6px rgba(79, 70, 229, 0.12);
+  border: 2px solid rgba(79, 70, 229, 0.15);
+}
+
+/* Quick Gesture Tips Pill */
+.ms-studio-tips {
+  margin-top: 10px;
+  background: #FFFFFF;
+  border: 1px solid #F1F5F9;
+  border-radius: 14px;
+  padding: 8px 12px;
+  font-size: 11px;
+  color: #64748B;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+}
+
+/* Selected Flower Control Dock */
+.ms-flower-dock {
+  margin-top: 10px;
+  background: #FFFFFF;
+  border: 1px solid #E0E7FF;
+  border-radius: 16px;
+  padding: 10px 12px;
+  box-shadow: 0 4px 16px rgba(79, 70, 229, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.ms-dock-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 6px 4px;
+  border-radius: 10px;
+  background: #F8FAFC;
+  color: #475569;
+  border: none;
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.ms-dock-btn:active {
+  transform: scale(0.93);
+  background: #EEF2FF;
+  color: #4F46E5;
+}
+
+.ms-dock-btn-delete {
+  color: #E11D48 !important;
+}
+.ms-dock-btn-delete:active {
+  background: #FFF1F2 !important;
+}
+
+/* Studio Quick Launcher Tabs */
+.ms-studio-launchers {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.ms-launcher-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 4px;
+  border-radius: 16px;
+  background: #FFFFFF;
+  border: 1px solid #F1F5F9;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.ms-launcher-btn:active {
+  transform: scale(0.94);
+}
+
+.ms-launcher-icon-box {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ms-launcher-label {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #334155;
+}
+
+.ms-launcher-btn-active {
+  border-color: #C7D2FE !important;
+  background: #EEF2FF !important;
+}
+
+/* ------------------------------------------------------------------------------------------------------------------------------------------------------------
+   10. VIP BADGE & BUTTON STYLES (DASHBOARD + STUDIO)
+   ------------------------------------------------------------------------------------------------------------------------------------------------------------ */
+
+/* Header right cluster (holds VIP + grid button) */
+.mb-header-right-cluster {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* VIP Badge (when unlocked) */
+.mb-header-vip-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 11px;
+  border-radius: 9999px;
+  background: linear-gradient(135deg, #1c1412, #2d1f0e);
+  color: #F59E0B;
+  font-size: 11px;
+  font-weight: 800;
+  border: 1px solid rgba(251, 191, 36, 0.35);
+  cursor: pointer;
+  box-shadow: 0 2px 10px rgba(180, 100, 0, 0.2);
+  letter-spacing: 0.3px;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.mb-header-vip-badge:active {
+  transform: scale(0.94);
+}
+
+/* VIP Unlock Button (when locked) */
+.mb-header-vip-unlock-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 11px;
+  border-radius: 9999px;
+  background: #FFFBEB;
+  color: #92400E;
+  font-size: 11px;
+  font-weight: 800;
+  border: 1px solid #FDE68A;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.15);
+  letter-spacing: 0.3px;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.mb-header-vip-unlock-btn:active {
+  transform: scale(0.94);
+  background: #FEF3C7;
+}
+
+/* VIP Banner inside modals */
+.ms-vip-banner {
+  width: 100%;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: linear-gradient(90deg, #FFFBEB, #FEF3C7);
+  border-width: 0 0 1px 0;
+  border-style: solid;
+  border-color: #FDE68A;
+  color: #78350F;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s ease;
+}
+
+.ms-vip-banner:active {
+  background: linear-gradient(90deg, #FEF3C7, #FDE68A);
+}
+
+.ms-vip-banner strong {
+  color: #92400E;
+}
+
+/* Studio header VIP badge */
+.ms-studio-vip-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 10px;
+  border-radius: 9999px;
+  background: linear-gradient(135deg, #1c1412, #2d1f0e);
+  color: #F59E0B;
+  font-size: 10.5px;
+  font-weight: 800;
+  border: 1px solid rgba(251, 191, 36, 0.35);
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(180, 100, 0, 0.2);
+  transition: transform 0.15s ease;
+}
+
+.ms-studio-vip-badge:active {
+  transform: scale(0.93);
+}
+
+.ms-studio-vip-unlock-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: #FFFBEB;
+  border: 1px solid #FDE68A;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.ms-studio-vip-unlock-btn:active {
+  transform: scale(0.93);
+  background: #FEF3C7;
+}
+
+/* ------------------------------------------------------------------------------------------------------------------------------------------------------------
+   11. VIP LOCK STATE FOR FLOWER & BUCKET CARDS
+   ------------------------------------------------------------------------------------------------------------------------------------------------------------ */
+
+/* Locked flower card */
+.ms-flower-card-locked {
+  opacity: 0.88;
+  position: relative;
+  background: #FAFAFA !important;
+}
+
+/* VIP Crown lock badge (top right corner of card) */
+.ms-vip-lock-badge {
+  position: absolute !important;
+  top: 5px !important;
+  right: 5px !important;
+  width: 18px !important;
+  height: 18px !important;
+  border-radius: 9999px !important;
+  background: linear-gradient(135deg, #D97706, #F59E0B) !important;
+  color: #FFFFFF !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-shadow: 0 2px 6px rgba(217, 119, 6, 0.4) !important;
+  z-index: 5 !important;
+  pointer-events: none !important;
+}
+
+/* Greyscale locked images */
+.ms-img-locked {
+  filter: grayscale(60%) opacity(0.7) !important;
+}
+
+/* VIP tag inline label */
+.ms-vip-tag {
+  font-size: 8.5px !important;
+  font-weight: 900 !important;
+  color: #D97706 !important;
+  letter-spacing: 0.3px !important;
+  vertical-align: middle !important;
+}
+
+/* Inline unlock VIP button inside flower card */
+.ms-btn-unlock-vip {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 3px !important;
+  margin-top: 4px !important;
+  padding: 3px 7px !important;
+  border-radius: 6px !important;
+  background: linear-gradient(135deg, #FEF3C7, #FFFBEB) !important;
+  border: 1px solid #FDE68A !important;
+  color: #92400E !important;
+  font-size: 9px !important;
+  font-weight: 800 !important;
+  cursor: pointer !important;
+  letter-spacing: 0.2px !important;
+  transition: background 0.15s ease, transform 0.15s ease !important;
+}
+
+.ms-btn-unlock-vip:active {
+  transform: scale(0.94) !important;
+  background: linear-gradient(135deg, #FDE68A, #FEF3C7) !important;
+}
+
+/* Locked bucket card */
+.ms-bucket-card-locked {
+  opacity: 0.88;
+  position: relative;
+  background: #FAFAFA !important;
+}
+
+/* Bucket lock overlay (centered in thumb area) */
+.ms-bucket-lock-overlay {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.ms-bucket-lock-icon {
+  width: 26px;
+  height: 26px;
+  border-radius: 9999px;
+  background: linear-gradient(135deg, #D97706, #F59E0B);
+  color: #FFFFFF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(217, 119, 6, 0.4);
+}
+
+.ms-bucket-lock-label {
+  font-size: 8px;
+  font-weight: 900;
+  color: #D97706;
+  letter-spacing: 0.5px;
+}
+
+/* ------------------------------------------------------------------------------------------------------------------------------------------------------------
+   12. 5-STEP INDICATOR STRIP (MOBILE STUDIO)
+   ------------------------------------------------------------------------------------------------------------------------------------------------------------ */
+
+.ms-step-strip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 14px 8px;
+  background: #FFFFFF;
+  border-bottom: 1px solid #F1F5F9;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.ms-step-segment {
+  display: flex;
+  align-items: flex-start;
+  flex-shrink: 0;
+}
+
+.ms-step-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  gap: 5px;
+}
+
+.ms-step-circle {
+  width: 28px;
+  height: 28px;
+  border-radius: 9999px;
+  background: #F1F5F9;
+  color: #94A3B8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 900;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+  position: relative;
+  z-index: 2;
+  border: 2px solid transparent;
+}
+
+.ms-step-active .ms-step-circle {
+  background: var(--step-color, #4F46E5);
+  color: #FFFFFF;
+  border-color: var(--step-color, #4F46E5);
+  box-shadow: 0 3px 10px -2px color-mix(in srgb, var(--step-color, #4F46E5) 50%, transparent);
+}
+
+.ms-step-done .ms-step-circle {
+  background: #DCFCE7;
+  color: #16A34A;
+  border-color: #86EFAC;
+}
+
+.ms-step-label {
+  font-size: 9.5px;
+  font-weight: 700;
+  color: #94A3B8;
+  white-space: nowrap;
+  letter-spacing: -0.1px;
+  text-align: center;
+}
+
+.ms-step-active .ms-step-label {
+  color: var(--step-color, #4F46E5);
+}
+
+.ms-step-done .ms-step-label {
+  color: #16A34A;
+}
+
+/* Connector line between steps */
+.ms-step-connector {
+  width: 20px;
+  height: 2px;
+  background: #E2E8F0;
+  margin: 14px 2px 0;
+  border-radius: 9999px;
+  transition: background 0.2s ease;
+  flex-shrink: 0;
+}
+
+.ms-step-connector-done {
+  background: #86EFAC;
+}
+
+/* ------------------------------------------------------------------------------------------------------------------------------------------------------------
+   13. NEXT STEP BUTTON (MOBILE STUDIO)
+   ------------------------------------------------------------------------------------------------------------------------------------------------------------ */
+
+.ms-next-step-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 14px;
+  padding: 14px 20px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #4F46E5, #6D28D9);
+  color: #FFFFFF;
+  font-size: 13.5px;
+  font-weight: 800;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 6px 20px -4px rgba(79, 70, 229, 0.45);
+  letter-spacing: -0.2px;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  box-sizing: border-box;
+}
+
+.ms-next-step-btn:active {
+  transform: scale(0.97);
+  box-shadow: 0 3px 12px -4px rgba(79, 70, 229, 0.35);
+}
+
+
+/* ----------------------------------------------------
+   14. BUCKET SCALE CONTROL DOCK
+   ---------------------------------------------------- */
+
+.ms-bucket-scale-dock {
+  margin-top: 10px;
+  background: #FFFFFF;
+  border: 1px solid #E0E7FF;
+  border-radius: 14px;
+  padding: 9px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 2px 10px rgba(79, 70, 229, 0.05);
+}
+
+.ms-dock-section-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #475569;
+  letter-spacing: -0.1px;
+}
+
+.ms-dock-scale-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ms-dock-scale-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  background: #F1F5F9;
+  border: 1.5px solid #E2E8F0;
+  color: #475569;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.ms-dock-scale-btn:active:not(:disabled) {
+  background: #EEF2FF;
+  color: #4F46E5;
+  border-color: #A5B4FC;
+  transform: scale(0.93);
+}
+
+.ms-dock-scale-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.ms-dock-scale-value {
+  font-size: 13px;
+  font-weight: 800;
+  color: #1E293B;
+  min-width: 40px;
+  text-align: center;
+}
+
+/* ----------------------------------------------------
+   15. FLOWER LAYER DOCK - ACTIVE STATES
+   ---------------------------------------------------- */
+
+.ms-dock-btn-active-front {
+  background: #ECFDF5 !important;
+  color: #059669 !important;
+  border: 1px solid #A7F3D0 !important;
+}
+
+.ms-dock-btn-active-inside {
+  background: #EEF2FF !important;
+  color: #4F46E5 !important;
+  border: 1px solid #C7D2FE !important;
+}

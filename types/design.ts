@@ -200,5 +200,13 @@ export interface DesignContextType {
   unlockPremium: (code: string, userName?: string) => Promise<{ success: boolean; message: string; userName?: string }>;
   /** Reset / Hapus status VIP dari perangkat ini (keluar VIP) */
   revokePremium: () => void;
+  /** Acak susunan bunga sesuai kuota target bunga */
+  randomizeFlowers: () => void;
+  /** Kosongkan seluruh bunga pada buket */
+  clearAllFlowers: () => void;
+  /** Undo last flower add/remove/layer change */
+  undo: () => void;
+  /** Whether there is anything to undo */
+  canUndo: boolean;
 }
 

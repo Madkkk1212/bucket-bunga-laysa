@@ -16,7 +16,7 @@ import StepText from '../steps/StepText';
 import StepPreview from '../steps/StepPreview';
 import StepDownload from '../steps/StepDownload';
 import { FlowerCountVariant } from '@/types/design';
-import { BookOpen, Edit3, SlidersHorizontal, ChevronRight, Sparkles, Crown } from 'lucide-react';
+import { BookOpen, Edit3, SlidersHorizontal, ChevronRight, Sparkles, Crown, ArrowLeft } from 'lucide-react';
 import VipCardModal from '../designer/VipCardModal';
 
 const STEP_TITLES: Record<number, string> = {
@@ -35,7 +35,11 @@ const STEP_TITLES_MOBILE: Record<number, string> = {
   5: 'Unduh Buket',
 };
 
-export default function DesignerLayout() {
+interface DesignerLayoutProps {
+  onBackToDashboard?: () => void;
+}
+
+export default function DesignerLayout({ onBackToDashboard }: DesignerLayoutProps = {}) {
   const { design, setStep, resetToEdit2D, setTargetFlowerCount, isPremiumUnlocked, premiumUserName, revokePremium } = useDesign();
   const searchParams = useSearchParams();
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -128,6 +132,17 @@ export default function DesignerLayout() {
       <div className="ds-main">
         {/* Top Header Bar */}
         <header className="ds-header">
+          {onBackToDashboard && (
+            <button
+              type="button"
+              onClick={onBackToDashboard}
+              className="ds-header-back-btn flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-indigo-50 text-indigo-700 text-xs font-bold border border-indigo-200 active:scale-95 transition shrink-0"
+              title="Kembali ke Dashboard Utama"
+            >
+              <ArrowLeft size={14} />
+              <span>Menu</span>
+            </button>
+          )}
           <div className="ds-header-left">
             <h1 className="ds-header-title">
               <span className="ds-title-desktop">{STEP_TITLES[design.currentStep]}</span>

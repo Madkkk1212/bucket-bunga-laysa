@@ -12,39 +12,30 @@ export const metadata: Metadata = {
 
 export default function HomePage() {
   return (
-    <div className="home-page theme-pink">
+    <div className="home-page theme-pink relative">
       <Navbar />
-
-      {/* ─── PERIPHERAL FLOATING FLORAL DECORATIONS (PINGGIR RAME BUNGA) ─── */}
       <div className="floral-frame-decor" aria-hidden="true">
-        {/* Top-Left Floral Cluster */}
         <div className="decor-flower decor-tl-1">
-          <Image src="/images/flowers/rose_pink.png" alt="" width={130} height={130} loading="lazy" sizes="(max-width: 768px) 70px, 130px" />
+          <Image src="/images/flowers/rose_pink.png" alt="" width={130} height={130} loading="lazy" sizes="130px" />
         </div>
         <div className="decor-flower decor-tl-2">
-          <Image src="/images/flowers/babysbreath_white.png" alt="" width={95} height={95} loading="lazy" sizes="(max-width: 768px) 50px, 95px" />
+          <Image src="/images/flowers/babysbreath_white.png" alt="" width={95} height={95} loading="lazy" sizes="95px" />
         </div>
         <div className="decor-flower decor-tl-3">
-          <Image src="/images/flowers/eucalyptus.png" alt="" width={110} height={110} loading="lazy" sizes="(max-width: 768px) 60px, 110px" />
+          <Image src="/images/flowers/eucalyptus.png" alt="" width={110} height={110} loading="lazy" sizes="110px" />
         </div>
-
-        {/* Top-Right Floral Cluster */}
         <div className="decor-flower decor-tr-1">
-          <Image src="/images/flowers/hydrangea_pink.png" alt="" width={140} height={140} loading="lazy" sizes="(max-width: 768px) 75px, 140px" />
+          <Image src="/images/flowers/hydrangea_pink.png" alt="" width={140} height={140} loading="lazy" sizes="140px" />
         </div>
         <div className="decor-flower decor-tr-2">
-          <Image src="/images/flowers/lily_pink.png" alt="" width={105} height={105} loading="lazy" sizes="(max-width: 768px) 55px, 105px" />
+          <Image src="/images/flowers/lily_pink.png" alt="" width={105} height={105} loading="lazy" sizes="105px" />
         </div>
-
-        {/* Bottom-Left Floral Cluster */}
         <div className="decor-flower decor-bl-1">
-          <Image src="/images/flowers/tulip_pink.png" alt="" width={120} height={120} loading="lazy" sizes="(max-width: 768px) 65px, 120px" />
+          <Image src="/images/flowers/tulip_pink.png" alt="" width={120} height={120} loading="lazy" sizes="120px" />
         </div>
         <div className="decor-flower decor-bl-2">
-          <Image src="/images/flowers/ranunculus_pink.png" alt="" width={100} height={100} loading="lazy" sizes="(max-width: 768px) 50px, 100px" />
+          <Image src="/images/flowers/ranunculus_pink.png" alt="" width={100} height={100} loading="lazy" sizes="100px" />
         </div>
-
-        {/* Floating Petals Drifting in the Air */}
         <span className="floating-petal petal-1">🌸</span>
         <span className="floating-petal petal-2">✨</span>
         <span className="floating-petal petal-3">🌺</span>
@@ -52,11 +43,8 @@ export default function HomePage() {
         <span className="floating-petal petal-5">✨</span>
         <span className="floating-petal petal-6">🌷</span>
       </div>
-
-      {/* ─── SECTION 1: HERO (ONLY SECTION) ─── */}
       <section className="hero-section" aria-label="Hero">
         <div className="hero-content">
-          {/* Left Column: Typography & Action */}
           <div className="hero-text">
             <span className="hero-badge">
               <Sparkles size={14} style={{ display: 'inline', marginRight: 6 }} />
@@ -72,10 +60,7 @@ export default function HomePage() {
             </p>
             <HeroActions />
           </div>
-
-          {/* Right Column: Giant home.png with Stunning Radiant Backdrop */}
           <div className="hero-visual">
-            {/* Luminous Backdrop Aura Behind home.png */}
             <div className="hero-backdrop-aura" aria-hidden="true">
               <div className="aura-sunburst-glow" />
               <div className="aura-arch-frame" />
@@ -84,8 +69,6 @@ export default function HomePage() {
               <div className="aura-sparkle aura-sp-2">★</div>
               <div className="aura-sparkle aura-sp-3">✦</div>
             </div>
-
-            {/* Transparent Bouquet */}
             <div className="hero-image-wrapper">
               <Image
                 src="/images/home.png"
@@ -94,7 +77,7 @@ export default function HomePage() {
                 height={640}
                 priority
                 fetchPriority="high"
-                sizes="(max-width: 640px) 320px, (max-width: 1024px) 480px, 640px"
+                sizes="(max-width: 1024px) 480px, 640px"
                 className="hero-bouquet-img"
               />
             </div>
