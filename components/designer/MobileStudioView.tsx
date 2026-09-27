@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   ArrowLeft,
   Sparkles,
@@ -12,16 +12,19 @@ import {
   Home,
   Trash2,
   RotateCw,
+  RotateCcw,
   Layers,
-  ZoomIn,
-  ZoomOut,
   Crown,
   ChevronRight,
+  ChevronLeft,
   Download,
   Undo2,
   ArrowUp,
-  Minus,
-  Plus,
+  ArrowDown,
+  Move,
+  X,
+  Maximize2,
+  Minimize2,
 } from 'lucide-react';
 import { useDesign } from '@/context/DesignContext';
 import PreviewCanvas from './PreviewCanvas';
@@ -32,6 +35,9 @@ import MobileThemePickerModal from '../home/mobile/MobileThemePickerModal';
 import MobileShareModal from '../home/mobile/MobileShareModal';
 import PremiumUnlockModal from './PremiumUnlockModal';
 import VipCardModal from './VipCardModal';
+import { CANVAS_RATIO_DIMENSIONS } from '@/utils/canvasUtils';
+import { CanvasRatio } from '@/types/design';
+import { FLOWERS } from '@/data/flowers';
 import '@/components/home/mobile/mobile-dashboard.css';
 
 interface MobileStudioViewProps {
@@ -55,26 +61,41 @@ const NEXT_LABEL: Record<number, string> = {
   5: 'Selesai & Bagikan',
 };
 
+const RATIO_ASPECT_MAP: Record<CanvasRatio, string> = {
+  '1:1': '1 / 1',
+  '9:16': '9 / 16',
+  '4:5': '4 / 5',
+  '3:4': '3 / 4',
+};
+
 export default function MobileStudioView({ onBack }: MobileStudioViewProps) {
   const {
     design,
     randomizeFlowers,
     selectedFlowerUid,
     setSelectedFlowerUid,
+    isBucketSelected,
+    setIsBucketSelected,
     updateFlower,
     removeFlowerByUid,
     toggleFlowerLayer,
     setBouquetScale,
+    setBouquetRotation,
     isPremiumUnlocked,
     premiumUserName,
     revokePremium,
     undo,
     canUndo,
     changeFlowerLayer,
+    nudgeFlower,
+    setCanvasRatio,
   } = useDesign();
 
   const [mobileStep, setMobileStep] = useState(1);
   const [hasMounted, setHasMounted] = useState(false);
+  const [nudgeStep, setNudgeStep] = useState<number>(10); // 5px or 15px step for D-pad
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const seqScrollRef = useRef<HTMLDivElement>(null);
 
   const [isFlowerPickerOpen, setIsFlowerPickerOpen] = useState(false);
   const [isBucketPickerOpen, setIsBucketPickerOpen] = useState(false);
@@ -88,13 +109,32 @@ export default function MobileStudioView({ onBack }: MobileStudioViewProps) {
 
   const flowerCount = design.selectedFlowers.length;
   const targetCount = design.targetFlowerCount ?? 25;
-  const selectedFlower = design.selectedFlowers.find((f) => f.uid === selectedFlowerUid);
+  const selectedIndex = design.selectedFlowers.findIndex((f) => f.uid === selectedFlowerUid);
+  const selectedFlower = selectedIndex !== -1 ? design.selectedFlowers[selectedIndex] : null;
   const currentScale = design.bouquetScale ?? 1.0;
+  const currentRotation = design.bouquetRotation ?? 0;
+  const currentRatio = design.canvasRatio ?? '1:1';
+
+  // Scroll active flower chip into center view when selection changes
+  useEffect(() => {
+    if (selectedFlowerUid && seqScrollRef.current) {
+      const chipEl = document.getElementById(`seq-chip-${selectedFlowerUid}`);
+      if (chipEl) {
+        chipEl.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+      }
+    }
+  }, [selectedFlowerUid]);
 
   // Current layer of selected flower
   const selectedFlowerLayer = selectedFlower
     ? (selectedFlower.layer ?? (design.flowerPlacementMode ?? 'front'))
     : null;
+
+  const getFlowerName = (flowerId: string) =>
+    FLOWERS.find((f) => f.id === flowerId)?.name ?? flowerId;
+
+  const getFlowerEmoji = (flowerId: string) =>
+    FLOWERS.find((f) => f.id === flowerId)?.emoji ?? '🌸';
 
   const handleRotateSelected = () => {
     if (!selectedFlower) return;
@@ -110,6 +150,30 @@ export default function MobileStudioView({ onBack }: MobileStudioViewProps) {
   const handleBucketScale = (delta: number) => {
     const next = Math.max(0.4, Math.min(2.0, currentScale + delta));
     setBouquetScale(Math.round(next * 20) / 20); // snap to 0.05 steps
+  };
+
+  const handleBucketRotate = (delta: number) => {
+    const next = (currentRotation + delta + 360) % 360;
+    setBouquetRotation(next);
+  };
+
+  // Previous & Next flower navigation
+  const handleSelectPrevFlower = () => {
+    if (flowerCount === 0) return;
+    if (selectedIndex <= 0) {
+      setSelectedFlowerUid(design.selectedFlowers[flowerCount - 1].uid);
+    } else {
+      setSelectedFlowerUid(design.selectedFlowers[selectedIndex - 1].uid);
+    }
+  };
+
+  const handleSelectNextFlower = () => {
+    if (flowerCount === 0) return;
+    if (selectedIndex === -1 || selectedIndex >= flowerCount - 1) {
+      setSelectedFlowerUid(design.selectedFlowers[0].uid);
+    } else {
+      setSelectedFlowerUid(design.selectedFlowers[selectedIndex + 1].uid);
+    }
   };
 
   const openStepModal = (step: number) => {
@@ -189,8 +253,13 @@ export default function MobileStudioView({ onBack }: MobileStudioViewProps) {
             onClick={undo}
             disabled={!canUndo}
             className="ms-studio-btn-icon"
-            title="Batalkan Aksi Terakhir"
-            style={{ opacity: canUndo ? 1 : 0.35 }}
+            title={canUndo ? 'Batalkan Aksi Terakhir (Undo)' : 'Tidak ada riwayat undo'}
+            style={{
+              opacity: canUndo ? 1 : 0.35,
+              background: canUndo ? '#EEF2FF' : undefined,
+              borderColor: canUndo ? '#A5B4FC' : undefined,
+              color: canUndo ? '#4F46E5' : undefined,
+            }}
           >
             <Undo2 size={16} />
           </button>
@@ -253,9 +322,35 @@ export default function MobileStudioView({ onBack }: MobileStudioViewProps) {
       {/* ─── 3. CANVAS + CONTROLS ─── */}
       <div className="ms-studio-canvas-container">
 
-        {/* Canvas */}
-        <div className="ms-studio-canvas-box">
-          <PreviewCanvas />
+        {/* ─── FITUR UKURAN / RASIO KANVAS ─── */}
+        <div className="ms-ratio-bar">
+          {(['1:1', '9:16', '4:5', '3:4'] as CanvasRatio[]).map((r) => {
+            const isSelected = currentRatio === r;
+            const info = CANVAS_RATIO_DIMENSIONS[r];
+            return (
+              <button
+                key={r}
+                type="button"
+                className={`ms-ratio-btn ${isSelected ? 'active' : ''}`}
+                onClick={() => setCanvasRatio(r)}
+                title={`${info.label} (${info.width}×${info.height}px)`}
+              >
+                <span>{info.icon}</span>
+                <span>{info.label}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Canvas Box (Adapts to Aspect Ratio) */}
+        <div
+          className="ms-studio-canvas-box"
+          style={{
+            aspectRatio: RATIO_ASPECT_MAP[currentRatio] || '1 / 1',
+            maxHeight: currentRatio === '9:16' ? '60vh' : '52vh',
+          }}
+        >
+          <PreviewCanvas canvasRef={canvasRef} />
         </div>
 
         {/* Gesture tip */}
@@ -263,115 +358,317 @@ export default function MobileStudioView({ onBack }: MobileStudioViewProps) {
           <Sparkles size={13} style={{ color: '#6366F1', flexShrink: 0 }} />
           <span>
             {mobileStep === 1 && 'Pilih model buket favoritmu untuk memulai'}
-            {mobileStep === 2 && 'Sentuh & geser bunga untuk atur posisi. Ketuk bunga untuk kontrol.'}
+            {mobileStep === 2 && 'Sentuh bunga di kanvas atau pilih dari daftar bunga di bawah untuk atur posisi.'}
             {mobileStep === 3 && 'Tulis pesan kartu ucapan yang spesial'}
             {mobileStep === 4 && 'Pilih suasana & latar belakang yang sesuai'}
             {mobileStep === 5 && 'Unduh dalam kualitas HD atau bagikan via WhatsApp'}
           </span>
         </div>
 
-        {/* ─── BUCKET SCALE CONTROLS ─── */}
-        <div className="ms-bucket-scale-dock">
-          <span className="ms-dock-section-label">
-            <Package size={12} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '4px' }} />
-            Ukuran Buket
-          </span>
-          <div className="ms-dock-scale-row">
-            <button
-              type="button"
-              onClick={() => handleBucketScale(-0.1)}
-              disabled={currentScale <= 0.4}
-              className="ms-dock-scale-btn"
-              title="Perkecil Buket"
-            >
-              <Minus size={14} />
-            </button>
-            <span className="ms-dock-scale-value">{Math.round(currentScale * 100)}%</span>
-            <button
-              type="button"
-              onClick={() => handleBucketScale(0.1)}
-              disabled={currentScale >= 2.0}
-              className="ms-dock-scale-btn"
-              title="Perbesar Buket"
-            >
-              <Plus size={14} />
-            </button>
-          </div>
-        </div>
+        {/* ─── FITUR MENU BUNGA KEBERAPA (DAFTAR BUNGA TERANGKAI) ─── */}
+        {flowerCount > 0 && (
+          <div className="ms-sequence-wrapper">
+            <div className="ms-sequence-header">
+              <span className="ms-sequence-title">
+                <Flower2 size={13} style={{ color: '#4F46E5' }} />
+                <span>
+                  {selectedFlower
+                    ? `Bunga #${selectedIndex + 1} dari ${flowerCount}`
+                    : `Daftar Bunga Terangkai (${flowerCount})`}
+                </span>
+              </span>
+              <div className="ms-sequence-nav">
+                <button
+                  type="button"
+                  onClick={handleSelectPrevFlower}
+                  className="ms-seq-nav-btn"
+                  title="Pilih bunga sebelumnya"
+                >
+                  <ChevronLeft size={14} />
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSelectNextFlower}
+                  className="ms-seq-nav-btn"
+                  title="Pilih bunga berikutnya"
+                >
+                  <ChevronRight size={14} />
+                </button>
+              </div>
+            </div>
 
-        {/* ─── SELECTED FLOWER CONTROLS ─── */}
-        {selectedFlower && (
-          <div className="ms-flower-dock">
-            {/* Layer Toggle — front/behind bucket */}
-            <button
-              type="button"
-              onClick={() => toggleFlowerLayer(selectedFlower.uid)}
-              className={`ms-dock-btn ${selectedFlowerLayer === 'front' ? 'ms-dock-btn-active-front' : 'ms-dock-btn-active-inside'}`}
-              title={selectedFlowerLayer === 'front' ? 'Posisi: Di Depan Buket (ketuk untuk ke Dalam)' : 'Posisi: Di Dalam Buket (ketuk untuk ke Depan)'}
-            >
-              <Layers size={14} />
-              <span>{selectedFlowerLayer === 'front' ? 'Depan' : 'Dalam'}</span>
-            </button>
+            <div className="ms-sequence-scroll" ref={seqScrollRef}>
+              {design.selectedFlowers.map((f, idx) => {
+                const isSelected = selectedFlowerUid === f.uid;
+                const name = getFlowerName(f.flowerId);
+                const emoji = getFlowerEmoji(f.flowerId);
+                const layer = f.layer ?? (design.flowerPlacementMode ?? 'front');
 
-            {/* Z-order: move flower forward in stack */}
-            <button
-              type="button"
-              onClick={() => changeFlowerLayer(selectedFlower.uid, 'up')}
-              className="ms-dock-btn"
-              title="Naikkan Urutan Lapisan"
-            >
-              <ArrowUp size={14} />
-              <span>Naik</span>
-            </button>
-
-            {/* Rotate */}
-            <button
-              type="button"
-              onClick={handleRotateSelected}
-              className="ms-dock-btn"
-              title="Putar 15°"
-            >
-              <RotateCw size={14} />
-              <span>Putar</span>
-            </button>
-
-            {/* Scale up */}
-            <button
-              type="button"
-              onClick={() => handleScaleSelected(0.1)}
-              className="ms-dock-btn"
-              title="Perbesar Bunga"
-            >
-              <ZoomIn size={14} />
-              <span>Besar</span>
-            </button>
-
-            {/* Scale down */}
-            <button
-              type="button"
-              onClick={() => handleScaleSelected(-0.1)}
-              className="ms-dock-btn"
-              title="Perkecil Bunga"
-            >
-              <ZoomOut size={14} />
-              <span>Kecil</span>
-            </button>
-
-            {/* Delete */}
-            <button
-              type="button"
-              onClick={() => {
-                removeFlowerByUid(selectedFlower.uid);
-                setSelectedFlowerUid(null);
-              }}
-              className="ms-dock-btn ms-dock-btn-delete"
-              title="Hapus Bunga Ini"
-            >
-              <Trash2 size={14} />
-              <span>Hapus</span>
-            </button>
+                return (
+                  <button
+                    key={f.uid}
+                    id={`seq-chip-${f.uid}`}
+                    type="button"
+                    className={`ms-seq-chip ${isSelected ? 'active' : ''}`}
+                    onClick={() => {
+                      if (isSelected) {
+                        setSelectedFlowerUid(null); // deselect
+                      } else {
+                        setSelectedFlowerUid(f.uid);
+                      }
+                    }}
+                    title={`Pilih Bunga #${idx + 1} ${name}`}
+                  >
+                    <span className="ms-seq-num">#{idx + 1}</span>
+                    <span>{emoji}</span>
+                    <span>{name.split(' ')[0]}</span>
+                    <span className={`ms-seq-layer-tag ${layer === 'front' ? 'ms-seq-tag-front' : 'ms-seq-tag-inside'}`}>
+                      {layer === 'front' ? 'Dpn' : 'Dlm'}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
         )}
+
+        {/* ─── KONTROL BUNGA TERPILIH + D-PAD TOUCHSCREEN GESER PRESISI ─── */}
+        {selectedFlower && (
+          <div className="ms-dpad-dock">
+            <div className="ms-dpad-header">
+              <span className="ms-dpad-title">
+                <Move size={13} />
+                <span>
+                  Bunga #{selectedIndex + 1} ({getFlowerName(selectedFlower.flowerId)})
+                </span>
+              </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <button
+                  type="button"
+                  onClick={() => setNudgeStep(nudgeStep === 5 ? 15 : 5)}
+                  className="ms-dpad-step-btn"
+                  title="Ubah sensitivitas geser (5px / 15px)"
+                >
+                  Geser: {nudgeStep}px
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedFlowerUid(null)}
+                  style={{ background: 'none', border: 'none', color: '#94A3B8', cursor: 'pointer', padding: '2px' }}
+                  title="Tutup Pilihan"
+                >
+                  <X size={15} />
+                </button>
+              </div>
+            </div>
+
+            {/* ── LAYOUT BARU: D-PAD + SCALE ROW + ACTION ROW ── */}
+
+            {/* Baris 1: D-PAD geser presisi */}
+            <div className="ms-dpad-layout">
+              <div className="ms-dpad-cross">
+                <div />
+                <button
+                  type="button"
+                  onClick={() => nudgeFlower(selectedFlower.uid, 0, -nudgeStep)}
+                  className="ms-dpad-btn"
+                  title="Geser ke Atas"
+                >
+                  <ArrowUp size={16} />
+                </button>
+                <div />
+
+                <button
+                  type="button"
+                  onClick={() => nudgeFlower(selectedFlower.uid, -nudgeStep, 0)}
+                  className="ms-dpad-btn"
+                  title="Geser ke Kiri"
+                >
+                  <ArrowLeft size={16} />
+                </button>
+                <div className="ms-dpad-center">
+                  <Move size={13} style={{ color: '#D97706' }} />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => nudgeFlower(selectedFlower.uid, nudgeStep, 0)}
+                  className="ms-dpad-btn"
+                  title="Geser ke Kanan"
+                >
+                  <ChevronRight size={17} />
+                </button>
+
+                <div />
+                <button
+                  type="button"
+                  onClick={() => nudgeFlower(selectedFlower.uid, 0, nudgeStep)}
+                  className="ms-dpad-btn"
+                  title="Geser ke Bawah"
+                >
+                  <ArrowDown size={16} />
+                </button>
+                <div />
+              </div>
+
+              {/* RIGHT COLUMN: Scale + Rotate + Layer + Delete */}
+              <div className="ms-flower-action-col">
+                {/* Baris Ukuran */}
+                <div className="ms-flower-scale-row">
+                  <button
+                    type="button"
+                    onClick={() => handleScaleSelected(-0.15)}
+                    className="ms-flower-scale-btn"
+                    title="Perkecil Bunga"
+                  >
+                    <Minimize2 size={17} />
+                    <span>Kecil</span>
+                  </button>
+                  <span className="ms-flower-scale-val">
+                    {Math.round((selectedFlower.scale ?? 1) * 100)}%
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => handleScaleSelected(0.15)}
+                    className="ms-flower-scale-btn"
+                    title="Perbesar Bunga"
+                  >
+                    <Maximize2 size={17} />
+                    <span>Besar</span>
+                  </button>
+                </div>
+
+                {/* Baris Putar */}
+                <div className="ms-flower-rotate-row">
+                  <button
+                    type="button"
+                    onClick={() => updateFlower(selectedFlower.uid, { rotation: ((selectedFlower.rotation || 0) - 15 + 360) % 360 })}
+                    className="ms-flower-rotate-btn"
+                    title="Putar Kiri 15°"
+                  >
+                    <RotateCcw size={17} />
+                  </button>
+                  <span className="ms-flower-rot-val">
+                    {Math.round(selectedFlower.rotation ?? 0)}°
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleRotateSelected}
+                    className="ms-flower-rotate-btn"
+                    title="Putar Kanan 15°"
+                  >
+                    <RotateCw size={17} />
+                  </button>
+                </div>
+
+                {/* Baris Layer + Delete */}
+                <div className="ms-flower-action-row">
+                  <button
+                    type="button"
+                    onClick={() => toggleFlowerLayer(selectedFlower.uid)}
+                    className={`ms-flower-action-btn ${selectedFlowerLayer === 'front' ? 'ms-flower-btn-front' : 'ms-flower-btn-inside'}`}
+                    title="Ganti Lapisan"
+                  >
+                    <Layers size={15} />
+                    <span>{selectedFlowerLayer === 'front' ? 'Depan' : 'Dalam'}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      removeFlowerByUid(selectedFlower.uid);
+                      setSelectedFlowerUid(null);
+                    }}
+                    className="ms-flower-action-btn ms-flower-btn-delete"
+                    title="Hapus Bunga"
+                  >
+                    <Trash2 size={15} />
+                    <span>Hapus</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ─── BUCKET CONTROLS: SCALE + ROTATE ─── */}
+        <div className={`ms-bucket-control-dock ${isBucketSelected ? 'ms-bucket-dock-selected' : ''}`}>
+          <div className="ms-bucket-dock-header">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Package size={13} style={{ color: '#E11D48' }} />
+              <span>Kontrol Buket</span>
+            </div>
+            {isBucketSelected ? (
+              <span className="ms-bucket-active-chip">✨ Aktif di Kanvas</span>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setIsBucketSelected(true)}
+                className="ms-bucket-select-btn"
+                title="Pilih buket di kanvas untuk putar & atur ukuran langsung"
+              >
+                Atur di Kanvas 👆
+              </button>
+            )}
+          </div>
+
+          <div className="ms-bucket-control-grid">
+            {/* SCALE COLUMN */}
+            <div className="ms-bucket-ctrl-col">
+              <span className="ms-bucket-ctrl-label">Ukuran</span>
+              <div className="ms-bucket-ctrl-row">
+                <button
+                  type="button"
+                  onClick={() => handleBucketScale(-0.1)}
+                  disabled={currentScale <= 0.4}
+                  className="ms-bucket-ctrl-btn"
+                  title="Perkecil Buket"
+                >
+                  <Minimize2 size={18} />
+                </button>
+                <span className="ms-bucket-ctrl-val">{Math.round(currentScale * 100)}%</span>
+                <button
+                  type="button"
+                  onClick={() => handleBucketScale(0.1)}
+                  disabled={currentScale >= 2.0}
+                  className="ms-bucket-ctrl-btn"
+                  title="Perbesar Buket"
+                >
+                  <Maximize2 size={18} />
+                </button>
+              </div>
+            </div>
+
+            {/* DIVIDER */}
+            <div className="ms-bucket-ctrl-divider" />
+
+            {/* ROTATION COLUMN */}
+            <div className="ms-bucket-ctrl-col">
+              <span className="ms-bucket-ctrl-label">Rotasi</span>
+              <div className="ms-bucket-ctrl-row">
+                <button
+                  type="button"
+                  onClick={() => handleBucketRotate(-15)}
+                  className="ms-bucket-ctrl-btn"
+                  title="Putar Buket Kiri 15°"
+                >
+                  <RotateCcw size={18} />
+                </button>
+                <span className="ms-bucket-ctrl-val">{Math.round(currentRotation)}°</span>
+                <button
+                  type="button"
+                  onClick={() => handleBucketRotate(15)}
+                  className="ms-bucket-ctrl-btn"
+                  title="Putar Buket Kanan 15°"
+                >
+                  <RotateCw size={18} />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="ms-bucket-touch-tip">
+            💡 <strong>Bisa diatur langsung di kanvas:</strong> Sentuh buket untuk seret, tarik pin <strong>↻</strong> untuk putar, atau pin <strong>⤡</strong> untuk perbesar/kecil!
+          </div>
+        </div>
 
         {/* ─── QUICK LAUNCHER TABS (4 tools) ─── */}
         <div className="ms-studio-launchers">
@@ -448,7 +745,17 @@ export default function MobileStudioView({ onBack }: MobileStudioViewProps) {
             <Flower2 size={22} />
           </button>
 
-          <button type="button" onClick={undo} disabled={!canUndo} className="mb-nav-btn" aria-label="Undo" style={{ opacity: canUndo ? 1 : 0.35 }}>
+          <button
+            type="button"
+            onClick={undo}
+            disabled={!canUndo}
+            className="mb-nav-btn"
+            aria-label="Undo"
+            style={{
+              opacity: canUndo ? 1 : 0.35,
+              color: canUndo ? '#4F46E5' : undefined,
+            }}
+          >
             <Undo2 size={22} />
           </button>
 
@@ -463,7 +770,11 @@ export default function MobileStudioView({ onBack }: MobileStudioViewProps) {
       <MobileBucketPickerModal isOpen={isBucketPickerOpen} onClose={() => setIsBucketPickerOpen(false)} />
       <MobileCardEditorModal isOpen={isCardEditorOpen} onClose={() => setIsCardEditorOpen(false)} />
       <MobileThemePickerModal isOpen={isThemePickerOpen} onClose={() => setIsThemePickerOpen(false)} />
-      <MobileShareModal isOpen={isShareModalOpen} onClose={() => setIsShareModalOpen(false)} />
+      <MobileShareModal
+        isOpen={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
+        canvasRef={canvasRef}
+      />
       <PremiumUnlockModal isOpen={isUnlockModalOpen} onClose={() => setIsUnlockModalOpen(false)} />
       {isPremiumUnlocked && (
         <VipCardModal

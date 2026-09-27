@@ -178,6 +178,9 @@ export interface DesignContextType {
   /** Selected flower UID — shared between canvas and summary panel */
   selectedFlowerUid: string | null;
   setSelectedFlowerUid: (uid: string | null) => void;
+  /** Status apakah buket sedang aktif/terpilih di canvas untuk rotasi & scale */
+  isBucketSelected: boolean;
+  setIsBucketSelected: (selected: boolean) => void;
   /** Hovered flower UID for highlighting buried flowers on canvas */
   hoveredFlowerUid: string | null;
   setHoveredFlowerUid: (uid: string | null) => void;
@@ -208,5 +211,9 @@ export interface DesignContextType {
   undo: () => void;
   /** Whether there is anything to undo */
   canUndo: boolean;
+  /** Geser posisi bunga secara presisi (D-pad nudge) */
+  nudgeFlower: (uid: string, dx: number, dy: number) => void;
+  /** Simpan snapshot sebelum aksi canvas atau interaksi manual */
+  recordSnapshot: (snapshot?: DesignState) => void;
 }
 

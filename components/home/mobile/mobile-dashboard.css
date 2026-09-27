@@ -1699,41 +1699,110 @@ html, body {
 
 
 /* ----------------------------------------------------
-   14. BUCKET SCALE CONTROL DOCK
+   14. BUCKET CONTROL DOCK (SCALE + ROTATE) — REDESIGNED
    ---------------------------------------------------- */
 
-.ms-bucket-scale-dock {
+.ms-bucket-control-dock {
   margin-top: 10px;
   background: #FFFFFF;
-  border: 1px solid #E0E7FF;
-  border-radius: 14px;
-  padding: 9px 14px;
+  border: 1.5px solid #FFE4E6;
+  border-radius: 16px;
+  padding: 10px 14px 12px;
+  box-shadow: 0 4px 16px rgba(225, 29, 72, 0.07);
+  transition: all 0.2s ease;
+}
+
+.ms-bucket-control-dock.ms-bucket-dock-selected {
+  border-color: #E11D48;
+  box-shadow: 0 4px 20px rgba(225, 29, 72, 0.16);
+  background: linear-gradient(180deg, #FFF5F7 0%, #FFFFFF 100%);
+}
+
+.ms-bucket-dock-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  box-shadow: 0 2px 10px rgba(79, 70, 229, 0.05);
+  font-size: 11.5px;
+  font-weight: 800;
+  color: #9F1239;
+  margin-bottom: 10px;
 }
 
-.ms-dock-section-label {
-  font-size: 11px;
+.ms-bucket-active-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 9.5px;
   font-weight: 700;
-  color: #475569;
-  letter-spacing: -0.1px;
+  color: #FFFFFF;
+  background: #E11D48;
+  padding: 2px 8px;
+  border-radius: 999px;
+  box-shadow: 0 2px 6px rgba(225, 29, 72, 0.25);
 }
 
-.ms-dock-scale-row {
+.ms-bucket-select-btn {
+  font-size: 10px;
+  font-weight: 700;
+  color: #E11D48;
+  background: #FFE4E6;
+  border: none;
+  border-radius: 999px;
+  padding: 3px 9px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.ms-bucket-select-btn:active {
+  background: #FECDD3;
+}
+
+.ms-bucket-touch-tip {
+  margin-top: 8px;
+  padding-top: 7px;
+  border-top: 1px dashed #FFE4E6;
+  font-size: 10px;
+  font-weight: 600;
+  color: #9F1239;
+  text-align: center;
+  line-height: 1.35;
+}
+
+.ms-bucket-control-grid {
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+
+.ms-bucket-ctrl-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.ms-bucket-ctrl-label {
+  font-size: 10px;
+  font-weight: 800;
+  color: #94A3B8;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.ms-bucket-ctrl-row {
   display: flex;
   align-items: center;
   gap: 10px;
 }
 
-.ms-dock-scale-btn {
-  width: 30px;
-  height: 30px;
-  border-radius: 9px;
-  background: #F1F5F9;
-  border: 1.5px solid #E2E8F0;
-  color: #475569;
+.ms-bucket-ctrl-btn {
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  background: #FFF1F2;
+  border: 1.5px solid #FECDD3;
+  color: #E11D48;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1742,24 +1811,39 @@ html, body {
   flex-shrink: 0;
 }
 
-.ms-dock-scale-btn:active:not(:disabled) {
-  background: #EEF2FF;
-  color: #4F46E5;
-  border-color: #A5B4FC;
-  transform: scale(0.93);
+.ms-bucket-ctrl-btn:active:not(:disabled) {
+  background: #FFE4E6;
+  border-color: #FB7185;
+  transform: scale(0.92);
 }
 
-.ms-dock-scale-btn:disabled {
+.ms-bucket-ctrl-btn:disabled {
   opacity: 0.3;
   cursor: not-allowed;
 }
 
-.ms-dock-scale-value {
-  font-size: 13px;
-  font-weight: 800;
+.ms-bucket-ctrl-val {
+  font-size: 14px;
+  font-weight: 900;
   color: #1E293B;
-  min-width: 40px;
+  min-width: 44px;
   text-align: center;
+}
+
+.ms-bucket-ctrl-divider {
+  width: 1px;
+  height: 56px;
+  background: #F1F5F9;
+  flex-shrink: 0;
+  margin: 0 12px;
+}
+
+/* ── Legacy ms-dock-section-label (keep for other uses) ── */
+.ms-dock-section-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #475569;
+  letter-spacing: -0.1px;
 }
 
 /* ----------------------------------------------------
@@ -1777,3 +1861,881 @@ html, body {
   color: #4F46E5 !important;
   border: 1px solid #C7D2FE !important;
 }
+
+/* ----------------------------------------------------
+   16. MOBILE MODAL TAB BAR
+   ---------------------------------------------------- */
+.ms-tab-bar {
+  display: flex;
+  background: #F1F5F9;
+  border-radius: 14px;
+  padding: 4px;
+  gap: 4px;
+  margin-bottom: 14px;
+}
+
+.ms-tab-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 10px;
+  border-radius: 11px;
+  border: none;
+  background: transparent;
+  color: #64748B;
+  font-size: 11.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.ms-tab-btn-active {
+  background: #FFFFFF;
+  color: #0F172A;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+/* ----------------------------------------------------
+   17. MOBILE CARD EDITOR: FONT & SIZE CONTROLS
+   ---------------------------------------------------- */
+.ms-control-card {
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 16px;
+  padding: 12px 14px;
+  margin-bottom: 12px;
+}
+
+.ms-control-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.ms-control-title {
+  font-size: 12px;
+  font-weight: 800;
+  color: #1E293B;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ms-control-badge {
+  font-size: 11px;
+  font-weight: 800;
+  color: #4F46E5;
+  background: #EEF2FF;
+  padding: 3px 8px;
+  border-radius: 8px;
+}
+
+.ms-slider-stepper-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ms-stepper-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: #FFFFFF;
+  border: 1.5px solid #CBD5E1;
+  color: #334155;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.12s ease;
+  flex-shrink: 0;
+}
+
+.ms-stepper-btn:active {
+  background: #EEF2FF;
+  border-color: #818CF8;
+  color: #4F46E5;
+  transform: scale(0.92);
+}
+
+.ms-range-input {
+  flex: 1;
+  accent-color: #4F46E5;
+  height: 6px;
+  cursor: pointer;
+}
+
+.ms-font-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.ms-font-card {
+  background: #FFFFFF;
+  border: 1.5px solid #E2E8F0;
+  border-radius: 12px;
+  padding: 10px 12px;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ms-font-card.active {
+  border-color: #D97706;
+  background: #FFFBEB;
+  box-shadow: 0 2px 10px rgba(217, 119, 6, 0.15);
+}
+
+.ms-font-name {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #1E293B;
+}
+
+.ms-font-card.active .ms-font-name {
+  color: #B45309;
+}
+
+.ms-font-preview {
+  font-size: 10.5px;
+  color: #64748B;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Card Style options (Minimalis vs Luxury Gold) */
+.ms-card-style-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.ms-card-style-card {
+  border: 1.5px solid #E2E8F0;
+  border-radius: 14px;
+  padding: 10px 12px;
+  background: #FFFFFF;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: left;
+}
+
+.ms-card-style-card.active {
+  border-color: #B45309;
+  background: #FFFDF8;
+  box-shadow: 0 3px 12px rgba(180, 83, 9, 0.12);
+}
+
+.ms-card-style-pill {
+  display: inline-block;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.5px;
+  padding: 2px 6px;
+  border-radius: 6px;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.ms-pill-simple {
+  background: #F1F5F9;
+  color: #475569;
+}
+
+.ms-pill-gold {
+  background: #FEF3C7;
+  color: #B45309;
+}
+
+.ms-card-style-name {
+  font-size: 12px;
+  font-weight: 800;
+  color: #0F172A;
+}
+
+.ms-card-style-desc {
+  font-size: 10px;
+  color: #64748B;
+  margin-top: 2px;
+  line-height: 1.3;
+}
+
+/* Color swatches */
+.ms-color-row {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 4px 0 6px;
+  scrollbar-width: none;
+}
+.ms-color-row::-webkit-scrollbar { display: none; }
+
+.ms-color-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 9999px;
+  border: 2px solid #FFFFFF;
+  box-shadow: 0 0 0 1.5px #CBD5E1;
+  cursor: pointer;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.12s ease;
+}
+
+.ms-color-btn.active {
+  box-shadow: 0 0 0 2.5px #D97706;
+  transform: scale(1.12);
+}
+
+/* Position shortcuts */
+.ms-pos-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.ms-pos-btn {
+  padding: 8px 6px;
+  border-radius: 10px;
+  background: #FFFFFF;
+  border: 1px solid #CBD5E1;
+  color: #334155;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  transition: all 0.15s ease;
+}
+
+.ms-pos-btn:active {
+  background: #FEF3C7;
+  border-color: #F59E0B;
+  color: #B45309;
+}
+
+/* ----------------------------------------------------
+   18. MOBILE SHARE MODAL: DIGITAL GIFT & MUSIC
+   ---------------------------------------------------- */
+.ms-form-field {
+  margin-bottom: 12px;
+}
+
+.ms-form-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  font-weight: 800;
+  color: #334155;
+  margin-bottom: 6px;
+}
+
+.ms-input {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1.5px solid #CBD5E1;
+  font-size: 13px;
+  color: #0F172A;
+  background: #FFFFFF;
+  box-sizing: border-box;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.ms-input:focus {
+  border-color: #6366F1;
+}
+
+.ms-textarea {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1.5px solid #CBD5E1;
+  font-size: 12.5px;
+  color: #0F172A;
+  background: #FFFFFF;
+  box-sizing: border-box;
+  outline: none;
+  resize: vertical;
+  transition: border-color 0.15s ease;
+  font-family: inherit;
+}
+
+.ms-textarea:focus {
+  border-color: #6366F1;
+}
+
+/* Music selection grid */
+.ms-music-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.ms-music-pill {
+  padding: 9px 11px;
+  border-radius: 12px;
+  background: #FFFFFF;
+  border: 1.5px solid #E2E8F0;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ms-music-pill.active {
+  border-color: #7C3AED;
+  background: #FAF5FF;
+  box-shadow: 0 2px 10px rgba(124, 58, 237, 0.14);
+}
+
+.ms-music-title {
+  font-size: 12px;
+  font-weight: 800;
+  color: #1E293B;
+}
+
+.ms-music-pill.active .ms-music-title {
+  color: #6D28D9;
+}
+
+.ms-music-desc {
+  font-size: 10px;
+  color: #64748B;
+  line-height: 1.25;
+}
+
+/* Format options (PNG vs JPG) */
+.ms-format-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.ms-format-card {
+  padding: 12px;
+  border-radius: 14px;
+  background: #FFFFFF;
+  border: 1.5px solid #E2E8F0;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.ms-format-card.active {
+  border-color: #059669;
+  background: #F0FDF4;
+  box-shadow: 0 3px 12px rgba(5, 150, 105, 0.15);
+}
+
+.ms-format-title {
+  font-size: 13px;
+  font-weight: 800;
+  color: #0F172A;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.ms-format-card.active .ms-format-title {
+  color: #059669;
+}
+
+.ms-format-desc {
+  font-size: 11px;
+  color: #64748B;
+  line-height: 1.3;
+}
+
+/* Gift Created Success State */
+.ms-gift-success-card {
+  background: linear-gradient(135deg, #FAF5FF, #EEF2FF);
+  border: 1.5px solid #C7D2FE;
+  border-radius: 18px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ms-link-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.ms-link-input {
+  flex: 1;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid #CBD5E1;
+  background: #FFFFFF;
+  font-size: 11.5px;
+  color: #334155;
+  box-sizing: border-box;
+}
+
+.ms-btn-copy {
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: #4F46E5;
+  color: #FFFFFF;
+  border: none;
+  font-size: 11.5px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.ms-btn-copy.copied {
+  background: #059669;
+}
+
+/* ----------------------------------------------------
+   19. CANVAS ASPECT RATIO BAR
+   ---------------------------------------------------- */
+.ms-ratio-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 14px;
+  padding: 4px;
+  margin-bottom: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+  gap: 4px;
+}
+
+.ms-ratio-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 6px 4px;
+  border-radius: 10px;
+  border: none;
+  background: transparent;
+  color: #64748B;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.ms-ratio-btn.active {
+  background: #EEF2FF;
+  color: #4F46E5;
+  box-shadow: 0 2px 6px rgba(79, 70, 229, 0.15);
+  font-weight: 800;
+}
+
+/* ----------------------------------------------------
+   20. FLOWER SEQUENCE STRIP (MENU BUNGA KE-BERAPA)
+   ---------------------------------------------------- */
+.ms-sequence-wrapper {
+  margin-top: 10px;
+  background: #FFFFFF;
+  border: 1px solid #E0E7FF;
+  border-radius: 16px;
+  padding: 10px 12px;
+  box-shadow: 0 3px 12px rgba(79, 70, 229, 0.05);
+}
+
+.ms-sequence-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.ms-sequence-title {
+  font-size: 11.5px;
+  font-weight: 800;
+  color: #1E293B;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ms-sequence-nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ms-seq-nav-btn {
+  width: 24px;
+  height: 24px;
+  border-radius: 7px;
+  background: #F1F5F9;
+  border: 1px solid #E2E8F0;
+  color: #475569;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.12s ease;
+}
+
+.ms-seq-nav-btn:active {
+  background: #EEF2FF;
+  color: #4F46E5;
+}
+
+.ms-sequence-scroll {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.ms-sequence-scroll::-webkit-scrollbar { display: none; }
+
+.ms-seq-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 11px;
+  background: #F8FAFC;
+  border: 1.5px solid #E2E8F0;
+  color: #334155;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+
+.ms-seq-chip.active {
+  background: #FFFBEB;
+  border-color: #D97706;
+  color: #B45309;
+  box-shadow: 0 2px 8px rgba(217, 119, 6, 0.2);
+  transform: translateY(-1px);
+}
+
+.ms-seq-num {
+  font-size: 9.5px;
+  font-weight: 800;
+  background: #E2E8F0;
+  color: #475569;
+  padding: 1px 5px;
+  border-radius: 5px;
+}
+
+.ms-seq-chip.active .ms-seq-num {
+  background: #D97706;
+  color: #FFFFFF;
+}
+
+.ms-seq-layer-tag {
+  font-size: 8.5px;
+  font-weight: 800;
+  padding: 1px 4px;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+.ms-seq-tag-front {
+  background: #ECFDF5;
+  color: #059669;
+}
+.ms-seq-tag-inside {
+  background: #EEF2FF;
+  color: #4F46E5;
+}
+
+/* ----------------------------------------------------
+   21. D-PAD DIRECTIONAL NUDGE CONTROLS (TOUCHSCREEN)
+   ---------------------------------------------------- */
+.ms-dpad-dock {
+  margin-top: 10px;
+  background: #FFFFFF;
+  border: 1.5px solid #FEF3C7;
+  border-radius: 16px;
+  padding: 10px 12px;
+  box-shadow: 0 3px 14px rgba(217, 119, 6, 0.08);
+}
+
+.ms-dpad-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.ms-dpad-title {
+  font-size: 11px;
+  font-weight: 800;
+  color: #92400E;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.ms-dpad-step-btn {
+  font-size: 10px;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 8px;
+  background: #FEF3C7;
+  color: #B45309;
+  border: 1px solid #FDE68A;
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.ms-dpad-step-btn:active {
+  background: #FDE68A;
+}
+
+.ms-dpad-layout {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.ms-dpad-cross {
+  display: grid;
+  grid-template-columns: repeat(3, 44px);
+  grid-template-rows: repeat(3, 44px);
+  gap: 3px;
+  justify-content: center;
+  margin: 0 auto;
+  flex-shrink: 0;
+}
+
+.ms-dpad-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: #F8FAFC;
+  border: 1.5px solid #CBD5E1;
+  color: #1E293B;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 800;
+  transition: all 0.12s ease;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.ms-dpad-btn:active {
+  background: #FEF3C7;
+  border-color: #D97706;
+  color: #B45309;
+  transform: scale(0.92);
+}
+
+.ms-dpad-center {
+  font-size: 10px;
+  color: #94A3B8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+}
+
+.ms-dpad-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ms-dpad-info-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10.5px;
+  color: #64748B;
+}
+
+.ms-dpad-info-val {
+  font-weight: 800;
+  color: #1E293B;
+}
+
+/* ----------------------------------------------------
+   22. FLOWER ACTION COLUMN (REDESIGNED CONTROLS)
+       Finger-friendly 44px+ touch targets
+   ---------------------------------------------------- */
+
+.ms-flower-action-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+/* ── Scale Row ── */
+.ms-flower-scale-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: #F8FAFC;
+  border: 1.5px solid #E2E8F0;
+  border-radius: 12px;
+  padding: 4px 6px;
+}
+
+.ms-flower-scale-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-height: 44px;
+  border-radius: 10px;
+  background: #FFFFFF;
+  border: 1.5px solid #E2E8F0;
+  color: #334155;
+  font-size: 9.5px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.13s ease;
+}
+
+.ms-flower-scale-btn:active {
+  background: #EEF2FF;
+  border-color: #A5B4FC;
+  color: #4F46E5;
+  transform: scale(0.93);
+}
+
+.ms-flower-scale-val {
+  font-size: 13px;
+  font-weight: 900;
+  color: #1E293B;
+  min-width: 38px;
+  text-align: center;
+}
+
+/* ── Rotate Row ── */
+.ms-flower-rotate-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: #FFFBEB;
+  border: 1.5px solid #FDE68A;
+  border-radius: 12px;
+  padding: 4px 6px;
+}
+
+.ms-flower-rotate-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  border-radius: 10px;
+  background: #FFFFFF;
+  border: 1.5px solid #FDE68A;
+  color: #B45309;
+  cursor: pointer;
+  transition: all 0.13s ease;
+}
+
+.ms-flower-rotate-btn:active {
+  background: #FEF3C7;
+  border-color: #D97706;
+  transform: scale(0.93);
+}
+
+.ms-flower-rot-val {
+  font-size: 13px;
+  font-weight: 900;
+  color: #1E293B;
+  min-width: 36px;
+  text-align: center;
+}
+
+/* ── Action Row (Layer + Delete) ── */
+.ms-flower-action-row {
+  display: flex;
+  gap: 5px;
+}
+
+.ms-flower-action-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  min-height: 44px;
+  border-radius: 11px;
+  background: #F8FAFC;
+  border: 1.5px solid #E2E8F0;
+  color: #475569;
+  font-size: 9.5px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.13s ease;
+}
+
+.ms-flower-action-btn:active {
+  transform: scale(0.93);
+}
+
+.ms-flower-btn-front {
+  background: #ECFDF5 !important;
+  border-color: #A7F3D0 !important;
+  color: #059669 !important;
+}
+
+.ms-flower-btn-inside {
+  background: #EEF2FF !important;
+  border-color: #C7D2FE !important;
+  color: #4F46E5 !important;
+}
+
+.ms-flower-btn-delete {
+  background: #FFF1F2 !important;
+  border-color: #FECDD3 !important;
+  color: #E11D48 !important;
+}
+
+.ms-flower-btn-delete:active {
+  background: #FFE4E6 !important;
+}
+
+

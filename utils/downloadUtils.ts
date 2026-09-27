@@ -1,11 +1,17 @@
 import { RefObject } from 'react';
 
 export async function downloadDesign(
-  canvasRef: RefObject<HTMLCanvasElement | null>,
-  format: 'png' | 'jpg',
-): Promise<void> {
-  const canvas = canvasRef.current;
-  if (!canvas) return;
+  canvasRef?: RefObject<HTMLCanvasElement | null> | null,
+  format: 'png' | 'jpg' = 'png',
+): Promise<boolean> {
+  const canvas =
+    canvasRef?.current ||
+    (typeof document !== 'undefined'
+      ? (document.querySelector('canvas.preview-canvas') as HTMLCanvasElement) ||
+        (document.querySelector('canvas') as HTMLCanvasElement)
+      : null);
+
+  if (!canvas) return false;
 
   const mimeType = format === 'jpg' ? 'image/jpeg' : 'image/png';
   const dataUrl = canvas.toDataURL(mimeType, 0.95);
@@ -21,4 +27,5 @@ export async function downloadDesign(
   if (link.parentNode === document.body) {
     document.body.removeChild(link);
   }
+  return true;
 }

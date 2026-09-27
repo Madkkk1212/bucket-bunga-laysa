@@ -12,6 +12,7 @@ import {
   computeFlowerRenderItems,
   getBouquetDimensions,
   FlowerRenderItem,
+  BouquetDimensions,
   CANVAS_RATIO_DIMENSIONS,
   BACKGROUND_THEMES,
   drawCanvasBackground,
@@ -22,7 +23,7 @@ interface PreviewCanvasProps {
   canvasRef?: React.RefObject<HTMLCanvasElement | null>;
 }
 
-type DragMode = 'move' | 'rotate' | 'scale' | 'scale-card';
+type DragMode = 'move' | 'rotate' | 'scale' | 'scale-card' | 'bucket-move' | 'bucket-rotate' | 'bucket-scale';
 
 interface DragState {
   mode: DragMode;
@@ -32,6 +33,7 @@ interface DragState {
   origY: number;
   origSize: number;
   origRot: number;
+  startAngle?: number;
 }
 
 export default function PreviewCanvas({ canvasRef: externalRef }: PreviewCanvasProps) {
@@ -45,11 +47,19 @@ export default function PreviewCanvas({ canvasRef: externalRef }: PreviewCanvasP
     setText,
     selectedFlowerUid: selectedUid,
     setSelectedFlowerUid: setSelectedUid,
+    isBucketSelected,
+    setIsBucketSelected,
     hoveredFlowerUid,
     setFlowerPlacementMode,
     toggleFlowerLayer,
+    setBouquetScale,
+    setBouquetRotation,
     setBucketOffset,
+    recordSnapshot,
   } = useDesign();
+
+  const preDragSnapshot = useRef<any>(null);
+  const hasMovedDrag = useRef<boolean>(false);
 
   const currentRatio: CanvasRatio = design.canvasRatio ?? '1:1';
   const currentTheme: BackgroundTheme = design.bgTheme ?? 'studio-warm';
@@ -67,10 +77,9 @@ export default function PreviewCanvas({ canvasRef: externalRef }: PreviewCanvasP
   const [cursorStyle, setCursorStyle] = useState<string>('default');
   const [isDragOver, setIsDragOver] = useState<boolean>(false);
 
-  // Bucket drag state
-  const [isDraggingBucket, setIsDraggingBucket] = useState<boolean>(false);
+  // Bucket interactive state
   const [isBucketHovered, setIsBucketHovered] = useState<boolean>(false);
-  const bucketDragStart = useRef<{ mouseX: number; mouseY: number; origOffsetX: number; origOffsetY: number } | null>(null);
+  const bucketDimsRef = useRef<BouquetDimensions | null>(null);
 
   // Greeting card drag and scale state
   const [isDraggingCard, setIsDraggingCard] = useState<boolean>(false);
@@ -144,60 +153,166 @@ export default function PreviewCanvas({ canvasRef: externalRef }: PreviewCanvasP
     ctx.restore();
   };
 
-  // ─── 1b. BUCKET DRAG HANDLE DRAWER ───────────────────────────────────────
-  const drawBucketDragHandle = (
+  // ─── 1b. INTERACTIVE BUCKET HANDLES DRAWER (SCALE, ROTATE & MOVE) ─────────
+  const drawBucketInteractiveHandles = (
     ctx: CanvasRenderingContext2D,
-    bx: number,
-    by: number,
-    bw: number,
-    bh: number,
-    active: boolean,
+    dims: BouquetDimensions,
+    isSelected: boolean,
+    isHovered: boolean,
+    activeMode?: DragMode | null,
   ) => {
+    const { bucketX: bx, bucketY: by, bucketW: bw, bucketH: bh } = dims;
+    const bcx = bx + bw / 2;
+    const bcy = by + bh * 0.52;
+
+    const isTouch = typeof window !== 'undefined' && ('ontouchstart' in window || (navigator?.maxTouchPoints ?? 0) > 0);
+    const handleRadius = isTouch ? 15 : 12;
+
     ctx.save();
 
-    // Dashed border around entire bucket
+    // 1. Dashed Bounding Box around Bucket
     ctx.beginPath();
-    ctx.roundRect(bx - 6, by - 6, bw + 12, bh + 12, 16);
-    ctx.strokeStyle = active ? '#7C3AED' : 'rgba(124, 58, 237, 0.55)';
-    ctx.lineWidth = active ? 2.5 : 1.8;
-    ctx.setLineDash([7, 5]);
-    ctx.shadowColor = 'rgba(124, 58, 237, 0.45)';
-    ctx.shadowBlur = active ? 18 : 8;
+    ctx.roundRect(bx - 8, by - 8, bw + 16, bh + 16, 18);
+    ctx.strokeStyle = isSelected ? '#E11D48' : 'rgba(225, 29, 72, 0.45)';
+    ctx.lineWidth = isSelected ? 2.5 : 1.5;
+    ctx.setLineDash(isSelected ? [8, 6] : [6, 6]);
+    if (isSelected) {
+      ctx.shadowColor = 'rgba(225, 29, 72, 0.35)';
+      ctx.shadowBlur = 14;
+    }
     ctx.stroke();
     ctx.setLineDash([]);
     ctx.shadowBlur = 0;
 
-    // Drag pill badge at top center of bucket
-    const pillW = 148;
-    const pillH = 24;
-    const pillX = bx + bw / 2 - pillW / 2;
-    const pillY = by - 34;
+    // 2. Top Pill Badge: "🪣 Buket • Seret / Putar / Ukuran"
+    const pillW = isSelected ? 186 : 136;
+    const pillH = 26;
+    const pillX = bcx - pillW / 2;
+    const pillY = by - 36;
     ctx.beginPath();
-    ctx.roundRect(pillX, pillY, pillW, pillH, 12);
-    ctx.fillStyle = active ? '#7C3AED' : 'rgba(124, 58, 237, 0.88)';
+    ctx.roundRect(pillX, pillY, pillW, pillH, 13);
+    ctx.fillStyle = isSelected ? '#E11D48' : 'rgba(225, 29, 72, 0.88)';
+    ctx.shadowColor = 'rgba(0,0,0,0.18)';
+    ctx.shadowBlur = 6;
     ctx.fill();
+    ctx.shadowBlur = 0;
 
-    ctx.font = 'bold 10px "Montserrat", sans-serif';
+    ctx.font = 'bold 10px "Montserrat", -apple-system, sans-serif';
     ctx.fillStyle = '#FFFFFF';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText('🪣 Seret Buket Bebas', bx + bw / 2, pillY + pillH / 2);
+    ctx.fillText(
+      isSelected ? '🪣 Buket • Seret / Putar / Ukuran' : '🪣 Buket (Ketuk)',
+      bcx,
+      pillY + pillH / 2,
+    );
 
-    // Center move icon
-    const iconCx = bx + bw / 2;
-    const iconCy = by + bh * 0.52;
+    // 3. Center Drag Move Icon
+    const moveRadius = isTouch ? 22 : 18;
     ctx.beginPath();
-    ctx.arc(iconCx, iconCy, 22, 0, Math.PI * 2);
-    ctx.fillStyle = active ? 'rgba(124,58,237,0.22)' : 'rgba(124,58,237,0.12)';
+    ctx.arc(bcx, bcy, moveRadius, 0, Math.PI * 2);
+    ctx.fillStyle = isSelected ? 'rgba(225, 29, 72, 0.18)' : 'rgba(225, 29, 72, 0.10)';
     ctx.fill();
-    ctx.strokeStyle = active ? '#7C3AED' : 'rgba(124,58,237,0.6)';
+    ctx.strokeStyle = isSelected ? '#E11D48' : 'rgba(225, 29, 72, 0.6)';
     ctx.lineWidth = 2;
     ctx.stroke();
-    ctx.font = '20px sans-serif';
-    ctx.fillStyle = active ? '#7C3AED' : 'rgba(124,58,237,0.85)';
+
+    ctx.font = '18px sans-serif';
+    ctx.fillStyle = isSelected ? '#E11D48' : 'rgba(225, 29, 72, 0.85)';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText('✥', iconCx, iconCy);
+    ctx.fillText('✥', bcx, bcy);
+
+    // If bucket is selected, show interactive Rotate Handle and Scale Handle!
+    if (isSelected) {
+      // 4. ROTATE HANDLE (Top, above badge)
+      const rotPinY = by - 68;
+      // Stem line
+      ctx.beginPath();
+      ctx.moveTo(bcx, pillY);
+      ctx.lineTo(bcx, rotPinY);
+      ctx.strokeStyle = '#E11D48';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // Rotate knob circle
+      ctx.beginPath();
+      ctx.arc(bcx, rotPinY, handleRadius, 0, Math.PI * 2);
+      ctx.fillStyle = '#FFFFFF';
+      ctx.shadowColor = 'rgba(0,0,0,0.2)';
+      ctx.shadowBlur = 8;
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.strokeStyle = '#E11D48';
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
+
+      // Rotate icon ↻
+      ctx.font = 'bold 15px sans-serif';
+      ctx.fillStyle = '#E11D48';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('↻', bcx, rotPinY);
+
+      // Rotation Degree Badge
+      const currentRot = Math.round(design.bouquetRotation ?? 0);
+      const rotBadgeW = 42;
+      const rotBadgeH = 18;
+      ctx.beginPath();
+      ctx.roundRect(bcx + handleRadius + 6, rotPinY - rotBadgeH / 2, rotBadgeW, rotBadgeH, 9);
+      ctx.fillStyle = '#E11D48';
+      ctx.fill();
+      ctx.font = 'bold 9.5px "Montserrat", sans-serif';
+      ctx.fillStyle = '#FFFFFF';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(`${currentRot}°`, bcx + handleRadius + 6 + rotBadgeW / 2, rotPinY);
+
+      // 5. SCALE HANDLE (Bottom-Right corner)
+      const scaleHandleX = bx + bw + 14;
+      const scaleHandleY = by + bh + 14;
+
+      // Stem line to corner
+      ctx.beginPath();
+      ctx.moveTo(bx + bw, by + bh);
+      ctx.lineTo(scaleHandleX, scaleHandleY);
+      ctx.strokeStyle = '#E11D48';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      // Scale knob circle
+      ctx.beginPath();
+      ctx.arc(scaleHandleX, scaleHandleY, handleRadius, 0, Math.PI * 2);
+      ctx.fillStyle = '#FFFFFF';
+      ctx.shadowColor = 'rgba(0,0,0,0.2)';
+      ctx.shadowBlur = 8;
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.strokeStyle = '#E11D48';
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
+
+      // Scale icon ⤡
+      ctx.font = 'bold 14px sans-serif';
+      ctx.fillStyle = '#E11D48';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('⤡', scaleHandleX, scaleHandleY);
+
+      // Scale Percentage Badge
+      const currentScalePct = Math.round((design.bouquetScale ?? 1.0) * 100);
+      const scaleBadgeW = 48;
+      const scaleBadgeH = 18;
+      ctx.beginPath();
+      ctx.roundRect(scaleHandleX + handleRadius + 4, scaleHandleY - scaleBadgeH / 2, scaleBadgeW, scaleBadgeH, 9);
+      ctx.fillStyle = '#BE123C';
+      ctx.fill();
+      ctx.font = 'bold 9.5px "Montserrat", sans-serif';
+      ctx.fillStyle = '#FFFFFF';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(`${currentScalePct}%`, scaleHandleX + handleRadius + 4 + scaleBadgeW / 2, scaleHandleY);
+    }
 
     ctx.restore();
   };
@@ -237,6 +352,7 @@ export default function PreviewCanvas({ canvasRef: externalRef }: PreviewCanvasP
       design.bouquetScale ?? 1.0,
       bucketOffset,
     );
+    bucketDimsRef.current = dims;
 
     // 2. Compute current item placements
     const items = computeFlowerRenderItems(design.selectedFlowers, dims);
@@ -299,35 +415,18 @@ export default function PreviewCanvas({ canvasRef: externalRef }: PreviewCanvasP
       drawFlowers(ctx, frontFlowers, dims);
     }
 
-    ctx.restore(); // end bouquet rotation transform
-
-    // 4b. Bucket drag/hover handle overlay (screen-space, sebelum handles bunga)
-    if (!isFinished && (isBucketHovered || isDraggingBucket)) {
-      // Re-compute dims in screen space to draw handle correctly (no canvas rotation, just offset)
-      const screenBucketX = dims.bucketX;
-      const screenBucketY = dims.bucketY;
-      // Apply rotation to corner coords to find screen position
-      const cos = Math.cos(bouquetRotRad);
-      const sin = Math.sin(bouquetRotRad);
-      const rotX = (x: number, y: number) =>
-        pivotX + (x - pivotX) * cos - (y - pivotY) * sin;
-      const rotY = (x: number, y: number) =>
-        pivotY + (x - pivotX) * sin + (y - pivotY) * cos;
-      // Use center point of bucket for pill positioning
-      const bcx = screenBucketX + dims.bucketW / 2;
-      const bcy = screenBucketY + dims.bucketH / 2;
-      const sBcx = rotX(bcx, bcy);
-      const sBcy = rotY(bcx, bcy);
-      // Draw handle centered on rotated bucket center
-      drawBucketDragHandle(
-        ctx,
-        sBcx - dims.bucketW / 2,
-        sBcy - dims.bucketH / 2,
-        dims.bucketW,
-        dims.bucketH,
-        isDraggingBucket,
-      );
+    // 4b. Draw Bucket Interactive Selection & Hover handles INSIDE rotated bouquet space
+    const isBucketActive =
+      isBucketSelected ||
+      isBucketHovered ||
+      dragState?.mode === 'bucket-move' ||
+      dragState?.mode === 'bucket-rotate' ||
+      dragState?.mode === 'bucket-scale';
+    if (!isFinished && isBucketActive) {
+      drawBucketInteractiveHandles(ctx, dims, isBucketSelected, isBucketHovered, dragState?.mode);
     }
+
+    ctx.restore(); // end bouquet rotation transform
 
     // 5. Draw interactive selection handles if a flower is selected (hanya saat belum final/selesai)
     // NOTE: handles drawn in screen space — need to apply rotation offset to positions
@@ -468,7 +567,7 @@ export default function PreviewCanvas({ canvasRef: externalRef }: PreviewCanvasP
     canvasH,
     currentTheme,
     isBucketHovered,
-    isDraggingBucket,
+    isBucketSelected,
   ]);
 
   useEffect(() => {
@@ -532,21 +631,68 @@ export default function PreviewCanvas({ canvasRef: externalRef }: PreviewCanvasP
     // 1. Rotate handle is at (0, -half - 26)
     const rotPinDist = half + 26;
     const distToRotate = Math.hypot(localX - 0, localY - (-rotPinDist));
-    if (distToRotate <= 16) return 'rotate';
+    const isTouch = typeof window !== 'undefined' && ('ontouchstart' in window || (navigator?.maxTouchPoints ?? 0) > 0);
+    const handleHitTolerance = isTouch ? 28 : 16;
+    if (distToRotate <= handleHitTolerance) return 'rotate';
 
     // 2. Scale handle is at (half + 6, half + 6)
     const distToScale = Math.hypot(localX - (half + 6), localY - (half + 6));
-    if (distToScale <= 16) return 'scale';
+    if (distToScale <= handleHitTolerance) return 'scale';
+
+    return null;
+  };
+
+  const checkBucketHandleHit = (
+    flMouseX: number,
+    flMouseY: number,
+    dims: BouquetDimensions,
+  ): 'bucket-rotate' | 'bucket-scale' | 'bucket-move' | null => {
+    const { bucketX: bx, bucketY: by, bucketW: bw, bucketH: bh } = dims;
+    const bcx = bx + bw / 2;
+    const rotPinY = by - 68;
+    const scaleHandleX = bx + bw + 14;
+    const scaleHandleY = by + bh + 14;
+
+    const isTouch = typeof window !== 'undefined' && ('ontouchstart' in window || (navigator?.maxTouchPoints ?? 0) > 0);
+    const handleHitTolerance = isTouch ? 36 : 22;
+
+    // 1. Check Rotate Handle Hit
+    if (Math.hypot(flMouseX - bcx, flMouseY - rotPinY) <= handleHitTolerance) {
+      return 'bucket-rotate';
+    }
+
+    // 2. Check Scale Handle Hit
+    if (Math.hypot(flMouseX - scaleHandleX, flMouseY - scaleHandleY) <= handleHitTolerance) {
+      return 'bucket-scale';
+    }
+
+    // 3. Check Bucket Body or Top Pill Badge Hit
+    if (
+      flMouseX >= bx - 14 &&
+      flMouseX <= bx + bw + 14 &&
+      flMouseY >= by - 44 &&
+      flMouseY <= by + bh + 14
+    ) {
+      return 'bucket-move';
+    }
 
     return null;
   };
 
   // ─── 4. MOUSE & TOUCH EVENT HANDLERS ─────────────────────────────────────
   const handlePointerDown = (e: React.MouseEvent | React.TouchEvent) => {
+    // Snapshot current state in case a drag move occurs
+    try {
+      preDragSnapshot.current = JSON.parse(JSON.stringify(design));
+    } catch {
+      preDragSnapshot.current = null;
+    }
+    hasMovedDrag.current = false;
+
     const { x: rawX, y: rawY } = getCanvasCoords(e);
     const mouseX = rawX;
     const mouseY = rawY;
-    // For flower hit-testing, use bouquet-local (inverse-rotated) coords
+    // For bouquet hit-testing, use bouquet-local (inverse-rotated) coords
     const { x: flMouseX, y: flMouseY } = toBouquetCoords(rawX, rawY);
 
     // 1. Check if user clicked on greeting card or its scale handle
@@ -569,6 +715,7 @@ export default function PreviewCanvas({ canvasRef: externalRef }: PreviewCanvasP
         });
         setIsCardSelected(true);
         setSelectedUid(null);
+        setIsBucketSelected(false);
         setIsDraggingCard(false);
         return;
       }
@@ -584,20 +731,61 @@ export default function PreviewCanvas({ canvasRef: externalRef }: PreviewCanvasP
         setIsCardSelected(true);
         cardDragOffset.current = { dx: mouseX - cardB.cx, dy: mouseY - cardB.cy };
         setSelectedUid(null);
+        setIsBucketSelected(false);
         setDragState(null);
+        return;
+      }
+    }
+
+    // 2. If bucket is already selected, check its rotate or scale handles first!
+    if (isBucketSelected && bucketDimsRef.current && !isFinished) {
+      const bDims = bucketDimsRef.current;
+      const bucketHit = checkBucketHandleHit(flMouseX, flMouseY, bDims);
+      if (bucketHit === 'bucket-rotate') {
+        const pivotX = canvasW / 2;
+        const pivotY = canvasH / 2;
+        setDragState({
+          mode: 'bucket-rotate',
+          startMouseX: rawX,
+          startMouseY: rawY,
+          origX: pivotX,
+          origY: pivotY,
+          origSize: design.bouquetScale ?? 1.0,
+          origRot: design.bouquetRotation ?? 0,
+          startAngle: Math.atan2(rawY - pivotY, rawX - pivotX),
+        });
+        setSelectedUid(null);
+        setIsCardSelected(false);
+        return;
+      }
+      if (bucketHit === 'bucket-scale') {
+        const bcx = bDims.bucketX + bDims.bucketW / 2;
+        const bcy = bDims.bucketY + bDims.bucketH / 2;
+        setDragState({
+          mode: 'bucket-scale',
+          startMouseX: flMouseX,
+          startMouseY: flMouseY,
+          origX: bcx,
+          origY: bcy,
+          origSize: design.bouquetScale ?? 1.0,
+          origRot: design.bouquetRotation ?? 0,
+        });
+        setSelectedUid(null);
+        setIsCardSelected(false);
         return;
       }
     }
 
     const items = renderItemsRef.current;
 
-    // If an item is already selected, check if user clicked on its handles first
+    // 3. If a flower is selected, check its rotate or scale handles
     if (selectedUid) {
       const selectedItem = items.find((it) => it.flower.uid === selectedUid);
       if (selectedItem) {
         const handleHit = checkHandleHit(flMouseX, flMouseY, selectedItem);
         if (handleHit) {
           setIsCardSelected(false);
+          setIsBucketSelected(false);
           setDragState({
             mode: handleHit,
             startMouseX: flMouseX,
@@ -612,14 +800,17 @@ export default function PreviewCanvas({ canvasRef: externalRef }: PreviewCanvasP
       }
     }
 
-    // 2. Check flower hits (bouquet-local coords)
+    // 4. Check flower bloom hits (bouquet-local coords, topmost flower first)
+    const isTouchDevice = typeof window !== 'undefined' && ('ontouchstart' in window || (navigator?.maxTouchPoints ?? 0) > 0);
+    const flowerHitSlop = isTouchDevice ? 16 : 6;
     for (let i = items.length - 1; i >= 0; i--) {
       const item = items[i];
       const dist = Math.hypot(flMouseX - item.x, flMouseY - item.y);
 
-      // Hit within circular bloom head boundary (with 6px grace margin)
-      if (dist <= item.sz / 2 + 6) {
+      // Hit within circular bloom head boundary (with touch grace margin)
+      if (dist <= item.sz / 2 + flowerHitSlop) {
         setSelectedUid(item.flower.uid);
+        setIsBucketSelected(false);
         setIsCardSelected(false);
 
         // If not already manual, lock in its current rendered position
@@ -646,34 +837,35 @@ export default function PreviewCanvas({ canvasRef: externalRef }: PreviewCanvasP
       }
     }
 
-    // 3. Check bucket body hit (bouquet-local coords) — only when not finished
-    if (!isFinished) {
-      const bucketOffset = design.bucketOffset ?? { x: 0, y: 0 };
-      const bDims = getBouquetDimensions(canvasW, canvasH, design.bucketSize, design.bouquetScale ?? 1.0, bucketOffset);
-
+    // 5. Check bucket body hit (select bucket and start dragging bucket directly)
+    if (!isFinished && bucketDimsRef.current) {
+      const bDims = bucketDimsRef.current;
       if (
-        flMouseX >= bDims.bucketX &&
-        flMouseX <= bDims.bucketX + bDims.bucketW &&
-        flMouseY >= bDims.bucketY &&
-        flMouseY <= bDims.bucketY + bDims.bucketH
+        flMouseX >= bDims.bucketX - 14 &&
+        flMouseX <= bDims.bucketX + bDims.bucketW + 14 &&
+        flMouseY >= bDims.bucketY - 44 &&
+        flMouseY <= bDims.bucketY + bDims.bucketH + 14
       ) {
-        // Start dragging bucket
-        setIsDraggingBucket(true);
+        setIsBucketSelected(true);
         setSelectedUid(null);
         setIsCardSelected(false);
-        setDragState(null);
-        bucketDragStart.current = {
-          mouseX: flMouseX,
-          mouseY: flMouseY,
-          origOffsetX: bucketOffset.x,
-          origOffsetY: bucketOffset.y,
-        };
+        const bucketOffset = design.bucketOffset ?? { x: 0, y: 0 };
+        setDragState({
+          mode: 'bucket-move',
+          startMouseX: flMouseX,
+          startMouseY: flMouseY,
+          origX: bucketOffset.x,
+          origY: bucketOffset.y,
+          origSize: design.bouquetScale ?? 1.0,
+          origRot: design.bouquetRotation ?? 0,
+        });
         return;
       }
     }
 
-    // Clicked empty canvas space
+    // 6. Clicked empty canvas space
     setSelectedUid(null);
+    setIsBucketSelected(false);
     setIsCardSelected(false);
   };
 
@@ -683,17 +875,18 @@ export default function PreviewCanvas({ canvasRef: externalRef }: PreviewCanvasP
     const mouseY = rawY;
     const { x: flMouseX, y: flMouseY } = toBouquetCoords(rawX, rawY);
 
-    // Active Bucket Drag (dibatasi dalam batas aman, jangan allow bebas keluar kanvas)
-    if (isDraggingBucket && bucketDragStart.current) {
+    // Active Bucket Move Drag
+    if (dragState?.mode === 'bucket-move') {
       if ('touches' in e) e.preventDefault();
-      const dx = flMouseX - bucketDragStart.current.mouseX;
-      const dy = flMouseY - bucketDragStart.current.mouseY;
+      hasMovedDrag.current = true;
+      const dx = flMouseX - dragState.startMouseX;
+      const dy = flMouseY - dragState.startMouseY;
 
-      // Batasi pergeseran buket dalam rentang aman agar tidak lepas / bablas keluar kanvas
-      const maxClampX = Math.round(canvasW * 0.28);
-      const maxClampY = Math.round(canvasH * 0.22);
-      const targetX = Math.round(bucketDragStart.current.origOffsetX + dx);
-      const targetY = Math.round(bucketDragStart.current.origOffsetY + dy);
+      // Batasi pergeseran buket dalam rentang aman agar tidak bablas keluar kanvas
+      const maxClampX = Math.round(canvasW * 0.38);
+      const maxClampY = Math.round(canvasH * 0.30);
+      const targetX = Math.round(dragState.origX + dx);
+      const targetY = Math.round(dragState.origY + dy);
 
       setBucketOffset({
         x: Math.max(-maxClampX, Math.min(maxClampX, targetX)),
@@ -703,9 +896,40 @@ export default function PreviewCanvas({ canvasRef: externalRef }: PreviewCanvasP
       return;
     }
 
+    // Active Bucket Rotate Drag
+    if (dragState?.mode === 'bucket-rotate') {
+      if ('touches' in e) e.preventDefault();
+      hasMovedDrag.current = true;
+      const pivotX = canvasW / 2;
+      const pivotY = canvasH / 2;
+      const currentAngle = Math.atan2(rawY - pivotY, rawX - pivotX);
+      const startAngle = dragState.startAngle ?? 0;
+      const deltaDeg = ((currentAngle - startAngle) * 180) / Math.PI;
+      let newRot = Math.round(dragState.origRot + deltaDeg);
+      while (newRot > 180) newRot -= 360;
+      while (newRot < -180) newRot += 360;
+      setBouquetRotation(newRot);
+      setCursorStyle('grabbing');
+      return;
+    }
+
+    // Active Bucket Scale Drag
+    if (dragState?.mode === 'bucket-scale') {
+      if ('touches' in e) e.preventDefault();
+      hasMovedDrag.current = true;
+      const currentDist = Math.hypot(flMouseX - dragState.origX, flMouseY - dragState.origY);
+      const startDist = Math.hypot(dragState.startMouseX - dragState.origX, dragState.startMouseY - dragState.origY);
+      const ratio = currentDist / (startDist || 1);
+      const newScale = Math.max(0.4, Math.min(2.0, Number((dragState.origSize * ratio).toFixed(2))));
+      setBouquetScale(newScale);
+      setCursorStyle('nwse-resize');
+      return;
+    }
+
     // Active Greeting Card Scaling
     if (dragState?.mode === 'scale-card') {
       if ('touches' in e) e.preventDefault();
+      hasMovedDrag.current = true;
       const currentDist = Math.hypot(mouseX - dragState.origX, mouseY - dragState.origY);
       const startDist = Math.hypot(
         dragState.startMouseX - dragState.origX,
@@ -721,6 +945,7 @@ export default function PreviewCanvas({ canvasRef: externalRef }: PreviewCanvasP
     // Active Greeting Card Dragging
     if (isDraggingCard) {
       if ('touches' in e) e.preventDefault();
+      hasMovedDrag.current = true;
       const newCx = Math.max(40, Math.min(canvasW - 40, Math.round(mouseX - cardDragOffset.current.dx)));
       const newCy = Math.max(40, Math.min(canvasH - 40, Math.round(mouseY - cardDragOffset.current.dy)));
       setText({ cardX: newCx, cardY: newCy });
@@ -731,6 +956,7 @@ export default function PreviewCanvas({ canvasRef: externalRef }: PreviewCanvasP
     // Active Flower Dragging (uses bouquet-local coords)
     if (dragState && selectedUid) {
       if ('touches' in e) e.preventDefault();
+      hasMovedDrag.current = true;
 
       if (dragState.mode === 'move') {
         const dx = flMouseX - dragState.startMouseX;
@@ -815,18 +1041,35 @@ export default function PreviewCanvas({ canvasRef: externalRef }: PreviewCanvasP
       return;
     }
 
-    // Bucket Hover Check (bouquet-local, only when not finished)
-    if (!isFinished) {
-      const bucketOffset = design.bucketOffset ?? { x: 0, y: 0 };
-      const bDims = getBouquetDimensions(canvasW, canvasH, design.bucketSize, design.bouquetScale ?? 1.0, bucketOffset);
+    // Bucket Handles Hover Detection when Bucket is Selected
+    if (!isFinished && isBucketSelected && bucketDimsRef.current) {
+      const bDims = bucketDimsRef.current;
+      const bHit = checkBucketHandleHit(flMouseX, flMouseY, bDims);
+      if (bHit === 'bucket-rotate') {
+        setCursorStyle('grab');
+        return;
+      }
+      if (bHit === 'bucket-scale') {
+        setCursorStyle('nwse-resize');
+        return;
+      }
+      if (bHit === 'bucket-move') {
+        setCursorStyle('grab');
+        return;
+      }
+    }
+
+    // Bucket Hover Check (when not selected)
+    if (!isFinished && bucketDimsRef.current) {
+      const bDims = bucketDimsRef.current;
       const isOverBucket =
-        flMouseX >= bDims.bucketX &&
-        flMouseX <= bDims.bucketX + bDims.bucketW &&
-        flMouseY >= bDims.bucketY &&
-        flMouseY <= bDims.bucketY + bDims.bucketH;
+        flMouseX >= bDims.bucketX - 14 &&
+        flMouseX <= bDims.bucketX + bDims.bucketW + 14 &&
+        flMouseY >= bDims.bucketY - 44 &&
+        flMouseY <= bDims.bucketY + bDims.bucketH + 14;
       setIsBucketHovered(isOverBucket);
       if (isOverBucket) {
-        setCursorStyle('grab');
+        setCursorStyle('pointer');
         return;
       }
     } else {
@@ -837,10 +1080,15 @@ export default function PreviewCanvas({ canvasRef: externalRef }: PreviewCanvasP
   };
 
   const handlePointerUp = () => {
+    // If user dragged a flower, bucket, or card, commit the preDragSnapshot to undo history
+    if (hasMovedDrag.current && preDragSnapshot.current) {
+      recordSnapshot(preDragSnapshot.current);
+    }
+    preDragSnapshot.current = null;
+    hasMovedDrag.current = false;
+
     setDragState(null);
     setIsDraggingCard(false);
-    setIsDraggingBucket(false);
-    bucketDragStart.current = null;
   };
 
   const handleDoubleClick = (e: React.MouseEvent) => {
@@ -848,15 +1096,17 @@ export default function PreviewCanvas({ canvasRef: externalRef }: PreviewCanvasP
     const { x: rawX, y: rawY } = getCanvasCoords(e);
     const { x: flMouseX, y: flMouseY } = toBouquetCoords(rawX, rawY);
     const bucketOffset = design.bucketOffset ?? { x: 0, y: 0 };
-    const bDims = getBouquetDimensions(canvasW, canvasH, design.bucketSize, design.bouquetScale ?? 1.0, bucketOffset);
+    const bDims = bucketDimsRef.current ?? getBouquetDimensions(canvasW, canvasH, design.bucketSize, design.bouquetScale ?? 1.0, bucketOffset);
     if (
-      flMouseX >= bDims.bucketX &&
-      flMouseX <= bDims.bucketX + bDims.bucketW &&
-      flMouseY >= bDims.bucketY &&
-      flMouseY <= bDims.bucketY + bDims.bucketH
+      flMouseX >= bDims.bucketX - 14 &&
+      flMouseX <= bDims.bucketX + bDims.bucketW + 14 &&
+      flMouseY >= bDims.bucketY - 44 &&
+      flMouseY <= bDims.bucketY + bDims.bucketH + 14
     ) {
-      // Double click buket untuk mereset posisi kembali tepat di tengah
+      // Double click buket untuk mereset posisi kembali tepat di tengah dan rotasi 0
+      recordSnapshot();
       setBucketOffset({ x: 0, y: 0 });
+      setBouquetRotation(0);
     }
   };
 
@@ -910,7 +1160,7 @@ export default function PreviewCanvas({ canvasRef: externalRef }: PreviewCanvasP
           width={canvasW}
           height={canvasH}
           className="preview-canvas"
-          style={{ cursor: cursorStyle }}
+          style={{ cursor: cursorStyle, touchAction: 'none' }}
           onMouseDown={handlePointerDown}
           onMouseMove={handlePointerMove}
           onMouseUp={handlePointerUp}
@@ -933,7 +1183,7 @@ export default function PreviewCanvas({ canvasRef: externalRef }: PreviewCanvasP
       {/* User Helper Caption */}
       <div className="canvas-interaction-guide">
         <span>
-          💡 <strong>Tips Interaktif:</strong> Drag <strong>🪣 buket</strong> untuk geser posisi (double-click buket untuk reset tengah) — klik <strong>bunga</strong> / kartu ucapan untuk <strong>geser &amp; resize</strong> — tarik pin <strong>⤡</strong> untuk <strong>perbesar / perkecil</strong>.
+          💡 <strong>Tips Interaktif:</strong> Ketuk <strong>🪣 buket</strong> di kanvas untuk atur (tarik pin <strong>↻</strong> untuk putar, pin <strong>⤡</strong> untuk ubah ukuran, atau seret buket) — ketuk <strong>bunga</strong> untuk geser/putar manual — double-click buket untuk reset.
         </span>
       </div>
     </div>
