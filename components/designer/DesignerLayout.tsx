@@ -18,6 +18,7 @@ import StepDownload from '../steps/StepDownload';
 import { FlowerCountVariant } from '@/types/design';
 import { BookOpen, Edit3, SlidersHorizontal, ChevronRight, Sparkles, Crown, ArrowLeft } from 'lucide-react';
 import VipCardModal from '../designer/VipCardModal';
+import FlowerGardenModal from '../garden/FlowerGardenModal';
 
 const STEP_TITLES: Record<number, string> = {
   1: 'Pilih Jenis Bucket',
@@ -47,6 +48,7 @@ export default function DesignerLayout({ onBackToDashboard }: DesignerLayoutProp
   const [isCountModalOpen, setIsCountModalOpen] = useState(false);
   const [isUnlockModalOpen, setIsUnlockModalOpen] = useState(false);
   const [isVipMenuOpen, setIsVipMenuOpen] = useState(false);
+  const [isGardenModalOpen, setIsGardenModalOpen] = useState(false);
   const [hasMounted, setHasMounted] = useState(false);
 
   // Mark as mounted so VIP state (from localStorage) only affects UI post-hydration
@@ -233,6 +235,18 @@ export default function DesignerLayout({ onBackToDashboard }: DesignerLayoutProp
               </button>
             )}
 
+            {/* Tombol Kebun Bunga Streak */}
+            <button
+              type="button"
+              className="ds-header-tutorial-btn"
+              onClick={() => setIsGardenModalOpen(true)}
+              style={{ background: '#fff7ed', borderColor: '#fed7aa', color: '#c2410c' }}
+              title="Kebun Bunga Harian (Api Streak 🔥)"
+            >
+              <span>🌱</span>
+              <span className="ds-btn-text">Kebun Bunga 🔥</span>
+            </button>
+
             <Link href="/tutorial" className="ds-header-tutorial-btn" id="nav-btn-tutorial-designer" title="Panduan Tutorial">
               <BookOpen size={13} />
               <span className="ds-btn-text">Tutorial</span>
@@ -261,6 +275,13 @@ export default function DesignerLayout({ onBackToDashboard }: DesignerLayoutProp
           onClose={() => setIsVipMenuOpen(false)}
           userName={premiumUserName || ''}
           onRevoke={revokePremium}
+        />
+
+        {/* Modal Kebun Bunga Harian */}
+        <FlowerGardenModal
+          isOpen={isGardenModalOpen}
+          onClose={() => setIsGardenModalOpen(false)}
+          onOpenVipModal={() => setIsUnlockModalOpen(true)}
         />
 
 

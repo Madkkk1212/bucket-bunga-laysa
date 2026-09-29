@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 140" width="120" height="140" fill="none">
+  <defs>
+    <filter id="softShadow" x="-10%" y="-10%" width="120%" height="120%" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="4" stdDeviation="3" flood-opacity="0.25"/>
+    </filter>
+    <radialGradient id="soilGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#45270e" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#2c1808" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <!-- Soil Mound Base -->
+  <ellipse cx="60" cy="132" rx="22" ry="6" fill="url(#soilGlow)" />
+  
+    <!-- Stem & Leaves -->
+    <path d="M60 130 Q58 105 60 76" stroke="#166534" stroke-width="4.5" stroke-linecap="round"/>
+    <path d="M60 112 Q44 110 38 98 Q48 94 60 106" fill="#15803d" stroke="#14532d" stroke-width="1.2"/>
+    <path d="M60 96 Q76 94 82 82 Q72 80 60 92" fill="#15803d" stroke="#14532d" stroke-width="1.2"/>
+    <path d="M60 120 Q74 122 78 114 Q70 110 60 116" fill="#15803d" stroke="#14532d" stroke-width="1"/>
+    <!-- Thorns -->
+    <path d="M58 118 L54 116 L58 114 Z" fill="#14532d"/>
+    <path d="M62 102 L66 100 L62 98 Z" fill="#14532d"/>
+    <!-- Calyx -->
+    <path d="M52 74 Q60 82 68 74 L60 66 Z" fill="#15803d"/>
+    <!-- Rose Bloom (Layered Petals) -->
+    <g filter="url(#softShadow)">
+      <!-- Outer Petals -->
+      <circle cx="60" cy="56" r="28" fill="#cbd5e1"/>
+      <path d="M38 52 C34 38 52 32 60 40 C68 32 86 38 82 52 C84 66 68 74 60 72 C52 74 36 66 38 52 Z" fill="#f1f5f9"/>
+      <path d="M44 58 C40 46 54 40 60 44 C66 40 80 46 76 58 C74 68 64 70 60 68 C56 70 46 68 44 58 Z" fill="#cbd5e1"/>
+      <!-- Mid swirl -->
+      <path d="M48 52 C46 44 56 40 60 44 C64 40 74 44 72 52 C72 60 64 62 60 62 C56 62 48 60 48 52 Z" fill="#ffffff"/>
+      <!-- Inner rosette -->
+      <ellipse cx="60" cy="52" rx="9" ry="7" fill="#f1f5f9"/>
+      <path d="M54 50 Q60 44 66 50 Q60 56 54 50" fill="#ffffff"/>
+      <circle cx="60" cy="51" r="3.5" fill="#fef08a" opacity="0.8"/>
+    </g>
+  
+</svg>

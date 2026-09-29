@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 140" width="120" height="140" fill="none">
+  <defs>
+    <filter id="softShadow" x="-10%" y="-10%" width="120%" height="120%" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="4" stdDeviation="3" flood-opacity="0.25"/>
+    </filter>
+    <radialGradient id="soilGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#45270e" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#2c1808" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <!-- Soil Mound Base -->
+  <ellipse cx="60" cy="132" rx="22" ry="6" fill="url(#soilGlow)" />
+  
+    <!-- Arrowhead lush leaves -->
+    <path d="M60 130 Q30 120 25 95 Q42 90 60 115" fill="#14532d" stroke="#052e16" stroke-width="1.5"/>
+    <path d="M60 130 Q90 120 95 95 Q78 90 60 115" fill="#166534" stroke="#052e16" stroke-width="1.5"/>
+    <!-- Smooth Stem -->
+    <path d="M60 130 Q58 85 60 55" stroke="#15803d" stroke-width="5" stroke-linecap="round"/>
+    <!-- Sculpted White Funnel Spathe -->
+    <g filter="url(#softShadow)">
+      <!-- Back fold -->
+      <path d="M46 62 C40 35 70 20 78 35 C82 45 74 65 60 68 C52 68 48 65 46 62 Z" fill="#e2e8f0"/>
+      <!-- Golden Spadix Spike -->
+      <path d="M60 56 Q61 38 62 30" stroke="#facc15" stroke-width="5" stroke-linecap="round"/>
+      <!-- Front Spathe Wrap -->
+      <path d="M44 65 C40 45 52 35 60 38 C68 42 76 55 68 70 C60 76 48 72 44 65 Z" fill="#ffffff"/>
+      <path d="M60 72 Q64 45 76 34" stroke="#f1f5f9" stroke-width="1.5"/>
+    </g>
+  
+</svg>

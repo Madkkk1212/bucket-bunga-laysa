@@ -36,6 +36,34 @@ function generateRandomCode(prefix = 'VIP'): string {
   return `${prefix}-${rand}`;
 }
 
+function enrichCodeRow(row: any) {
+  let tier: 'daily' | 'weekly' | 'lifetime' = 'lifetime';
+  if (row.tier === 'daily' || row.tier === 'weekly' || row.tier === 'lifetime') {
+    tier = row.tier;
+  } else if (row.notes?.includes('[TIER:daily]') || row.code?.startsWith('DAY-')) {
+    tier = 'daily';
+  } else if (row.notes?.includes('[TIER:weekly]') || row.code?.startsWith('WEEK-')) {
+    tier = 'weekly';
+  }
+
+  const durationDays = row.duration_days ?? (tier === 'daily' ? 1 : tier === 'weekly' ? 7 : 0);
+  const hasGardenAccess = row.has_garden_access ?? (tier === 'lifetime');
+
+  let expiresAt = row.expires_at || null;
+  if (!expiresAt && row.notes?.includes('[EXP:')) {
+    const match = row.notes.match(/\[EXP:([^\]]+)\]/);
+    if (match) expiresAt = match[1];
+  }
+
+  return {
+    ...row,
+    tier,
+    duration_days: durationDays,
+    has_garden_access: hasGardenAccess,
+    expires_at: expiresAt,
+  };
+}
+
 // 1. GET: Ambil semua kode akses (+ device count per kode jika Supabase tersedia)
 export async function GET(req: Request) {
   try {
@@ -81,43 +109,68 @@ export async function GET(req: Request) {
       const from = page * pageSize;
       const to = from + pageSize - 1;
 
-      const { data, error, count } = await supabase
+      // Coba query lengkap dengan kolom tier baru
+      let data: any[] | null = null;
+      let error: any = null;
+      let count: number | null = null;
+
+      const initialRes = await supabase
         .from('access_codes')
-        .select('id, code, is_active, max_uses, max_devices, used_count, used_by_name, claimed_at, notes, created_at, code_devices(count)', { count: 'exact' })
+        .select('id, code, is_active, max_uses, max_devices, used_count, used_by_name, claimed_at, notes, created_at, tier, duration_days, expires_at, has_garden_access, code_devices(count)', { count: 'exact' })
         .order('created_at', { ascending: false })
         .range(from, to);
 
-      if (!error && data) {
-        // Flatten device_count dari nested aggregate
-        const codes = data.map((row: any) => ({
-          ...row,
-          device_count: row.code_devices?.[0]?.count ?? 0,
-          code_devices: undefined,
-        }));
-        return NextResponse.json({ success: true, codes, total: count, page, pageSize });
+      data = initialRes.data;
+      error = initialRes.error;
+      count = initialRes.count;
+
+      // Jika kolom baru belum ada (PGRST204)
+      if (error && (error.code === 'PGRST204' || error.message?.includes('column'))) {
+        const retry = await supabase
+          .from('access_codes')
+          .select('id, code, is_active, max_uses, max_devices, used_count, used_by_name, claimed_at, notes, created_at, code_devices(count)', { count: 'exact' })
+          .order('created_at', { ascending: false })
+          .range(from, to);
+        data = retry.data;
+        error = retry.error;
+        count = retry.count;
       }
 
-      // Fallback query tanpa join jika tabel code_devices belum ada
-      const { data: simpleData, error: simpleError, count: simpleCount } = await supabase
-        .from('access_codes')
-        .select('id, code, is_active, max_uses, max_devices, used_count, used_by_name, claimed_at, notes, created_at', { count: 'exact' })
-        .order('created_at', { ascending: false })
-        .range(from, to);
+      // Fallback query tanpa join jika relasi code_devices belum ada
+      if (error) {
+        const retrySimple = await supabase
+          .from('access_codes')
+          .select('id, code, is_active, max_uses, max_devices, used_count, used_by_name, claimed_at, notes, created_at', { count: 'exact' })
+          .order('created_at', { ascending: false })
+          .range(from, to);
+        data = retrySimple.data;
+        error = retrySimple.error;
+        count = retrySimple.count;
+      }
 
-      if (!simpleError && simpleData) {
-        return NextResponse.json({ success: true, codes: simpleData, total: simpleCount, page, pageSize });
+      if (!error && data) {
+        const codes = data.map((row: any) => {
+          const enriched = enrichCodeRow(row);
+          return {
+            ...enriched,
+            device_count: row.code_devices?.[0]?.count ?? 0,
+            code_devices: undefined,
+          };
+        });
+        return NextResponse.json({ success: true, codes, total: count, page, pageSize });
       }
 
       console.error('[Admin GET Error]:', error?.message);
     }
 
-    return NextResponse.json({ success: true, codes: localCodes, total: localCodes.length, page: 0, pageSize, fallback: true });
+    const fallbackCodes = localCodes.map(enrichCodeRow);
+    return NextResponse.json({ success: true, codes: fallbackCodes, total: fallbackCodes.length, page: 0, pageSize, fallback: true });
   } catch (err: any) {
     return NextResponse.json({ success: false, message: err.message }, { status: 500 });
   }
 }
 
-// 2. POST: Buat kode baru (+ support max_devices)
+// 2. POST: Buat kode baru (+ support tier, duration, max_devices)
 export async function POST(req: Request) {
   try {
     const body = await req.json();
@@ -125,9 +178,14 @@ export async function POST(req: Request) {
     const maxUses = typeof body?.max_uses === 'number' ? body.max_uses : 1;
     const maxDevices = typeof body?.max_devices === 'number' ? Math.max(1, body.max_devices) : 5;
     const notes = (body?.notes || '').trim();
+    const rawTier = body?.tier;
+    const tier: 'daily' | 'weekly' | 'lifetime' = (rawTier === 'daily' || rawTier === 'weekly') ? rawTier : 'lifetime';
+    const durationDays = tier === 'daily' ? 1 : tier === 'weekly' ? 7 : 0;
+    const hasGardenAccess = tier === 'lifetime';
 
     if (!rawCode || !rawCode.trim()) {
-      rawCode = generateRandomCode('VIP');
+      const prefix = tier === 'daily' ? 'DAY' : tier === 'weekly' ? 'WEEK' : 'VIP';
+      rawCode = generateRandomCode(prefix);
     }
 
     const cleanCode = rawCode.trim().toUpperCase().replace(/\s+/g, '-');
@@ -141,6 +199,10 @@ export async function POST(req: Request) {
         max_devices: maxDevices,
         used_count: 0,
         notes: notes || null,
+        tier,
+        duration_days: durationDays,
+        has_garden_access: hasGardenAccess,
+        expires_at: null,
         created_at: new Date().toISOString(),
       };
 
@@ -151,7 +213,7 @@ export async function POST(req: Request) {
         .single();
 
       if (!error && data) {
-        return NextResponse.json({ success: true, code: data });
+        return NextResponse.json({ success: true, code: enrichCodeRow(data) });
       }
 
       if (error?.code === '23505') {
@@ -160,11 +222,45 @@ export async function POST(req: Request) {
           { status: 400 }
         );
       }
+
+      // RETRY ADAPTIF jika kolom baru belum ada di Supabase
+      if (error?.code === 'PGRST204' || error?.message?.includes('column')) {
+        console.warn('[Admin POST]: Retrying insert with legacy schema + tagged notes');
+        const taggedNotes = `[TIER:${tier}]${notes ? ` ${notes}` : ''}`;
+        const legacyPayload = {
+          code: cleanCode,
+          is_active: true,
+          max_uses: maxUses,
+          max_devices: maxDevices,
+          used_count: 0,
+          notes: taggedNotes,
+          created_at: new Date().toISOString(),
+        };
+
+        const { data: legData, error: legErr } = await supabase
+          .from('access_codes')
+          .insert([legacyPayload])
+          .select()
+          .single();
+
+        if (!legErr && legData) {
+          return NextResponse.json({
+            success: true,
+            code: enrichCodeRow({ ...legData, tier, duration_days: durationDays, has_garden_access: hasGardenAccess }),
+          });
+        }
+        if (legErr?.code === '23505') {
+          return NextResponse.json(
+            { success: false, message: `Kode "${cleanCode}" sudah pernah dibuat sebelumnya.` },
+            { status: 400 }
+          );
+        }
+      }
       console.error('[Admin POST Supabase Error]:', error);
     }
 
     // Local fallback
-    const newLocalItem = {
+    const newLocalItem = enrichCodeRow({
       id: `local-${Date.now()}`,
       code: cleanCode,
       is_active: true,
@@ -173,8 +269,12 @@ export async function POST(req: Request) {
       used_count: 0,
       used_by_name: null,
       notes,
+      tier,
+      duration_days: durationDays,
+      has_garden_access: hasGardenAccess,
+      expires_at: null,
       created_at: new Date().toISOString(),
-    };
+    });
     localCodes.unshift(newLocalItem);
     return NextResponse.json({ success: true, code: newLocalItem, fallback: true });
   } catch (err: any) {

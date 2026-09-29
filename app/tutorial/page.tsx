@@ -1,326 +1,498 @@
-import type { Metadata } from 'next';
+'use client';
+
+import React, { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import { 
-  ArrowLeft, 
-  ArrowRight, 
-  Move, 
-  Download, 
-  Sparkles, 
-  Flower2
+  ArrowLeft, ArrowRight, Move, Download, Sparkles, 
+  Layers, Palette, Award, ShieldCheck, Heart, Zap, CheckCircle2, ChevronRight
 } from 'lucide-react';
-
-export const metadata: Metadata = {
-  title: 'Panduan Praktis — Bucket Bunga Laysa',
-  description:
-    'Panduan ringkas dan to-the-point cara merancang buket bunga di Bucket Bunga Laysa dalam 5 langkah cepat.',
-};
+import HomeBackgroundVideo from '@/components/home/HomeBackgroundVideo';
+import FlowerCountModal from '@/components/designer/FlowerCountModal';
+import { FlowerCountVariant } from '@/types/design';
+import { DesignProvider } from '@/context/DesignContext';
 
 export default function TutorialPage() {
   return (
-    <div className="tutorial-page theme-pink-tutorial">
-      {/* ─── TOPBAR NAVIGASI ─── */}
-      <header className="tutorial-topbar">
-        <div className="tutorial-topbar-inner">
-          <Link href="/" className="tutorial-back-btn" id="btn-tutorial-back">
+    <DesignProvider>
+      <TutorialGameContent />
+    </DesignProvider>
+  );
+}
+
+function TutorialGameContent() {
+  const router = useRouter();
+  const [isCountModalOpen, setIsCountModalOpen] = useState(false);
+  const [activeStageTab, setActiveStageTab] = useState<number | null>(null);
+
+  // Sound effect synthesizer (Web Audio API - lightweight & fast)
+  const playSfx = (type: 'hover' | 'select' | 'portal') => {
+    try {
+      const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      if (type === 'hover') {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(440, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(580, ctx.currentTime + 0.08);
+        gain.gain.setValueAtTime(0.04, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.08);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.08);
+      } else if (type === 'select') {
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(523.25, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(783.99, ctx.currentTime + 0.12);
+        gain.gain.setValueAtTime(0.08, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.12);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.12);
+      } else if (type === 'portal') {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(392, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.2);
+        gain.gain.setValueAtTime(0.09, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.2);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.2);
+      }
+    } catch {
+      // Audio context might be restricted before interaction, ignore safely
+    }
+  };
+
+  const handleConfirmFlowerCount = (count: FlowerCountVariant) => {
+    setIsCountModalOpen(false);
+    playSfx('portal');
+    router.push(`/designer?flowers=${count}`);
+  };
+
+  const scrollToStage = (stageId: string, index: number) => {
+    playSfx('select');
+    setActiveStageTab(index);
+    const element = document.getElementById(stageId);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  };
+
+  return (
+    <div className="game-tutorial-container game-theme-arena relative min-h-screen">
+      {/* ── 1. CINEMATIC VIDEO BACKGROUND ── */}
+      <HomeBackgroundVideo />
+
+      {/* ── 2. TOP GAME HUD HEADER ── */}
+      <header className="game-hud-topbar" aria-label="Game HUD">
+        <div className="game-hud-inner">
+          {/* Tombol Kembali ke Menu Game */}
+          <Link
+            href="/menu"
+            className="game-hud-back-btn"
+            onClick={() => playSfx('hover')}
+            aria-label="Kembali ke Menu Game"
+          >
             <ArrowLeft size={15} />
-            <span>Beranda</span>
+            <span>KEMBALI KE MENU</span>
           </Link>
 
-          <Link href="/" className="tutorial-brand" aria-label="Beranda Bucket Bunga Laysa">
-            <span className="tutorial-brand-icon">
-              <Flower2 size={16} />
-            </span>
-            <div className="tutorial-brand-text">
-              <span className="tutorial-brand-title">Bucket Bunga</span>
-              <span className="tutorial-brand-accent">Laysa</span>
+          {/* Judul Arena / Header Mode */}
+          <div className="game-hud-title-wrap">
+            <span className="game-hud-subbadge">✦ FLORIST ACADEMY ✦</span>
+            <h1 className="game-hud-heading">PANDUAN MERANGKAI BUKET</h1>
+          </div>
+
+          {/* Status Pemain / Atelier Badge */}
+          <div className="game-hud-player-status">
+            <span className="game-hud-badge-icon">📖</span>
+            <div className="game-hud-badge-info">
+              <span className="game-hud-player-rank">QUEST GUIDEBOOK</span>
+              <span className="game-hud-player-level">5 STAGE CEPAT</span>
             </div>
-          </Link>
-
-          <Link href="/designer" className="tutorial-top-cta" id="btn-tutorial-start-top">
-            <span>Mulai Rancang</span>
-            <ArrowRight size={14} />
-          </Link>
+          </div>
         </div>
       </header>
 
-      {/* ─── HEADER RINGKAS & TO THE POINT ─── */}
-      <section className="tutorial-hero-compact">
-        <div className="tutorial-container">
-          <span className="tutorial-pill-badge">PANDUAN 5 LANGKAH CEPAT</span>
-          <h1 className="tutorial-heading">Cara Merancang Buket Impianmu</h1>
-          <p className="tutorial-subtext">
-            Tanpa ribet. Ikuti langkah praktis berikut untuk merangkai buket bunga kustommu sendiri:
-          </p>
+      {/* ── 3. FLOATING FLORAL PARTICLES ── */}
+      <div className="floral-frame-decor" aria-hidden="true">
+        <span className="floating-petal petal-1">🌸</span>
+        <span className="floating-petal petal-2">✨</span>
+        <span className="floating-petal petal-3">🌺</span>
+        <span className="floating-petal petal-4">🌸</span>
+        <span className="floating-petal petal-5">✨</span>
+        <span className="floating-petal petal-6">🌷</span>
+      </div>
 
-          {/* Quick Step Bar / Timeline */}
-          <div className="steps-quickbar">
-            <a href="#step-1" className="quickbar-step">
-              <span className="q-num">1</span>
-              <span className="q-label">Jenis Bucket</span>
-            </a>
-            <span className="q-arrow">→</span>
-            <a href="#step-2" className="quickbar-step">
-              <span className="q-num">2</span>
-              <span className="q-label">Tata Bunga</span>
-            </a>
-            <span className="q-arrow">→</span>
-            <a href="#step-3" className="quickbar-step">
-              <span className="q-num">3</span>
-              <span className="q-label">Kartu Ucapan</span>
-            </a>
-            <span className="q-arrow">→</span>
-            <a href="#step-4" className="quickbar-step">
-              <span className="q-num">4</span>
-              <span className="q-label">Cek Desain</span>
-            </a>
-            <span className="q-arrow">→</span>
-            <a href="#step-5" className="quickbar-step">
-              <span className="q-num">5</span>
-              <span className="q-label">Unduh Desain</span>
-            </a>
+      {/* ── 4. STAGE TIMELINE QUICK BAR (QUEST MAP) ── */}
+      <div className="game-tutorial-map-bar">
+        <div className="game-tutorial-map-inner">
+          <span className="game-map-title">QUEST MAP:</span>
+          <div className="game-map-chips">
+            {[
+              { id: 'stage-1', label: '1. Kertas Buket' },
+              { id: 'stage-2', label: '2. Tata Bunga' },
+              { id: 'stage-3', label: '3. Kartu Kaligrafi' },
+              { id: 'stage-4', label: '4. Cek Desain' },
+              { id: 'stage-5', label: '5. Ekspor 4K' },
+            ].map((step, idx) => (
+              <button
+                key={step.id}
+                type="button"
+                className={`game-map-chip ${activeStageTab === idx ? 'chip-active' : ''}`}
+                onClick={() => scrollToStage(step.id, idx)}
+                onMouseEnter={() => playSfx('hover')}
+              >
+                <span>{step.label}</span>
+              </button>
+            ))}
           </div>
         </div>
-      </section>
+      </div>
 
-      {/* ─── 5 LANGKAH PRAKTIS ─── */}
-      <main className="tutorial-steps-container">
-        <div className="tutorial-container">
+      {/* ── 5. MAIN 5 QUEST STAGES CONTAINER ── */}
+      <main className="game-tutorial-main">
+        <div className="game-tutorial-content-wrap">
 
-          {/* LANGKAH 1 */}
-          <div className="step-card-compact" id="step-1">
-            <div className="step-badge-circle">1</div>
-            <div className="step-main-content">
-              <h2 className="step-heading-compact">Pilih Jenis Bucket</h2>
-              <p className="step-lead">Pilih model dan warna pembungkus buket yang kamu sukai:</p>
+          {/* ══════════ STAGE 1: PILIH KERTAS BUKET ══════════ */}
+          <section className="game-stage-card" id="stage-1">
+            <div className="game-stage-card-header">
+              <div className="game-stage-badge badge-rose">
+                <span>STAGE #01 • KERTAS PEMBUNGKUS</span>
+              </div>
+            </div>
+
+            <div className="game-stage-grid">
+              <div className="game-stage-info">
+                <h2 className="game-stage-title">Pilih Model & Warna Kertas Buket</h2>
+                <p className="game-stage-desc">
+                  Tentukan tema buketmu dengan memilih bahan kertas pembungkus premium ala florist profesional:
+                </p>
+
+                <div className="game-stage-bullets">
+                  <div className="game-stage-bullet-item">
+                    <span className="bullet-dot dot-rose">✦</span>
+                    <div>
+                      <strong>Korean Noir Signature:</strong> Kertas matte hitam bersayap origami mewah dan elegan.
+                    </div>
+                  </div>
+                  <div className="game-stage-bullet-item">
+                    <span className="bullet-dot dot-amber">✦</span>
+                    <div>
+                      <strong>Korean Golden Kraft:</strong> Warna cokelat kraft keemasan hangat bergaya vintage klasik (<em>Favorit</em>).
+                    </div>
+                  </div>
+                  <div className="game-stage-bullet-item">
+                    <span className="bullet-dot dot-pink">✦</span>
+                    <div>
+                      <strong>Pastel Rose & Sky:</strong> Kertas warna pastel lembut bernuansa manis, ceria, dan romantis.
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="game-stage-visual">
+                <div className="game-stage-visual-box">
+                  <div className="game-stage-preview-row">
+                    <div className="game-mini-thumb">
+                      <Image src="/images/bucket/bucket-1.png" alt="Noir" width={75} height={75} />
+                      <span>Noir</span>
+                    </div>
+                    <div className="game-mini-thumb thumb-highlight">
+                      <Image src="/images/bucket/bucket-2.png" alt="Kraft" width={85} height={85} />
+                      <span>Kraft ★</span>
+                    </div>
+                    <div className="game-mini-thumb">
+                      <Image src="/images/bucket/bucket-3.png" alt="Pastel" width={75} height={75} />
+                      <span>Pastel</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* ══════════ STAGE 2: TATA BUNGA BEBAS DI KANVAS ══════════ */}
+          <section className="game-stage-card" id="stage-2">
+            <div className="game-stage-card-header">
+              <div className="game-stage-badge badge-cyan">
+                <span>STAGE #02 • FREE DRAG CANVAS</span>
+              </div>
+            </div>
+
+            <div className="game-stage-grid">
+              <div className="game-stage-info">
+                <h2 className="game-stage-title">Susun & Geser Bunga Bebas Manual</h2>
+                <p className="game-stage-desc">
+                  Kamu memiliki kendali penuh seperti florist sungguhan! Atur posisi setiap tangkai bunga di kanvas:
+                </p>
+
+                <div className="game-stage-bullets">
+                  <div className="game-stage-bullet-item">
+                    <span className="bullet-dot dot-cyan">✦</span>
+                    <div>
+                      <strong>Klik & Geser (Drag):</strong> Sentuh bunga di kanvas lalu geser ke titik mana pun yang kamu inginkan.
+                    </div>
+                  </div>
+                  <div className="game-stage-bullet-item">
+                    <span className="bullet-dot dot-cyan">✦</span>
+                    <div>
+                      <strong>Layering Maju/Mundur:</strong> Atur urutan tumpukan bunga agar bunga utama tampil di depan dan filler di belakang.
+                    </div>
+                  </div>
+                  <div className="game-stage-bullet-item">
+                    <span className="bullet-dot dot-cyan">✦</span>
+                    <div>
+                      <strong>Rotasi & Sudut Kemiringan:</strong> Putar sudut tangkai bunga agar buket terlihat mekar alami dan bervolume.
+                    </div>
+                  </div>
+                </div>
+
+                <div className="game-stage-pro-tip">
+                  <span className="pro-tip-tag">💡 PRO TIP FLORIST:</span>
+                  <span>Taruh bunga besar (Mawar/Lily) di tengah, lalu kelilingi dengan Baby&apos;s Breath dan Eucalyptus agar buket rimbun!</span>
+                </div>
+              </div>
+
+              <div className="game-stage-visual">
+                <div className="game-stage-visual-box">
+                  <div className="visual-img-container">
+                    <Image 
+                      src="/images/tutorial/step2_arrange.png" 
+                      alt="Tata Bunga Bebas" 
+                      width={280} 
+                      height={240} 
+                      className="game-tutorial-img"
+                    />
+                    <div className="game-visual-pill">
+                      <Move size={13} />
+                      <span>Bisa digeser bebas manual</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* ══════════ STAGE 3: KARTU UCAPAN KALIGRAFI ══════════ */}
+          <section className="game-stage-card" id="stage-3">
+            <div className="game-stage-card-header">
+              <div className="game-stage-badge badge-purple">
+                <span>STAGE #03 • INSCRIPTION SPELL</span>
+              </div>
+            </div>
+
+            <div className="game-stage-grid">
+              <div className="game-stage-info">
+                <h2 className="game-stage-title">Sematkan Kartu Ucapan Spesial</h2>
+                <p className="game-stage-desc">
+                  Beri sentuhan emosional dengan menuliskan pesan manis yang otomatis terpasang pada buket:
+                </p>
+
+                <div className="game-stage-bullets">
+                  <div className="game-stage-bullet-item">
+                    <span className="bullet-dot dot-purple">✦</span>
+                    <div>
+                      <strong>Nama Penerima & Pengirim:</strong> Cantumkan nama lengkap atau panggilan romantis kesayangan.
+                    </div>
+                  </div>
+                  <div className="game-stage-bullet-item">
+                    <span className="bullet-dot dot-purple">✦</span>
+                    <div>
+                      <strong>Kata Ucapan Estetik:</strong> Ketik pesan sendiri atau gunakan template instan (Wisuda, Ulang Tahun, LDR, Anniversary).
+                    </div>
+                  </div>
+                  <div className="game-stage-bullet-item">
+                    <span className="bullet-dot dot-purple">✦</span>
+                    <div>
+                      <strong>Font Kaligrafi Otomatis:</strong> Desain kartu bergaya kaligrafi elegan langsung tertancap di rangkaian bunga buketmu.
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="game-stage-visual">
+                <div className="game-stage-visual-box">
+                  <div className="game-card-mockup-frame">
+                    <div className="mockup-ribbon">💌 KARTU UCAPAN</div>
+                    <div className="mockup-to"><strong>Untuk:</strong> Sarah Az-Zahra</div>
+                    <p className="mockup-msg">&ldquo;Selamat atas wisudamu! Semoga setiap langkah barumu dipenuhi keberkahan & kebahagiaan.&rdquo;</p>
+                    <div className="mockup-from"><strong>Dari:</strong> Lutfi & Keluarga 💕</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* ══════════ STAGE 4: CEK DESAIN & HARMONISASI ══════════ */}
+          <section className="game-stage-card" id="stage-4">
+            <div className="game-stage-card-header">
+              <div className="game-stage-badge badge-amber">
+                <span>STAGE #04 • QUALITY CHECK</span>
+              </div>
+            </div>
+
+            <div className="game-stage-grid">
+              <div className="game-stage-info">
+                <h2 className="game-stage-title">Periksa Kerapian & Pratinjau</h2>
+                <p className="game-stage-desc">
+                  Sebelum melakukan ekspor akhir, cek kembali komposisi karyamu secara menyeluruh:
+                </p>
+
+                <div className="game-stage-bullets">
+                  <div className="game-stage-bullet-item">
+                    <CheckCircle2 size={16} className="text-emerald-500 shrink-0 mt-0.5" />
+                    <div>
+                      <strong>Keseimbangan Warna:</strong> Pastikan kombinasi warna bunga utama dan dedaunan saling melengkapi.
+                    </div>
+                  </div>
+                  <div className="game-stage-bullet-item">
+                    <CheckCircle2 size={16} className="text-emerald-500 shrink-0 mt-0.5" />
+                    <div>
+                      <strong>Bebas Typo:</strong> Pastikan ejaan nama dan kalimat doa di kartu ucapan sudah sempurna.
+                    </div>
+                  </div>
+                  <div className="game-stage-bullet-item">
+                    <CheckCircle2 size={16} className="text-emerald-500 shrink-0 mt-0.5" />
+                    <div>
+                      <strong>Bisa Diedit Ulang:</strong> Kapan pun ingin merombak posisi bunga, desain tidak akan hilang dan bisa diedit bebas.
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="game-stage-visual">
+                <div className="game-stage-visual-box">
+                  <div className="visual-img-container">
+                    <Image 
+                      src="/images/tutorial/step4_preview.png" 
+                      alt="Pratinjau Desain" 
+                      width={280} 
+                      height={240} 
+                      className="game-tutorial-img"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* ══════════ STAGE 5: EKSPOR GAMBAR ULTRA HD 4K ══════════ */}
+          <section className="game-stage-card" id="stage-5">
+            <div className="game-stage-card-header">
+              <div className="game-stage-badge badge-emerald">
+                <span>STAGE #05 • MYTHIC EXPORT</span>
+              </div>
+            </div>
+
+            <div className="game-stage-grid">
+              <div className="game-stage-info">
+                <h2 className="game-stage-title">Unduh Hasil Desain Jernih HD & Kirim</h2>
+                <p className="game-stage-desc">
+                  Tahap pamungkas! Simpan karya seni buketmu ke galeri HP / laptop dengan resolusi super tajam:
+                </p>
+
+                <div className="game-stage-bullets">
+                  <div className="game-stage-bullet-item">
+                    <span className="bullet-dot dot-emerald">✦</span>
+                    <div>
+                      <strong>Download Gratis Tanpa Batas:</strong> Simpan file PNG/JPG kualitas HD jernih tanpa watermark langsung ke perangkatmu.
+                    </div>
+                  </div>
+                  <div className="game-stage-bullet-item">
+                    <span className="bullet-dot dot-emerald">✦</span>
+                    <div>
+                      <strong>Jadikan Kado Virtual:</strong> Kirimkan gambar buket bunga cantik ini kepada pasangan, sahabat, atau orang tua sebagai kejutan manis.
+                    </div>
+                  </div>
+                  <div className="game-stage-bullet-item">
+                    <span className="bullet-dot dot-emerald">✦</span>
+                    <div>
+                      <strong>Cetak Fisik Lewat WhatsApp:</strong> Kirim desain buketmu ke admin florist Laysa, dan buket aslinya akan dirangkai persis sesuai desainmu!
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="game-stage-visual">
+                <div className="game-stage-visual-box">
+                  <div className="game-export-showcase">
+                    <div className="export-aura-ring" />
+                    <Image src="/images/home.png" alt="Hasil Buket HD" width={140} height={140} className="export-thumb-img" />
+                    <div className="export-pill-btn">
+                      <Download size={13} />
+                      <span>Unduh HD Gratis</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* ══════════ GAME BOSS BANNER / CTA AKHIR ══════════ */}
+          <div className="game-tutorial-cta-banner">
+            <div className="cta-banner-content">
+              <span className="cta-banner-badge">🏆 TUTORIAL COMPLETED</span>
+              <h2 className="cta-banner-title">Siap Merangkai Buket Impianmu Sekarang?</h2>
+              <p className="cta-banner-desc">
+                Semua kontrol dan trik sudah kamu kuasai. Waktunya meluncur ke studio dan ciptakan karya terindahmu!
+              </p>
               
-              <div className="step-points-compact">
-                <div className="point-row">
-                  <span className="point-bullet">•</span>
-                  <div>
-                    <strong>Korean Noir Signature</strong>: Wrap hitam matte bersayap origami dengan pita garis hitam-putih mewah.
-                  </div>
-                </div>
-                <div className="point-row highlight-row">
-                  <span className="point-bullet">•</span>
-                  <div>
-                    <strong>Korean Golden Kraft</strong>: Wrap cokelat kraft keemasan hangat bergaya vintage klasik (<em>Paling Favorit</em>).
-                  </div>
-                </div>
-                <div className="point-row">
-                  <span className="point-bullet">•</span>
-                  <div>
-                    <strong>Korean Pastel Rose</strong>: Wrap pink pastel lembut bernuansa manis & romantis.
-                  </div>
-                </div>
-              </div>
-            </div>
+              <div className="cta-banner-actions">
+                <button
+                  type="button"
+                  id="btn-tutorial-start"
+                  className="game-btn-massive"
+                  onClick={() => {
+                    playSfx('select');
+                    setIsCountModalOpen(true);
+                  }}
+                >
+                  <Sparkles size={20} className="game-sparkle-spin" />
+                  <span>MULAI BUAT BUCKET</span>
+                  <ArrowRight size={20} className="game-arrow-pulse" />
+                </button>
 
-            <div className="step-visual-compact">
-              <div className="size-preview-mini-grid">
-                <div className="size-mini-box">
-                  <Image src="/images/bucket/bucket-1.png" alt="Korean Noir" width={80} height={80} />
-                  <span>Noir (Hitam)</span>
-                </div>
-                <div className="size-mini-box active">
-                  <Image src="/images/bucket/bucket-2.png" alt="Golden Kraft" width={90} height={90} />
-                  <span>Kraft (Cokelat)</span>
-                  <span className="badge-pop">Favorit</span>
-                </div>
-                <div className="size-mini-box">
-                  <Image src="/images/bucket/bucket-3.png" alt="Pastel Rose" width={80} height={80} />
-                  <span>Rose (Pink)</span>
-                </div>
+                <Link
+                  href="/menu"
+                  className="game-hud-back-btn"
+                  onClick={() => playSfx('hover')}
+                >
+                  <ArrowLeft size={16} />
+                  <span>Kembali ke Menu Game</span>
+                </Link>
               </div>
-            </div>
-          </div>
-
-          {/* LANGKAH 2 */}
-          <div className="step-card-compact" id="step-2">
-            <div className="step-badge-circle">2</div>
-            <div className="step-main-content">
-              <h2 className="step-heading-compact">Pilih Bunga & Geser Bebas di Kanvas</h2>
-              <p className="step-lead">Kamu bisa mengatur posisi setiap bunga secara bebas (manual):</p>
-              
-              <div className="step-points-compact">
-                <div className="point-row">
-                  <span className="point-bullet">1.</span>
-                  <div>
-                    <strong>Pilih Bunga</strong>: Klik bunga dari katalog (Mawar, Lily, Tulip, Baby&apos;s Breath, Eucalyptus, dll).
-                  </div>
-                </div>
-                <div className="point-row">
-                  <span className="point-bullet">2.</span>
-                  <div>
-                    <strong>Geser Manual</strong>: Klik & <strong>tahan (drag) bunga</strong> langsung di kanvas ke posisi mana pun yang kamu mau.
-                  </div>
-                </div>
-                <div className="point-row">
-                  <span className="point-bullet">3.</span>
-                  <div>
-                    <strong>Atur Layer & Posisi</strong>: Gunakan tombol <strong>Maju / Mundur</strong> agar tumpukan bunga rapi, dan tombol <strong>Putar</strong> untuk memiringkan bunga.
-                  </div>
-                </div>
-              </div>
-
-              <div className="quick-tip-box">
-                💡 <strong>Tips Cepat:</strong> Taruh bunga besar (Mawar/Lily) di tengah, lalu isi pinggirnya dengan Baby&apos;s Breath dan dedaunan agar buket kelihatan rimbun.
-              </div>
-            </div>
-
-            <div className="step-visual-compact">
-              <div className="visual-compact-frame">
-                <Image 
-                  src="/images/tutorial/step2_arrange.png" 
-                  alt="Geser Bunga Manual" 
-                  width={340} 
-                  height={300} 
-                  className="compact-img"
-                />
-                <div className="compact-img-tag">
-                  <Move size={14} />
-                  <span>Bisa digeser bebas sesukamu</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* LANGKAH 3 */}
-          <div className="step-card-compact" id="step-3">
-            <div className="step-badge-circle">3</div>
-            <div className="step-main-content">
-              <h2 className="step-heading-compact">Tulis Kartu Ucapan</h2>
-              <p className="step-lead">Sematkan pesan manis untuk penerima:</p>
-              
-              <div className="step-points-compact">
-                <div className="point-row">
-                  <span className="point-bullet">•</span>
-                  <div>
-                    <strong>Nama Penerima & Pengirim</strong>: Tuliskan nama lengkap atau panggilan sayang.
-                  </div>
-                </div>
-                <div className="point-row">
-                  <span className="point-bullet">•</span>
-                  <div>
-                    <strong>Isi Pesan</strong>: Ketik ucapan sendiri atau pilih <strong>template instan</strong> (Wisuda, Ultah, Anniversary).
-                  </div>
-                </div>
-                <div className="point-row">
-                  <span className="point-bullet">•</span>
-                  <div>
-                    <strong>Kartu Otomatis Terpasang</strong>: Desain kartu akan langsung muncul di buket bunga.
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="step-visual-compact">
-              <div className="compact-card-mockup">
-                <div className="mockup-header-tag">💌 Kartu Ucapan</div>
-                <div className="mockup-line"><strong>Untuk:</strong> Sarah Az-Zahra</div>
-                <p className="mockup-text">&ldquo;Happy graduation! Sukses selalu untuk langkah barumu.&rdquo;</p>
-                <div className="mockup-line"><strong>Dari:</strong> Lutfi & Keluarga</div>
-              </div>
-            </div>
-          </div>
-
-          {/* LANGKAH 4 */}
-          <div className="step-card-compact" id="step-4">
-            <div className="step-badge-circle">4</div>
-            <div className="step-main-content">
-              <h2 className="step-heading-compact">Cek Pratinjau Desain</h2>
-              <p className="step-lead">Periksa kembali hasil karyamu sebelum selesai:</p>
-              
-              <div className="step-points-compact">
-                <div className="point-row">
-                  <span className="point-check">✓</span>
-                  <div><strong>Kerapian Bunga</strong>: Pastikan susunan warna dan tinggi bunga sudah seimbang.</div>
-                </div>
-                <div className="point-row">
-                  <span className="point-check">✓</span>
-                  <div><strong>Teks Kartu</strong>: Pastikan nama dan pesan ucapan sudah benar bebas dari salah ketik.</div>
-                </div>
-                <div className="point-row">
-                  <span className="point-check">✓</span>
-                  <div><strong>Bisa Diedit Kembali</strong>: Kalau mau ubah posisi bunga, tinggal klik tombol <em>Kembali</em>. Desain tidak akan hilang.</div>
-                </div>
-              </div>
-            </div>
-
-            <div className="step-visual-compact">
-              <div className="visual-compact-frame">
-                <Image 
-                  src="/images/tutorial/step4_preview.png" 
-                  alt="Pratinjau Buket" 
-                  width={340} 
-                  height={300} 
-                  className="compact-img"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* LANGKAH 5 */}
-          <div className="step-card-compact" id="step-5">
-            <div className="step-badge-circle">5</div>
-            <div className="step-main-content">
-              <h2 className="step-heading-compact">Pratinjau & Unduh Desain HD</h2>
-              <p className="step-lead">Tahap akhir untuk memeriksa hasil rangkaian dan menyimpan desain:</p>
-              
-              <div className="step-points-compact">
-                <div className="point-row">
-                  <span className="point-bullet">1.</span>
-                  <div>
-                    <strong>Periksa Kerapian</strong>: Pastikan posisi bunga, sudut rotasi, dan pesan kartu ucapan sudah sempurna.
-                  </div>
-                </div>
-                <div className="point-row">
-                  <span className="point-bullet">2.</span>
-                  <div>
-                    <strong>Unduh Gambar (PNG/JPG)</strong>: Klik tombol <strong>Unduh Desain</strong> untuk menyimpan gambar berkualitas tinggi (HD) tanpa watermark.
-                  </div>
-                </div>
-                <div className="point-row">
-                  <span className="point-bullet">3.</span>
-                  <div>
-                    <strong>Kirim ke WhatsApp Florist</strong>: Kirim gambar hasil download ke WhatsApp admin kami, dan florist kami akan langsung merangkainya sesuai desainmu!
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="step-visual-compact">
-              <div className="compact-preview-box">
-                <div className="compact-preview-ring">
-                  <Sparkles size={16} className="compact-rotate-icon text-amber-500" />
-                  <span>Hasil Desain HD</span>
-                </div>
-                <Image src="/images/home.png" alt="Buket Bunga Laysa" width={180} height={180} className="compact-bouquet" />
-                <div className="compact-dl-btn">
-                  <Download size={14} />
-                  <span>Unduh Desain (PNG)</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* ─── BOTTOM CTA RINGKAS ─── */}
-          <div className="tutorial-cta-box">
-            <h3>Siap Merangkai Buketmu Sekarang?</h3>
-            <p>Langsung coba aplikasinya, pilih bunganya, dan atur sesuka hatimu.</p>
-            <div className="cta-box-buttons">
-              <Link href="/designer" className="btn-cta-primary" id="btn-tutorial-start-bottom">
-                <span>MULAI RANCANG BUKET</span>
-                <ArrowRight size={17} />
-              </Link>
-              <Link href="/" className="btn-cta-secondary">
-                <span>Kembali ke Beranda</span>
-              </Link>
             </div>
           </div>
 
         </div>
       </main>
+
+      {/* ── 6. BOTTOM GAME HUD FOOTER ── */}
+      <footer className="game-bottom-hud" aria-label="Game Tutorial Status">
+        <div className="game-hud-status">
+          <span className="game-status-dot" />
+          <span>FLORIST ACADEMY: READY • 5/5 STAGES</span>
+        </div>
+        <div className="game-hud-hint">
+          <span>✨ TEKAN &quot;MULAI BUAT BUCKET&quot; UNTUK MEMULAI MERANGKAI KARYAMU ✨</span>
+        </div>
+        <div className="game-hud-version">
+          <span>VER 2.5 • LAYSA STUDIO</span>
+        </div>
+      </footer>
+
+      {/* ── 7. FLOWER COUNT MODAL (KETIKA KLIK MULAI) ── */}
+      <FlowerCountModal
+        isOpen={isCountModalOpen}
+        onClose={() => setIsCountModalOpen(false)}
+        onConfirm={handleConfirmFlowerCount}
+        canDismiss={true}
+      />
     </div>
   );
 }

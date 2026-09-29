@@ -199,6 +199,12 @@ export interface DesignContextType {
   isPremiumUnlocked: boolean;
   /** Nama pengguna yang mengaktifkan kode VIP */
   premiumUserName?: string;
+  /** Tier paket VIP aktif: daily, weekly, lifetime */
+  premiumTier?: 'daily' | 'weekly' | 'lifetime' | null;
+  /** Tanggal kedaluwarsa VIP (ISO string) jika paket harian/mingguan */
+  premiumExpiresAt?: string | null;
+  /** Status apakah perangkat ini memiliki akses ke Fitur Kebun Bunga Streak */
+  hasGardenAccess: boolean;
   /** Buka akses premium dengan nama dan 1 kode voucher / kode akses */
   unlockPremium: (code: string, userName?: string) => Promise<{ success: boolean; message: string; userName?: string }>;
   /** Reset / Hapus status VIP dari perangkat ini (keluar VIP) */

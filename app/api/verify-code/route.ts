@@ -47,14 +47,58 @@ export async function POST(req: Request) {
     // ── Verifikasi dengan Supabase ──
     if (supabaseClient) {
       try {
-        const { data: codeData, error } = await supabaseClient
+        let rawCodeData: any = null;
+        let error: any = null;
+
+        const initialRes = await supabaseClient
           .from('access_codes')
-          .select('id, code, is_active, max_uses, used_count, used_by_name, max_devices')
+          .select('id, code, is_active, max_uses, used_count, used_by_name, max_devices, notes, claimed_at, tier, duration_days, expires_at, has_garden_access')
           .eq('code', cleanCode)
           .maybeSingle();
 
+        rawCodeData = initialRes.data;
+        error = initialRes.error;
+
+        // Jika kolom baru belum ada di remote DB
+        if (error && (error.code === 'PGRST204' || error.message?.includes('column'))) {
+          const retry = await supabaseClient
+            .from('access_codes')
+            .select('id, code, is_active, max_uses, used_count, used_by_name, max_devices, notes, claimed_at')
+            .eq('code', cleanCode)
+            .maybeSingle();
+          rawCodeData = retry.data;
+          error = retry.error;
+        }
+
         if (error) {
           console.error('[Supabase Error Verify Code]:', error.message);
+        }
+
+        let codeData: any = null;
+        if (rawCodeData) {
+          let tier: 'daily' | 'weekly' | 'lifetime' = 'lifetime';
+          if (rawCodeData.tier === 'daily' || rawCodeData.tier === 'weekly' || rawCodeData.tier === 'lifetime') {
+            tier = rawCodeData.tier;
+          } else if (rawCodeData.notes?.includes('[TIER:daily]') || cleanCode.startsWith('DAY-')) {
+            tier = 'daily';
+          } else if (rawCodeData.notes?.includes('[TIER:weekly]') || cleanCode.startsWith('WEEK-')) {
+            tier = 'weekly';
+          }
+
+          let expiresAt = rawCodeData.expires_at || null;
+          if (!expiresAt && rawCodeData.notes?.includes('[EXP:')) {
+            const match = rawCodeData.notes.match(/\[EXP:([^\]]+)\]/);
+            if (match) expiresAt = match[1];
+          }
+
+          const hasGardenAccess = rawCodeData.has_garden_access ?? (tier === 'lifetime');
+
+          codeData = {
+            ...rawCodeData,
+            tier,
+            expires_at: expiresAt,
+            has_garden_access: hasGardenAccess,
+          };
         }
 
         // Jika kode tidak ditemukan di DB
@@ -123,14 +167,28 @@ export async function POST(req: Request) {
 
           // ── SCENARIO A: checkSession (Validasi berkala sesi VIP aktif) ──
           if (checkSession) {
-            // 1. Kode dinonaktifkan admin
-            if (!codeData.is_active) {
+            // 0. Cek masa aktif (Expiry Check) untuk paket harian / mingguan
+            if (codeData.expires_at) {
+            const isExpired = new Date(codeData.expires_at).getTime() < Date.now();
+            if (isExpired) {
               return NextResponse.json({
                 valid: false,
+                expired: true,
                 revoked: true,
-                message: 'Kode akses telah dinonaktifkan oleh admin.',
+                tier: codeData.tier || 'daily',
+                message: 'Masa aktif kode VIP ini telah berakhir.',
               });
             }
+          }
+
+          // 1. Kode dinonaktifkan admin
+          if (!codeData.is_active) {
+            return NextResponse.json({
+              valid: false,
+              revoked: true,
+              message: 'Kode akses telah dinonaktifkan oleh admin.',
+            });
+          }
 
             // 2. Kode di-reset admin (used_count 0 dan nama null)
             if (codeData.used_count === 0 && !codeData.used_by_name) {
@@ -173,12 +231,28 @@ export async function POST(req: Request) {
               revoked: false,
               code: cleanCode,
               userName: codeData.used_by_name || cleanName || existingDevice?.user_name,
+              tier: codeData.tier || 'lifetime',
+              expiresAt: codeData.expires_at,
+              hasGardenAccess: codeData.has_garden_access ?? (codeData.tier === 'lifetime' || !codeData.tier),
               message: 'Sesi VIP aktif.',
             });
           }
 
           // ── SCENARIO B: checkOnly (Langkah 1 modal input kode) ──
           if (checkOnly || !cleanName) {
+            // Cek kedaluwarsa pada checkOnly
+            if (codeData.expires_at) {
+              const isExpired = new Date(codeData.expires_at).getTime() < Date.now();
+              if (isExpired) {
+                return NextResponse.json({
+                  valid: false,
+                  expired: true,
+                  tier: codeData.tier || 'daily',
+                  message: 'Masa aktif kode VIP ini telah berakhir.',
+                });
+              }
+            }
+
             if (!codeData.is_active) {
               return NextResponse.json({
                 valid: false,
@@ -197,6 +271,10 @@ export async function POST(req: Request) {
               });
             }
 
+            const tier = codeData.tier || 'lifetime';
+            const expiresAt = codeData.expires_at;
+            const hasGardenAccess = codeData.has_garden_access ?? (tier === 'lifetime');
+
             if (isKnownDevice) {
               return NextResponse.json({
                 valid: true,
@@ -207,6 +285,9 @@ export async function POST(req: Request) {
                 registeredName: existingDevice.user_name || codeData.used_by_name,
                 deviceCount: totalDevices,
                 maxDevices,
+                tier,
+                expiresAt,
+                hasGardenAccess,
                 message: 'Perangkat ini sudah terdaftar. Masukkan nama untuk melanjutkan.',
               });
             }
@@ -222,6 +303,9 @@ export async function POST(req: Request) {
                 slotNumber: 1,
                 deviceCount: totalDevices,
                 maxDevices,
+                tier,
+                expiresAt,
+                hasGardenAccess,
                 message: 'Kode akses valid! Anda adalah pendaftar pertama (Pemilik Utama). Silakan masukkan nama Anda.',
               });
             } else {
@@ -235,12 +319,27 @@ export async function POST(req: Request) {
                 slotNumber: totalDevices + 1,
                 deviceCount: totalDevices,
                 maxDevices,
+                tier,
+                expiresAt,
+                hasGardenAccess,
                 message: `Kode valid milik ${codeData.used_by_name || 'Pemilik'}. Masukkan nama perangkat ini untuk bergabung (Slot ${totalDevices + 1} dari ${maxDevices}).`,
               });
             }
           }
 
           // ── SCENARIO C: Langkah 2 Aktivasi dengan Nama ──
+          if (codeData.expires_at) {
+            const isExpired = new Date(codeData.expires_at).getTime() < Date.now();
+            if (isExpired) {
+              return NextResponse.json({
+                valid: false,
+                expired: true,
+                tier: codeData.tier || 'daily',
+                message: 'Masa aktif kode VIP ini telah berakhir.',
+              });
+            }
+          }
+
           if (!codeData.is_active) {
             return NextResponse.json({
               valid: false,
@@ -258,6 +357,7 @@ export async function POST(req: Request) {
           }
 
           // ── Catat / update device di tabel code_devices ──
+          let calculatedExpiry: string | null = codeData.expires_at || null;
           try {
             if (isKnownDevice) {
               // Update perangkat yang sudah ada
@@ -348,6 +448,7 @@ export async function POST(req: Request) {
                 console.error('[Insert with is_owner failed]:', errWithOwner.message);
               }
 
+              calculatedExpiry = codeData.expires_at || null;
               if (inserted) {
                 // Update used_count dan nama pemilik di access_codes
                 const updatePayload: Record<string, any> = {
@@ -357,11 +458,33 @@ export async function POST(req: Request) {
                 if (isOwnerNow) {
                   updatePayload.used_by_name = cleanName;
                   updatePayload.claimed_at = nowISO;
+
+                  // Hitung tanggal kedaluwarsa jika paket harian atau mingguan
+                  const tier = codeData.tier || 'lifetime';
+                  if (tier === 'daily') {
+                    calculatedExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+                    updatePayload.expires_at = calculatedExpiry;
+                  } else if (tier === 'weekly') {
+                    calculatedExpiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+                    updatePayload.expires_at = calculatedExpiry;
+                  }
                 }
-                await supabaseClient
+                const { error: updErr } = await supabaseClient
                   .from('access_codes')
                   .update(updatePayload)
                   .eq('id', codeData.id);
+
+                if (updErr && (updErr.code === 'PGRST204' || updErr.message?.includes('expires_at'))) {
+                  delete updatePayload.expires_at;
+                  if (calculatedExpiry) {
+                    const existingNotes = codeData.notes || '';
+                    updatePayload.notes = `${existingNotes} [EXP:${calculatedExpiry}]`.trim();
+                  }
+                  await supabaseClient
+                    .from('access_codes')
+                    .update(updatePayload)
+                    .eq('id', codeData.id);
+                }
               }
             }
           } catch (dbErr) {
@@ -375,6 +498,9 @@ export async function POST(req: Request) {
             isOwner: isKnownDevice ? Boolean(existingDevice?.is_owner) : isFirstDevice,
             deviceCount: isKnownDevice ? totalDevices : totalDevices + 1,
             maxDevices,
+            tier: codeData.tier || 'lifetime',
+            expiresAt: codeData.expires_at || calculatedExpiry,
+            hasGardenAccess: codeData.has_garden_access ?? (codeData.tier === 'lifetime' || !codeData.tier),
             message: isFirstDevice
               ? `Selamat datang, ${cleanName}! Anda resmi terdaftar sebagai Pemilik Utama VIP.`
               : `Selamat datang, ${cleanName}! Perangkat ini berhasil terhubung ke akses VIP.`,

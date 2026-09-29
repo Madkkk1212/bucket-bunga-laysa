@@ -7,6 +7,7 @@ import Navbar from '@/components/layout/Navbar';
 import HeroActions from '@/components/home/HeroActions';
 import { DesignProvider } from '@/context/DesignContext';
 import MobileDashboard from './mobile/MobileDashboard';
+import HomeBackgroundVideo from './HomeBackgroundVideo';
 
 export default function HomeClient() {
   const [viewMode, setViewMode] = useState<'mobile' | 'desktop'>('mobile');
@@ -41,6 +42,9 @@ export default function HomeClient() {
       ) : (
         /* ─── DESKTOP VIEW (ACCESSIBLE VIA SWITCHER) ─── */
         <div className="home-page theme-pink relative">
+          {/* ── Background Video Cinematic (home.mp4) ── */}
+          <HomeBackgroundVideo />
+
           {/* Floating Switcher Back to Mobile */}
           <div className="fixed top-4 right-4 z-50">
             <button

@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 70" width="60" height="70" fill="none">
+  <!-- Moist Soil Mound -->
+  <ellipse cx="30" cy="62" rx="20" ry="6" fill="#3e230f" opacity="0.8" />
+  <!-- Tender Sprout Stem -->
+  <path d="M30 62 Q29 48 30 34" stroke="#16a34a" stroke-width="3.5" stroke-linecap="round"/>
+  <!-- Left Baby Cotyledon Leaf -->
+  <path d="M30 46 C16 44 12 30 22 28 C30 34 30 44 30 46 Z" fill="#22c55e" stroke="#15803d" stroke-width="1.2"/>
+  <path d="M20 34 Q25 38 30 46" stroke="#86efac" stroke-width="1" stroke-linecap="round"/>
+  <!-- Right Baby Cotyledon Leaf -->
+  <path d="M30 44 C44 42 48 28 38 26 C30 32 30 42 30 44 Z" fill="#4ade80" stroke="#15803d" stroke-width="1.2"/>
+  <path d="M40 32 Q35 36 30 44" stroke="#bbf7d0" stroke-width="1" stroke-linecap="round"/>
+  <!-- Tiny Emerging Bud -->
+  <circle cx="30" cy="28" r="4.5" fill="#f43f5e" stroke="#ffffff" stroke-width="1"/>
+  <circle cx="28.5" cy="26.5" r="1.5" fill="#ffffff" opacity="0.8"/>
+  <path d="M26 31 Q30 34 34 31" stroke="#15803d" stroke-width="1" fill="none"/>
+</svg>

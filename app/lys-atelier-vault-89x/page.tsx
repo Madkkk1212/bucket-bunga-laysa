@@ -44,6 +44,10 @@ interface AccessCodeItem {
   notes?: string | null;
   created_at: string;
   claimed_at?: string | null;
+  tier?: 'daily' | 'weekly' | 'lifetime';
+  duration_days?: number;
+  expires_at?: string | null;
+  has_garden_access?: boolean;
 }
 
 interface DeviceItem {
@@ -78,6 +82,26 @@ function parseDeviceInfo(ua?: string | null): { browser: string; os: string; ful
   return { browser, os, full: `${browser} (${os})` };
 }
 
+interface TierPricingItem {
+  key: 'daily' | 'weekly' | 'lifetime';
+  name: string;
+  durationLabel: string;
+  durationDays: number;
+  basePrice: number;
+  promoPrice: number;
+  isPromoActive: boolean;
+  isActive: boolean;
+  badge?: string;
+  gardenAccess: boolean;
+  features: string[];
+}
+
+interface MultiTierPricingState {
+  daily: TierPricingItem;
+  weekly: TierPricingItem;
+  lifetime: TierPricingItem;
+}
+
 interface PricingState {
   basePrice: number;
   isPromoActive: boolean;
@@ -103,6 +127,7 @@ export default function LaysaCleanPortalPage() {
 
   // Form Create Code
   const [newCode, setNewCode] = useState<string>('');
+  const [newTier, setNewTier] = useState<'daily' | 'weekly' | 'lifetime'>('lifetime');
   const [newMaxUses, setNewMaxUses] = useState<number>(1);
   const [newMaxDevices, setNewMaxDevices] = useState<number>(5);
   const [newNotes, setNewNotes] = useState<string>('');
@@ -117,10 +142,71 @@ export default function LaysaCleanPortalPage() {
   const [editDeviceLimitVal, setEditDeviceLimitVal] = useState<number>(5);
 
   // Pricing State
+  const [selectedPricingTier, setSelectedPricingTier] = useState<'daily' | 'weekly' | 'lifetime'>('lifetime');
+  const [multiTierPricing, setMultiTierPricing] = useState<MultiTierPricingState>({
+    daily: {
+      key: 'daily',
+      name: 'Paket Harian (24 Jam)',
+      durationLabel: '24 Jam',
+      durationDays: 1,
+      basePrice: 10000,
+      promoPrice: 5000,
+      isPromoActive: true,
+      isActive: true,
+      badge: 'Hemat 50%',
+      gardenAccess: false,
+      features: [
+        'Buka seluruh 100+ koleksi bunga & pembungkus buket',
+        'Masa aktif 24 jam bebas rangkai & unduh sepuasnya',
+        'Bisa terhubung hingga 5 perangkat bersamaan',
+        'Unduh hasil buket jernih beresolusi HD',
+        'Akses instan tanpa ribet daftar akun',
+      ],
+    },
+    weekly: {
+      key: 'weekly',
+      name: 'Paket Mingguan (7 Hari)',
+      durationLabel: '7 Hari',
+      durationDays: 7,
+      basePrice: 25000,
+      promoPrice: 12000,
+      isPromoActive: true,
+      isActive: true,
+      badge: 'Hemat 52%',
+      gardenAccess: false,
+      features: [
+        'Buka seluruh 100+ koleksi bunga & pembungkus buket',
+        'Masa aktif 7 hari penuh (Ideal untuk kado, wisuda & ultah)',
+        'Bebas edit & simpan berbagai rancangan buket kapan saja',
+        'Bisa terhubung hingga 5 perangkat bersamaan',
+        'Jauh lebih hemat dibanding beli paket harian berulang kali',
+      ],
+    },
+    lifetime: {
+      key: 'lifetime',
+      name: 'Paket Selamanya (VIP Sultan)',
+      durationLabel: 'Selamanya',
+      durationDays: 0,
+      basePrice: 85000,
+      promoPrice: 25000,
+      isPromoActive: true,
+      isActive: true,
+      badge: '👑 Terpopuler & Lengkap',
+      gardenAccess: true,
+      features: [
+        'Akses VIP permanen SELAMANYA (sekali bayar tanpa langganan)',
+        '🌸 EKSKLUSIF: Buka Fitur Kebun Bunga Harian Streak 🔥 (Solo / Pasangan)',
+        'Ekspor Kualitas Tertinggi Ultra HD 4K & Stiker WA (Transparan)',
+        'Kartu Ucapan Kaligrafi Eksklusif & Ornamen Pita Mewah',
+        'Bisa terhubung hingga 5 perangkat bersama keluarga / pasangan',
+        'Akses gratis ke seluruh varian bunga & buket baru di masa depan',
+      ],
+    },
+  });
   const [pricing, setPricing] = useState<PricingState>({
-    basePrice: 15000,
+    basePrice: 85000,
     isPromoActive: true,
-    promoPrice: 10000,
+    promoPrice: 25000,
     promoLabel: 'Promo Terbatas',
   });
   const [isSavingPricing, setIsSavingPricing] = useState<boolean>(false);
@@ -133,6 +219,7 @@ export default function LaysaCleanPortalPage() {
   // Copy Feedback
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [copiedSql, setCopiedSql] = useState<boolean>(false);
+  const [copiedBroadcastKey, setCopiedBroadcastKey] = useState<string | null>(null);
 
   // ── 1. Cek Sesi Cookie Saat Pertama Kali Dimuat ──
   useEffect(() => {
@@ -232,11 +319,18 @@ export default function LaysaCleanPortalPage() {
       const data = await res.json();
       if (data.success && data.pricing) {
         setPricing({
-          basePrice: data.pricing.basePrice ?? 15000,
+          basePrice: data.pricing.basePrice ?? 85000,
           isPromoActive: Boolean(data.pricing.isPromoActive),
-          promoPrice: data.pricing.promoPrice ?? 10000,
+          promoPrice: data.pricing.promoPrice ?? 25000,
           promoLabel: data.pricing.promoLabel || 'Promo Terbatas',
         });
+        if (data.pricing.tiers) {
+          setMultiTierPricing((prev) => ({
+            daily: { ...prev.daily, ...(data.pricing.tiers.daily || {}) },
+            weekly: { ...prev.weekly, ...(data.pricing.tiers.weekly || {}) },
+            lifetime: { ...prev.lifetime, ...(data.pricing.tiers.lifetime || {}) },
+          }));
+        }
       }
     } catch (err) {
       console.error('Fetch pricing error:', err);
@@ -276,7 +370,8 @@ export default function LaysaCleanPortalPage() {
     for (let i = 0; i < 6; i++) {
       rand += chars.charAt(Math.floor(Math.random() * chars.length));
     }
-    setNewCode(`VIP-${rand}`);
+    const prefix = newTier === 'daily' ? 'DAY' : newTier === 'weekly' ? 'WEEK' : 'VIP';
+    setNewCode(`${prefix}-${rand}`);
   };
 
   // Buat kode baru
@@ -300,13 +395,14 @@ export default function LaysaCleanPortalPage() {
           max_uses: newMaxUses,
           max_devices: newMaxDevices,
           notes: newNotes.trim() || undefined,
+          tier: newTier,
         }),
       });
 
       const data = await res.json();
 
       if (data.success) {
-        setFormMsg({ text: `Kode ${newCode.toUpperCase()} berhasil dibuat!`, type: 'success' });
+        setFormMsg({ text: `Kode ${newCode.toUpperCase()} (${newTier}) berhasil dibuat!`, type: 'success' });
         setNewCode('');
         setNewNotes('');
         setNewMaxUses(1);
@@ -428,12 +524,13 @@ export default function LaysaCleanPortalPage() {
     }
   };
 
-  // Perhitungan otomatis diskon persen & hemat rupiah
+  // Perhitungan otomatis diskon persen & hemat rupiah untuk tier yang sedang dipilih di admin
+  const currentTierData = multiTierPricing[selectedPricingTier];
   const discountStats = useMemo(() => {
-    const base = Math.max(0, Number(pricing.basePrice) || 0);
-    const promo = Math.max(0, Number(pricing.promoPrice) || 0);
+    const base = Math.max(0, Number(currentTierData.basePrice) || 0);
+    const promo = Math.max(0, Number(currentTierData.promoPrice) || 0);
 
-    if (!pricing.isPromoActive || promo >= base || base === 0) {
+    if (!currentTierData.isPromoActive || promo >= base || base === 0) {
       return {
         hasDiscount: false,
         percent: 0,
@@ -451,35 +548,41 @@ export default function LaysaCleanPortalPage() {
       percent: pct,
       savingRupiah: saving,
       finalPrice: promo,
-      badge: pricing.promoLabel.trim() || `Diskon ${pct}%`,
+      badge: currentTierData.badge?.trim() || `Diskon ${pct}%`,
     };
-  }, [pricing]);
+  }, [currentTierData]);
 
-  // Handler ubah persen -> otomatis hitung promoPrice
+  // Handler ubah persen -> otomatis hitung promoPrice pada tier aktif
   const handleDiscountPercentChange = (percentVal: number) => {
     const pct = Math.max(0, Math.min(99, percentVal));
-    const base = Number(pricing.basePrice) || 10000;
+    const base = Number(currentTierData.basePrice) || 10000;
     const computedPromo = Math.round((base * (100 - pct)) / 100);
-    setPricing((prev) => ({
+    setMultiTierPricing((prev) => ({
       ...prev,
-      promoPrice: computedPromo,
-      promoLabel: pct > 0 ? `Diskon ${pct}%` : 'Promo Terbatas',
+      [selectedPricingTier]: {
+        ...prev[selectedPricingTier],
+        promoPrice: computedPromo,
+        badge: pct > 0 ? `Hemat ${pct}%` : 'Promo Terbatas',
+      },
     }));
   };
 
-  // Handler ubah promoPrice -> otomatis hitung persen
+  // Handler ubah promoPrice -> otomatis hitung persen pada tier aktif
   const handlePromoPriceChange = (priceVal: number) => {
     const promo = Math.max(0, priceVal);
-    const base = Number(pricing.basePrice) || 10000;
+    const base = Number(currentTierData.basePrice) || 10000;
     const pct = base > promo ? Math.round(((base - promo) / base) * 100) : 0;
-    setPricing((prev) => ({
+    setMultiTierPricing((prev) => ({
       ...prev,
-      promoPrice: promo,
-      promoLabel: pct > 0 ? `Hemat ${pct}%` : prev.promoLabel,
+      [selectedPricingTier]: {
+        ...prev[selectedPricingTier],
+        promoPrice: promo,
+        badge: pct > 0 ? `Hemat ${pct}%` : prev[selectedPricingTier].badge,
+      },
     }));
   };
 
-  // Simpan harga ke backend
+  // Simpan semua paket harga ke backend
   const handleSavePricing = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSavingPricing(true);
@@ -493,12 +596,18 @@ export default function LaysaCleanPortalPage() {
           'x-admin-key': 'laysa-admin-s3cr3t-k3y-2026-buket',
         },
         credentials: 'same-origin',
-        body: JSON.stringify(pricing),
+        body: JSON.stringify({
+          tiers: multiTierPricing,
+          basePrice: multiTierPricing.lifetime.basePrice,
+          promoPrice: multiTierPricing.lifetime.promoPrice,
+          isPromoActive: multiTierPricing.lifetime.isPromoActive,
+          promoLabel: multiTierPricing.lifetime.badge || 'Promo Terbatas',
+        }),
       });
       const data = await res.json();
 
       if (data.success) {
-        setPricingMsg({ text: '✓ Harga dan diskon promo berhasil disimpan!', type: 'success' });
+        setPricingMsg({ text: '✓ Semua paket harga dan promo berhasil disimpan!', type: 'success' });
         fetchPricing();
       } else {
         setPricingMsg({ text: data.message || data.error || 'Gagal menyimpan harga.', type: 'error' });
@@ -510,6 +619,55 @@ export default function LaysaCleanPortalPage() {
     }
   };
 
+  // Handler salin format teks jualan / broadcast WhatsApp & Sosmed
+  const handleCopyBroadcast = (key: 'daily' | 'weekly' | 'lifetime' | 'all') => {
+    let text = '';
+    const d = multiTierPricing.daily;
+    const w = multiTierPricing.weekly;
+    const l = multiTierPricing.lifetime;
+
+    const dPrice = d.isPromoActive ? d.promoPrice : d.basePrice;
+    const wPrice = w.isPromoActive ? w.promoPrice : w.basePrice;
+    const lPrice = l.isPromoActive ? l.promoPrice : l.basePrice;
+
+    if (key === 'daily') {
+      text = `🌸 *PROMO BUKET LAYSA - PAKET HARIAN (24 JAM)* 🌸\n` +
+        `Butuh merangkai buket virtual estetik untuk kado wisuda atau ulang tahun hari ini?\n\n` +
+        `💰 Cuma *Rp ${dPrice.toLocaleString('id-ID')}* ${d.isPromoActive ? `(Diskon dari Rp ${d.basePrice.toLocaleString('id-ID')})` : ''}!\n\n` +
+        `✨ Keuntungan:\n` +
+        (d.features || []).map((f) => `• ${f}`).join('\n') + `\n\n` +
+        `📲 Pesan kode akses instan via WA: https://wa.me/6289514618737`;
+    } else if (key === 'weekly') {
+      text = `🌸 *PROMO SPESIAL 7 HARI - BUKET LAYSA FLORIST* 🌸\n` +
+        `Mau buat banyak variasi buket untuk teman, wisuda, atau pasangan sepanjang minggu?\n\n` +
+        `💰 Cuma *Rp ${wPrice.toLocaleString('id-ID')}* (Hemat lebih dari 50%)!\n\n` +
+        `✨ Keuntungan:\n` +
+        (w.features || []).map((f) => `• ${f}`).join('\n') + `\n\n` +
+        `📲 Pesan kode akses instan via WA: https://wa.me/6289514618737`;
+    } else if (key === 'lifetime') {
+      text = `👑 *VIP SULTAN SELAMANYA + KEBUN BUNGA STREAK 🔥* 👑\n` +
+        `Sekali bayar aktif selamanya tanpa biaya langganan bulanan!\n\n` +
+        `💰 Cuma *Rp ${lPrice.toLocaleString('id-ID')}* ${l.isPromoActive ? `(Diskon dari Rp ${l.basePrice.toLocaleString('id-ID')})` : ''}!\n\n` +
+        `✨ Keuntungan Eksklusif:\n` +
+        (l.features || []).map((f) => `• ${f}`).join('\n') + `\n\n` +
+        `📲 Pesan kode akses Sultan via WA: https://wa.me/6289514618737`;
+    } else {
+      text = `🌸 *KATALOG HARGA & PAKET VIP BUKET BUNGA LAYSA* 🌸\n` +
+        `Pilih paket buket bunga virtual terbaik untuk orang tersayang:\n\n` +
+        `1️⃣ *Paket Harian (24 Jam)* — Rp ${dPrice.toLocaleString('id-ID')}\n` +
+        `• Akses semua bunga & buket, aktif 24 jam, hingga 5 device.\n\n` +
+        `2️⃣ *Paket Mingguan (7 Hari)* — Rp ${wPrice.toLocaleString('id-ID')}\n` +
+        `• Cocok untuk event wisuda/kado, bebas edit kapan saja, hingga 5 device.\n\n` +
+        `3️⃣ *Paket Selamanya (VIP Sultan)* — Rp ${lPrice.toLocaleString('id-ID')} 👑\n` +
+        `• Akses PERMANEN selamanya + Buka Fitur Kebun Bunga Harian Streak 🔥 (Solo / Pasangan).\n\n` +
+        `📲 Pesan kode akses langsung via WhatsApp: https://wa.me/6289514618737`;
+    }
+
+    navigator.clipboard.writeText(text);
+    setCopiedBroadcastKey(key);
+    setTimeout(() => setCopiedBroadcastKey(null), 2500);
+  };
+
   // Salin ke clipboard
   const handleCopy = (codeStr: string, id: string) => {
     navigator.clipboard.writeText(codeStr);
@@ -517,11 +675,19 @@ export default function LaysaCleanPortalPage() {
     setTimeout(() => setCopiedId(null), 1500);
   };
 
-  // Salin template WA
-  const handleCopyWaTemplate = (codeStr: string) => {
-    const text = `Halo kak! Terima kasih atas pemesanan Akses VIP Studio Buket Laysa.\n\nBerikut kode akses eksklusif Anda:\n👉 *${codeStr}*\n\nCara pakai:\n1. Buka website Studio Buket kami\n2. Klik "Buka VIP" lalu masukkan kode di atas\n3. Ketik nama kamu, dan seluruh bunga & bucket premium langsung aktif selamanya! 🌸✨`;
+  // Salin template WA sesuai tier
+  const handleCopyWaTemplate = (codeStr: string, item?: AccessCodeItem) => {
+    const tier = item?.tier || 'lifetime';
+    let text = '';
+    if (tier === 'daily') {
+      text = `Halo kak! Terima kasih atas pemesanan Akses VIP Harian (24 Jam) Studio Buket Laysa.\n\nBerikut kode akses Anda:\n👉 *${codeStr}*\n\nCara pakai:\n1. Buka website Studio Buket kami\n2. Klik "Buka VIP" lalu masukkan kode di atas\n3. Ketik nama kamu, dan seluruh bunga & bucket aktif selama 24 jam! 🌸⏱️`;
+    } else if (tier === 'weekly') {
+      text = `Halo kak! Terima kasih atas pemesanan Akses VIP Mingguan (7 Hari) Studio Buket Laysa.\n\nBerikut kode akses Anda:\n👉 *${codeStr}*\n\nCara pakai:\n1. Buka website Studio Buket kami\n2. Klik "Buka VIP" lalu masukkan kode di atas\n3. Ketik nama kamu, dan seluruh bunga & bucket aktif selama 7 hari! 🌸📅`;
+    } else {
+      text = `Halo kak! Terima kasih atas pemesanan Akses VIP Selamanya Studio Buket Laysa.\n\nBerikut kode akses eksklusif Anda:\n👉 *${codeStr}*\n\nCara pakai:\n1. Buka website Studio Buket kami\n2. Klik "Buka VIP" lalu masukkan kode di atas\n3. Ketik nama kamu, seluruh bunga & bucket aktif SELAMANYA + fitur Kebun Bunga Streak 🔥 terbuka! 🌸👑`;
+    }
     navigator.clipboard.writeText(text);
-    alert(`Pesan WhatsApp untuk kode "${codeStr}" berhasil disalin.`);
+    alert(`Pesan WhatsApp untuk kode "${codeStr}" (${tier}) berhasil disalin.`);
   };
 
   // Stats
@@ -729,6 +895,71 @@ export default function LaysaCleanPortalPage() {
 
         {/* ===== KONTEN TENGAH (1fr) ===== */}
         <main className="adm-main-content">
+          {/* ─── MOBILE TOPBAR & SCROLLABLE TAB STRIP (KHUSUS HP) ─── */}
+          <div className="adm-mobile-nav-wrapper">
+            <div className="adm-mobile-header">
+              <div className="adm-mobile-brand">
+                <span className="adm-mobile-brand-icon">🌸</span>
+                <div>
+                  <h2 className="adm-mobile-brand-title">Laysa Studio</h2>
+                  <p className="adm-mobile-brand-sub">Admin Panel</p>
+                </div>
+              </div>
+              <div className="adm-mobile-actions">
+                <Link href="/" target="_blank" className="adm-mobile-action-btn" title="Lihat Web Studio">
+                  <ExternalLink size={14} />
+                </Link>
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="adm-mobile-action-btn logout"
+                  title="Keluar dari Panel"
+                >
+                  <LogOut size={14} />
+                </button>
+              </div>
+            </div>
+
+            <nav className="adm-mobile-tabs">
+              <button
+                type="button"
+                onClick={() => setActiveTab('dashboard')}
+                className={`adm-mobile-tab-btn ${activeTab === 'dashboard' ? 'active' : ''}`}
+              >
+                <LayoutDashboard size={14} />
+                <span>Dashboard</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveTab('tokens')}
+                className={`adm-mobile-tab-btn ${activeTab === 'tokens' ? 'active' : ''}`}
+              >
+                <KeyRound size={14} />
+                <span>Kode VIP</span>
+                {stats.active > 0 && <span className="adm-mobile-badge">{stats.active}</span>}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveTab('pricing')}
+                className={`adm-mobile-tab-btn ${activeTab === 'pricing' ? 'active' : ''}`}
+              >
+                <Tag size={14} />
+                <span>Harga &amp; Promo</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveTab('diagnostics')}
+                className={`adm-mobile-tab-btn ${activeTab === 'diagnostics' ? 'active' : ''}`}
+              >
+                <Database size={14} />
+                <span>Status DB</span>
+              </button>
+            </nav>
+          </div>
+
           {/* Top Search Bar */}
           <div className="adm-top-bar">
             <Search size={16} />
@@ -1094,6 +1325,29 @@ export default function LaysaCleanPortalPage() {
                     </div>
 
                     <div>
+                      <label className="vault-input-label">Paket VIP / Durasi</label>
+                      <select
+                        value={newTier}
+                        onChange={(e) => {
+                          const t = e.target.value as 'daily' | 'weekly' | 'lifetime';
+                          setNewTier(t);
+                          const prefix = t === 'daily' ? 'DAY' : t === 'weekly' ? 'WEEK' : 'VIP';
+                          const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+                          let rand = '';
+                          for (let i = 0; i < 6; i++) {
+                            rand += chars.charAt(Math.floor(Math.random() * chars.length));
+                          }
+                          setNewCode(`${prefix}-${rand}`);
+                        }}
+                        className="vault-input-field"
+                      >
+                        <option value="daily">⏱️ Paket Harian (Berlaku 24 Jam sejak klaim)</option>
+                        <option value="weekly">📅 Paket Mingguan (Berlaku 7 Hari sejak klaim)</option>
+                        <option value="lifetime">👑 Paket Selamanya (Permanen + Akses Kebun Bunga Streak 🔥)</option>
+                      </select>
+                    </div>
+
+                    <div>
                       <label className="vault-input-label">Catatan / Pembeli</label>
                       <input
                         type="text"
@@ -1192,6 +1446,7 @@ export default function LaysaCleanPortalPage() {
                     <thead>
                       <tr>
                         <th>Kode</th>
+                        <th>Paket</th>
                         <th>Status</th>
                         <th>Klaim</th>
                         <th>Perangkat</th>
@@ -1204,13 +1459,13 @@ export default function LaysaCleanPortalPage() {
                     <tbody>
                       {isLoadingCodes ? (
                         <tr>
-                          <td colSpan={8} style={{ textAlign: 'center', padding: '30px', color: 'var(--text-muted)' }}>
+                          <td colSpan={9} style={{ textAlign: 'center', padding: '30px', color: 'var(--text-muted)' }}>
                             Memuat daftar kode...
                           </td>
                         </tr>
                       ) : filteredCodes.length === 0 ? (
                         <tr>
-                          <td colSpan={8} style={{ textAlign: 'center', padding: '30px', color: 'var(--text-muted)' }}>
+                          <td colSpan={9} style={{ textAlign: 'center', padding: '30px', color: 'var(--text-muted)' }}>
                             Tidak ada kode yang sesuai pencarian.
                           </td>
                         </tr>
@@ -1239,6 +1494,22 @@ export default function LaysaCleanPortalPage() {
                                     {copiedId === item.id ? <Check size={12} color="#22c55e" /> : <Copy size={12} />}
                                   </button>
                                 </div>
+                              </td>
+
+                              <td>
+                                <span
+                                  style={{
+                                    display: 'inline-block',
+                                    padding: '3px 8px',
+                                    borderRadius: '8px',
+                                    fontSize: '0.72rem',
+                                    fontWeight: 700,
+                                    background: item.tier === 'daily' ? '#f5f5f4' : item.tier === 'weekly' ? '#eff6ff' : '#fef3c7',
+                                    color: item.tier === 'daily' ? '#44403c' : item.tier === 'weekly' ? '#1d4ed8' : '#92400e',
+                                  }}
+                                >
+                                  {item.tier === 'daily' ? '⏱️ 24 Jam' : item.tier === 'weekly' ? '📅 7 Hari' : '👑 Selamanya'}
+                                </span>
                               </td>
 
                               <td>
@@ -1299,7 +1570,7 @@ export default function LaysaCleanPortalPage() {
                                 <div style={{ display: 'inline-flex', gap: '5px' }}>
                                   <button
                                     type="button"
-                                    onClick={() => handleCopyWaTemplate(item.code)}
+                                    onClick={() => handleCopyWaTemplate(item.code, item)}
                                     style={{
                                       background: '#f0fdf4',
                                       color: '#15803d',
@@ -1368,6 +1639,171 @@ export default function LaysaCleanPortalPage() {
                     </tbody>
                   </table>
                 </div>
+
+                {/* ── TAMPILAN KHUSUS SMARTPHONE / HP (MOBILE CARDS VIEW) ── */}
+                <div className="adm-mobile-cards-wrap">
+                  {isLoadingCodes ? (
+                    <div style={{ textAlign: 'center', padding: '24px', color: 'var(--text-muted)', fontSize: '0.82rem' }}>
+                      Memuat daftar kode...
+                    </div>
+                  ) : filteredCodes.length === 0 ? (
+                    <div style={{ textAlign: 'center', padding: '24px', color: 'var(--text-muted)', fontSize: '0.82rem' }}>
+                      Tidak ada kode yang sesuai pencarian.
+                    </div>
+                  ) : (
+                    filteredCodes.map((item) => {
+                      const deviceCount = item.device_count ?? 0;
+                      const maxDev = item.max_devices ?? 5;
+
+                      return (
+                        <div key={item.id} className="adm-code-card-mobile">
+                          {/* Baris Atas: Kode + Tier + Status */}
+                          <div className="adm-code-card-top">
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <span className="adm-code-tag" style={{ fontSize: '0.9rem', padding: '4px 8px' }}>
+                                {item.code}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => handleCopy(item.code, item.id)}
+                                style={{
+                                  background: 'none',
+                                  border: 'none',
+                                  cursor: 'pointer',
+                                  padding: '4px',
+                                  color: 'var(--text-dim)',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                }}
+                                title="Salin Kode"
+                              >
+                                {copiedId === item.id ? <Check size={14} color="#22c55e" /> : <Copy size={14} />}
+                              </button>
+                            </div>
+
+                            <div className="adm-code-card-badge-row">
+                              <span
+                                style={{
+                                  display: 'inline-block',
+                                  padding: '2px 7px',
+                                  borderRadius: '6px',
+                                  fontSize: '0.68rem',
+                                  fontWeight: 700,
+                                  background: item.tier === 'daily' ? '#f5f5f4' : item.tier === 'weekly' ? '#eff6ff' : '#fef3c7',
+                                  color: item.tier === 'daily' ? '#44403c' : item.tier === 'weekly' ? '#1d4ed8' : '#92400e',
+                                }}
+                              >
+                                {item.tier === 'daily' ? '⏱️ 24 Jam' : item.tier === 'weekly' ? '📅 7 Hari' : '👑 Selamanya'}
+                              </span>
+
+                              <span
+                                style={{
+                                  display: 'inline-block',
+                                  padding: '2px 8px',
+                                  borderRadius: '20px',
+                                  fontSize: '0.68rem',
+                                  fontWeight: 700,
+                                  background: item.is_active ? '#e0f7ea' : '#ffe8ec',
+                                  color: item.is_active ? '#15803d' : '#be123c',
+                                }}
+                              >
+                                {item.is_active ? 'Aktif' : 'Nonaktif'}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Info Meta Ringkas */}
+                          <div className="adm-code-card-meta">
+                            <div className="adm-code-card-meta-item">
+                              <span className="adm-code-card-meta-label">Pemakai / Catatan</span>
+                              <span className="adm-code-card-meta-val" style={{ fontSize: '0.78rem' }}>
+                                {item.used_by_name || item.notes || '—'}
+                              </span>
+                            </div>
+
+                            <div className="adm-code-card-meta-item">
+                              <span className="adm-code-card-meta-label">Klaim / Kuota</span>
+                              <span className="adm-code-card-meta-val">
+                                {item.used_count}/{item.max_uses} Terklaim
+                              </span>
+                            </div>
+
+                            <div className="adm-code-card-meta-item">
+                              <span className="adm-code-card-meta-label">Perangkat Aktif</span>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px' }}>
+                                <span style={{ fontWeight: 700 }}>{deviceCount}/{maxDev}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => fetchDevices(item)}
+                                  style={{
+                                    background: 'var(--bg-blue-light)',
+                                    color: 'var(--primary)',
+                                    border: 'none',
+                                    borderRadius: '6px',
+                                    padding: '2px 6px',
+                                    fontSize: '0.68rem',
+                                    fontWeight: 700,
+                                    cursor: 'pointer',
+                                  }}
+                                >
+                                  Lihat ({deviceCount})
+                                </button>
+                              </div>
+                            </div>
+
+                            <div className="adm-code-card-meta-item">
+                              <span className="adm-code-card-meta-label">Dibuat</span>
+                              <span className="adm-code-card-meta-val" style={{ color: 'var(--text-dim)' }}>
+                                {new Date(item.created_at).toLocaleDateString('id-ID', {
+                                  day: 'numeric',
+                                  month: 'short',
+                                })}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Tombol Aksi Cepat Touch-Friendly */}
+                          <div className="adm-code-card-actions">
+                            <button
+                              type="button"
+                              onClick={() => handleCopyWaTemplate(item.code, item)}
+                              className="adm-btn-mobile-wa"
+                            >
+                              <MessageCircle size={13} />
+                              <span>Salin WA</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => handleToggleActive(item.id, item.is_active)}
+                              className="adm-btn-mobile-toggle"
+                            >
+                              {item.is_active ? 'Matikan' : 'Aktifkan'}
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => handleResetCode(item.id, item.code)}
+                              className="adm-btn-mobile-icon"
+                              title="Reset Pemakaian &amp; Perangkat"
+                            >
+                              <RotateCcw size={13} />
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteCode(item.id, item.code)}
+                              className="adm-btn-mobile-icon delete"
+                              title="Hapus Kode"
+                            >
+                              <Trash2 size={13} />
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
               </div>
             </div>
           )}
@@ -1376,39 +1812,109 @@ export default function LaysaCleanPortalPage() {
               TAB 2: ATUR HARGA & DISKON PROMO
               ═══════════════════════════════════════════ */}
           {activeTab === 'pricing' && (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '22px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
               <div className="adm-form-card">
                 <div className="adm-form-card-header">
                   <div className="adm-form-card-icon" style={{ background: 'linear-gradient(135deg, #f59e0b, #f97316)' }}>
-                    <Tag size={20} />
+                    <Tag size={18} />
                   </div>
                   <div>
-                    <h3 className="adm-card-title">Pengaturan Harga &amp; Diskon Persen</h3>
+                    <h3 className="adm-card-title">Pengaturan Harga Multi-Tier VIP</h3>
                     <p className="adm-card-sub">
-                      Atur nominal harga asli, persen diskon promo, atau tentukan harga akhir yang dibayar pembeli.
+                      Atur nominal harga, status aktif, dan promo untuk paket Harian (24 Jam), Mingguan (7 Hari), dan Selamanya (Lifetime).
                     </p>
                   </div>
                 </div>
 
+                {/* 3 Tier Sub-Tabs */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px', marginBottom: '16px' }}>
+                  {(['daily', 'weekly', 'lifetime'] as const).map((key) => {
+                    const t = multiTierPricing[key];
+                    const isSelected = selectedPricingTier === key;
+                    return (
+                      <button
+                        key={key}
+                        type="button"
+                        onClick={() => setSelectedPricingTier(key)}
+                        style={{
+                          padding: '8px 4px',
+                          borderRadius: '12px',
+                          border: isSelected ? '2px solid var(--primary)' : '1px solid var(--border)',
+                          background: isSelected ? 'var(--bg-blue-light)' : '#ffffff',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          gap: '2px',
+                          transition: 'all 0.2s',
+                        }}
+                      >
+                        <div style={{ fontSize: '0.78rem', fontWeight: 700, color: isSelected ? 'var(--primary)' : 'var(--text-dark)', whiteSpace: 'nowrap' }}>
+                          {key === 'daily' ? '⏱️ Harian' : key === 'weekly' ? '📅 Mingguan' : '👑 Sultan'}
+                        </div>
+                        <div style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+                          Rp {(t.isPromoActive ? t.promoPrice : t.basePrice).toLocaleString('id-ID')}
+                        </div>
+                        <span style={{ fontSize: '0.64rem', padding: '1px 5px', borderRadius: '4px', background: t.isActive ? '#e0f7ea' : '#fee2e2', color: t.isActive ? '#15803d' : '#b91c1c' }}>
+                          {t.isActive ? 'Aktif' : 'Off'}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+
                 <form onSubmit={handleSavePricing}>
+                  {/* Status Aktif Toggle */}
+                  <div
+                    style={{
+                      marginBottom: '14px',
+                      background: 'var(--bg-subtle)',
+                      padding: '10px 14px',
+                      borderRadius: '12px',
+                      border: '1px solid var(--border)',
+                    }}
+                  >
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', fontSize: '0.88rem', fontWeight: 600 }}>
+                      <input
+                        type="checkbox"
+                        checked={currentTierData.isActive}
+                        onChange={(e) => {
+                          const val = e.target.checked;
+                          setMultiTierPricing((prev) => ({
+                            ...prev,
+                            [selectedPricingTier]: { ...prev[selectedPricingTier], isActive: val },
+                          }));
+                        }}
+                        style={{ width: '18px', height: '18px', accentColor: 'var(--primary)' }}
+                      />
+                      <span>Jual Paket Ini ke Pengunjung Web ({currentTierData.name})</span>
+                    </label>
+                  </div>
+
+                  {/* Harga Asli / Normal */}
                   <div className="vault-input-group">
                     <label className="vault-input-label">Harga Asli / Normal (Rp)</label>
                     <input
                       type="number"
                       step="1000"
-                      value={pricing.basePrice}
+                      value={currentTierData.basePrice}
                       onChange={(e) => {
                         const newBase = Math.max(0, parseInt(e.target.value) || 0);
-                        setPricing((prev) => {
-                          const promo = prev.promoPrice > newBase ? newBase : prev.promoPrice;
-                          return { ...prev, basePrice: newBase, promoPrice: promo };
+                        setMultiTierPricing((prev) => {
+                          const cur = prev[selectedPricingTier];
+                          const promo = cur.promoPrice > newBase ? newBase : cur.promoPrice;
+                          return {
+                            ...prev,
+                            [selectedPricingTier]: { ...cur, basePrice: newBase, promoPrice: promo },
+                          };
                         });
                       }}
                       className="vault-input-field"
-                      placeholder="85000"
+                      placeholder="10000"
                     />
                   </div>
 
+                  {/* Promo Toggle */}
                   <div
                     style={{
                       marginBottom: '16px',
@@ -1421,15 +1927,21 @@ export default function LaysaCleanPortalPage() {
                     <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', fontSize: '0.88rem', fontWeight: 600 }}>
                       <input
                         type="checkbox"
-                        checked={pricing.isPromoActive}
-                        onChange={(e) => setPricing({ ...pricing, isPromoActive: e.target.checked })}
+                        checked={currentTierData.isPromoActive}
+                        onChange={(e) => {
+                          const val = e.target.checked;
+                          setMultiTierPricing((prev) => ({
+                            ...prev,
+                            [selectedPricingTier]: { ...prev[selectedPricingTier], isPromoActive: val },
+                          }));
+                        }}
                         style={{ width: '18px', height: '18px', accentColor: 'var(--primary)' }}
                       />
                       <span>Aktifkan Harga Promo / Diskon Spesial</span>
                     </label>
                   </div>
 
-                  {pricing.isPromoActive && (
+                  {currentTierData.isPromoActive && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '18px' }}>
                       {/* Baris Input Persentase Diskon (%) */}
                       <div>
@@ -1455,7 +1967,7 @@ export default function LaysaCleanPortalPage() {
 
                           {/* Quick Preset Buttons */}
                           <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap', marginLeft: '6px' }}>
-                            {[10, 25, 50, 70, 80, 85].map((pct) => (
+                            {[10, 25, 50, 70, 80].map((pct) => (
                               <button
                                 key={pct}
                                 type="button"
@@ -1491,7 +2003,7 @@ export default function LaysaCleanPortalPage() {
                         <input
                           type="number"
                           step="1000"
-                          value={pricing.promoPrice}
+                          value={currentTierData.promoPrice}
                           onChange={(e) => handlePromoPriceChange(parseInt(e.target.value) || 0)}
                           className="vault-input-field"
                           style={{ fontWeight: 800, fontSize: '1.05rem', color: 'var(--primary)' }}
@@ -1512,7 +2024,7 @@ export default function LaysaCleanPortalPage() {
                         >
                           <div style={{ fontWeight: 700 }}>✓ Diskon {discountStats.percent}% Aktif</div>
                           <div style={{ marginTop: '2px', color: '#15803d' }}>
-                            Pembeli hemat <strong>Rp {discountStats.savingRupiah.toLocaleString('id-ID')}</strong> (dari Rp {pricing.basePrice.toLocaleString('id-ID')} menjadi <strong>Rp {pricing.promoPrice.toLocaleString('id-ID')}</strong>).
+                            Pembeli hemat <strong>Rp {discountStats.savingRupiah.toLocaleString('id-ID')}</strong> (dari Rp {currentTierData.basePrice.toLocaleString('id-ID')} menjadi <strong>Rp {currentTierData.promoPrice.toLocaleString('id-ID')}</strong>).
                           </div>
                         </div>
                       )}
@@ -1523,16 +2035,25 @@ export default function LaysaCleanPortalPage() {
                         <div style={{ display: 'flex', gap: '8px' }}>
                           <input
                             type="text"
-                            value={pricing.promoLabel}
-                            onChange={(e) => setPricing({ ...pricing, promoLabel: e.target.value })}
-                            placeholder="Cth: Promo Terbatas atau Diskon 80%"
+                            value={currentTierData.badge || ''}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setMultiTierPricing((prev) => ({
+                                ...prev,
+                                [selectedPricingTier]: { ...prev[selectedPricingTier], badge: val },
+                              }));
+                            }}
+                            placeholder="Cth: Promo Terbatas atau Hemat 50%"
                             className="vault-input-field"
                           />
                           <button
                             type="button"
                             onClick={() => {
-                              const autoLabel = discountStats.percent > 0 ? `Hemat ${discountStats.percent}%` : 'Promo Terbatas';
-                              setPricing((prev) => ({ ...prev, promoLabel: autoLabel }));
+                              const autoLabel = discountStats.percent > 0 ? `Hemat ${discountStats.percent}%` : 'Promo Spesial';
+                              setMultiTierPricing((prev) => ({
+                                ...prev,
+                                [selectedPricingTier]: { ...prev[selectedPricingTier], badge: autoLabel },
+                              }));
                             }}
                             style={{
                               padding: '0 14px',
@@ -1548,6 +2069,65 @@ export default function LaysaCleanPortalPage() {
                             Label Otomatis
                           </button>
                         </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Poin Manfaat & Deskripsi Penjualan */}
+                  <div style={{ marginBottom: '16px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                      <label className="vault-input-label" style={{ margin: 0 }}>
+                        Poin Manfaat &amp; Deskripsi Penjualan (1 Baris per Poin)
+                      </label>
+                      <span style={{ fontSize: '0.72rem', color: 'var(--text-dim)' }}>
+                        Tampil di modal beli pengunjung
+                      </span>
+                    </div>
+                    <textarea
+                      rows={5}
+                      value={(currentTierData.features || []).join('\n')}
+                      onChange={(e) => {
+                        const lines = e.target.value.split('\n');
+                        setMultiTierPricing((prev) => ({
+                          ...prev,
+                          [selectedPricingTier]: {
+                            ...prev[selectedPricingTier],
+                            features: lines,
+                          },
+                        }));
+                      }}
+                      placeholder="Masukkan poin manfaat per baris..."
+                      className="vault-input-field"
+                      style={{
+                        fontFamily: 'inherit',
+                        fontSize: '0.85rem',
+                        lineHeight: 1.5,
+                        resize: 'vertical',
+                      }}
+                    />
+                    <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '4px' }}>
+                      💡 Tip: Tuliskan manfaat yang memikat pembeli seperti durasi aktif, kuota perangkat, ekspor HD, atau akses Kebun Bunga.
+                    </div>
+                  </div>
+
+                  {/* Special Callout untuk Tier Lifetime */}
+                  {selectedPricingTier === 'lifetime' && (
+                    <div
+                      style={{
+                        background: '#fef3c7',
+                        border: '1px solid #fde68a',
+                        borderRadius: '12px',
+                        padding: '12px 16px',
+                        fontSize: '0.82rem',
+                        color: '#92400e',
+                        marginBottom: '16px',
+                      }}
+                    >
+                      <div style={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span>👑 Fitur Eksklusif Kebun Bunga Streak 🔥</span>
+                      </div>
+                      <div style={{ marginTop: '3px', opacity: 0.9 }}>
+                        Paket Selamanya ini otomatis memberikan akses ke fitur penyiraman bunga harian ala Api TikTok (solo &amp; undang teman via kode).
                       </div>
                     </div>
                   )}
@@ -1576,7 +2156,7 @@ export default function LaysaCleanPortalPage() {
                     style={{ width: '100%' }}
                   >
                     <Save size={16} />
-                    <span>{isSavingPricing ? 'Menyimpan...' : 'Simpan Harga & Diskon'}</span>
+                    <span>{isSavingPricing ? 'Menyimpan...' : 'Simpan Semua Paket Harga'}</span>
                   </button>
                 </form>
               </div>
@@ -1588,74 +2168,207 @@ export default function LaysaCleanPortalPage() {
                     <Sparkles size={20} />
                   </div>
                   <div>
-                    <h3 className="adm-card-title">Pratinjau Tampilan Web</h3>
-                    <p className="adm-card-sub">Simulasi langsung tampilan harga di modal pengunjung studio.</p>
+                    <h3 className="adm-card-title">Pratinjau Pilihan Paket Pengunjung</h3>
+                    <p className="adm-card-sub">Simulasi modal yang dilihat pelanggan saat mengklik Buka VIP.</p>
                   </div>
                 </div>
 
-                <div style={{ padding: '24px 26px' }}>
+                <div style={{ padding: '20px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    {(['daily', 'weekly', 'lifetime'] as const).map((key) => {
+                      const t = multiTierPricing[key];
+                      const isSelected = selectedPricingTier === key;
+                      const hasDisc = t.isPromoActive && t.promoPrice < t.basePrice;
+                      const finalPr = hasDisc ? t.promoPrice : t.basePrice;
+
+                      return (
+                        <div
+                          key={key}
+                          onClick={() => setSelectedPricingTier(key)}
+                          style={{
+                            border: isSelected ? '2px solid var(--primary)' : '1px solid var(--border)',
+                            background: isSelected ? '#ffffff' : 'var(--bg-subtle)',
+                            borderRadius: '14px',
+                            padding: '14px 16px',
+                            cursor: 'pointer',
+                            boxShadow: isSelected ? '0 4px 14px rgba(0,0,0,0.06)' : 'none',
+                            transition: 'all 0.2s',
+                          }}
+                        >
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                            <div style={{ fontWeight: 700, fontSize: '0.88rem', color: isSelected ? 'var(--primary)' : 'var(--text-dark)' }}>
+                              {key === 'daily' ? '⏱️ Paket Harian (24 Jam)' : key === 'weekly' ? '📅 Paket Mingguan (7 Hari)' : '👑 Paket Selamanya (VIP Sultan)'}
+                            </div>
+                            <span
+                              style={{
+                                fontSize: '0.7rem',
+                                fontWeight: 700,
+                                padding: '2px 8px',
+                                borderRadius: '12px',
+                                background: key === 'lifetime' ? '#fef3c7' : '#e0f7ea',
+                                color: key === 'lifetime' ? '#92400e' : '#15803d',
+                              }}
+                            >
+                              {t.badge || (key === 'lifetime' ? '👑 Termasuk Kebun' : 'Hemat')}
+                            </span>
+                          </div>
+
+                          <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
+                            {hasDisc && (
+                              <span style={{ fontSize: '0.8rem', color: 'var(--text-dim)', textDecoration: 'line-through' }}>
+                                Rp {t.basePrice.toLocaleString('id-ID')}
+                              </span>
+                            )}
+                            <span style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-dark)' }}>
+                              Rp {finalPr.toLocaleString('id-ID')}
+                            </span>
+                            <span style={{ fontSize: '0.72rem', color: 'var(--text-dim)' }}>
+                              / {t.durationLabel}
+                            </span>
+                          </div>
+
+                          <ul style={{ margin: '8px 0 0', padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            {(t.features || []).slice(0, 3).map((f, i) => (
+                              <li key={i} style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <span style={{ color: '#16a34a', fontWeight: 800 }}>✓</span>
+                                <span>{f}</span>
+                              </li>
+                            ))}
+                            {(t.features || []).length > 3 && (
+                              <li style={{ fontSize: '0.68rem', color: 'var(--text-dim)', fontStyle: 'italic', paddingLeft: '14px' }}>
+                                + {(t.features || []).length - 3} keuntungan lainnya...
+                              </li>
+                            )}
+                          </ul>
+
+                          {key === 'lifetime' && (
+                            <div style={{ fontSize: '0.72rem', color: '#b45309', fontWeight: 700, marginTop: '6px', background: '#fef3c7', padding: '3px 8px', borderRadius: '6px' }}>
+                              🌸 Buka Fitur Kebun Bunga Streak Harian 🔥
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* ── Generator Teks Promosi & Broadcast Penjualan ── */}
                   <div
                     style={{
+                      marginTop: '20px',
                       background: 'var(--bg-subtle)',
-                      border: '1px solid var(--border)',
-                      borderRadius: '18px',
-                      padding: '28px 24px',
-                      textAlign: 'center',
-                      maxWidth: '360px',
-                      margin: '0 auto',
-                      boxShadow: '0 4px 16px rgba(100, 130, 200, 0.05)',
+                      border: '1.5px dashed var(--border)',
+                      borderRadius: '14px',
+                      padding: '16px',
                     }}
                   >
-                  <div style={{ marginBottom: '12px' }}>
-                    <span
-                      style={{
-                        display: 'inline-block',
-                        background: '#ffe8ec',
-                        color: '#f43f5e',
-                        padding: '4px 12px',
-                        borderRadius: '20px',
-                        fontSize: '0.75rem',
-                        fontWeight: 700,
-                      }}
-                    >
-                      {discountStats.hasDiscount ? (pricing.promoLabel || `Hemat ${discountStats.percent}%`) : '1x Bayar • Selamanya'}
-                    </span>
-                  </div>
-
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)', textTransform: 'uppercase', fontWeight: 600 }}>
-                    Akses VIP Selamanya
-                  </div>
-
-                  <div style={{ margin: '12px 0 6px' }}>
-                    {discountStats.hasDiscount && (
-                      <div style={{ fontSize: '0.88rem', color: 'var(--text-dim)', textDecoration: 'line-through', marginBottom: '2px' }}>
-                        Rp {pricing.basePrice.toLocaleString('id-ID')}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                      <div style={{ fontWeight: 700, fontSize: '0.86rem', color: 'var(--text-dark)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span>📢 Salin Teks Promosi Siap Jual (WhatsApp / Sosmed)</span>
                       </div>
-                    )}
-                    <div style={{ fontSize: '1.9rem', fontWeight: 800, color: 'var(--text-dark)' }}>
-                      Rp {discountStats.finalPrice.toLocaleString('id-ID')}
+                      {copiedBroadcastKey && (
+                        <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#16a34a', background: '#e0f7ea', padding: '2px 8px', borderRadius: '9999px' }}>
+                          ✓ Teks Disalin!
+                        </span>
+                      )}
+                    </div>
+                    <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: '0 0 12px', lineHeight: 1.4 }}>
+                      Klik tombol di bawah untuk menyalin pesan penawaran promo lengkap yang siap Anda kirimkan ke status WhatsApp, broadcast pelanggan, atau DM Instagram.
+                    </p>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px' }}>
+                      <button
+                        type="button"
+                        onClick={() => handleCopyBroadcast('daily')}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '6px',
+                          padding: '8px 10px',
+                          borderRadius: '10px',
+                          border: '1px solid var(--border-input)',
+                          background: copiedBroadcastKey === 'daily' ? '#dcfce7' : '#ffffff',
+                          color: copiedBroadcastKey === 'daily' ? '#15803d' : 'var(--text-dark)',
+                          fontSize: '0.75rem',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          transition: 'all 0.15s',
+                        }}
+                      >
+                        <Copy size={13} />
+                        <span>Promo Paket Harian</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleCopyBroadcast('weekly')}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '6px',
+                          padding: '8px 10px',
+                          borderRadius: '10px',
+                          border: '1px solid var(--border-input)',
+                          background: copiedBroadcastKey === 'weekly' ? '#dcfce7' : '#ffffff',
+                          color: copiedBroadcastKey === 'weekly' ? '#15803d' : 'var(--text-dark)',
+                          fontSize: '0.75rem',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          transition: 'all 0.15s',
+                        }}
+                      >
+                        <Copy size={13} />
+                        <span>Promo Paket Mingguan</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleCopyBroadcast('lifetime')}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '6px',
+                          padding: '8px 10px',
+                          borderRadius: '10px',
+                          border: '1px solid #fde68a',
+                          background: copiedBroadcastKey === 'lifetime' ? '#dcfce7' : '#fffbeb',
+                          color: copiedBroadcastKey === 'lifetime' ? '#15803d' : '#92400e',
+                          fontSize: '0.75rem',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          transition: 'all 0.15s',
+                        }}
+                      >
+                        <Copy size={13} />
+                        <span>Promo VIP Sultan (Streak 🔥)</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleCopyBroadcast('all')}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '6px',
+                          padding: '8px 10px',
+                          borderRadius: '10px',
+                          border: '1px solid var(--primary)',
+                          background: copiedBroadcastKey === 'all' ? '#dcfce7' : 'var(--primary)',
+                          color: copiedBroadcastKey === 'all' ? '#15803d' : '#ffffff',
+                          fontSize: '0.75rem',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          transition: 'all 0.15s',
+                        }}
+                      >
+                        <Copy size={13} />
+                        <span>Katalog Lengkap (Semua Paket)</span>
+                      </button>
                     </div>
                   </div>
-
-                  {discountStats.hasDiscount && (
-                    <div style={{ fontSize: '0.78rem', color: '#16a34a', fontWeight: 700, marginBottom: '16px' }}>
-                      Hemat Rp {discountStats.savingRupiah.toLocaleString('id-ID')} ({discountStats.percent}%)
-                    </div>
-                  )}
-
-                  <div
-                    style={{
-                      background: 'var(--primary)',
-                      color: '#ffffff',
-                      padding: '12px',
-                      borderRadius: '30px',
-                      fontWeight: 600,
-                      fontSize: '0.85rem',
-                    }}
-                  >
-                    Beli Kode via WhatsApp
-                  </div>
-                </div>
                 </div>
               </div>
             </div>

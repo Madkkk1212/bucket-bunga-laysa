@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 140" width="120" height="140" fill="none">
+  <defs>
+    <filter id="softShadow" x="-10%" y="-10%" width="120%" height="120%" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="4" stdDeviation="3" flood-opacity="0.25"/>
+    </filter>
+    <radialGradient id="soilGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#45270e" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#2c1808" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <!-- Soil Mound Base -->
+  <ellipse cx="60" cy="132" rx="22" ry="6" fill="url(#soilGlow)" />
+  
+    <!-- Foliage -->
+    <path d="M60 130 Q59 95 60 72" stroke="#15803d" stroke-width="5" stroke-linecap="round"/>
+    <path d="M60 114 Q32 112 26 98 Q46 95 60 106" fill="#166534" stroke="#14532d" stroke-width="1.5"/>
+    <path d="M60 98 Q88 96 94 82 Q74 80 60 92" fill="#15803d" stroke="#14532d" stroke-width="1.5"/>
+    <!-- Dense concentric petals -->
+    <g filter="url(#softShadow)">
+      <circle cx="60" cy="54" r="30" fill="#9f1239"/>
+      <circle cx="60" cy="54" r="24" fill="#f43f5e"/>
+      <circle cx="60" cy="54" r="18" fill="#fecdd3"/>
+      <circle cx="60" cy="54" r="12" fill="#f43f5e"/>
+      <circle cx="60" cy="54" r="6" fill="#9f1239"/>
+      <!-- Petal edge notches -->
+      <path d="M34 54 C34 40 44 32 60 32 C76 32 86 40 86 54 C86 68 76 76 60 76 C44 76 34 68 34 54 Z" fill="none" stroke="#fecdd3" stroke-width="2" stroke-dasharray="6 3"/>
+      <circle cx="60" cy="54" r="3" fill="#fef08a"/>
+    </g>
+  
+</svg>

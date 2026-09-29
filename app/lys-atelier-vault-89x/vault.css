@@ -972,25 +972,420 @@
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
 }
 
-/* Responsif */
-@media (max-width: 1200px) {
+/* ═════════════════════════════════════════════════════════════
+   MOBILE HEADER & SCROLLABLE TAB NAVIGATION (HP OPTIMIZED)
+   ═════════════════════════════════════════════════════════════ */
+.adm-mobile-nav-wrapper {
+  display: none; /* Sembunyi di desktop (>1000px) */
+}
+
+.adm-mobile-cards-wrap {
+  display: none; /* Sembunyi di desktop (>768px) */
+}
+
+/* Responsif Tablet & Mobile */
+@media (max-width: 1000px) {
+  .vault-wrapper {
+    padding: 0;
+    background: #f8fafc;
+  }
+
   .dashboard-main {
-    /* 3-col handled by inline style; shrink sidebar col */
+    grid-template-columns: 1fr !important;
+    min-height: 100vh;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .adm-sidebar, .adm-right-sidebar {
+    display: none !important;
+  }
+
+  .adm-main-content {
+    padding: 16px 14px 40px;
+  }
+
+  /* Tampilkan Mobile Navigation Header */
+  .adm-mobile-nav-wrapper {
+    display: block;
+    position: sticky;
+    top: 0;
+    z-index: 45;
+    background: rgba(255, 255, 255, 0.94);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-bottom: 1px solid var(--border);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
+  }
+
+  .adm-mobile-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    border-bottom: 1px solid rgba(240, 243, 248, 0.8);
+  }
+
+  .adm-mobile-brand {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .adm-mobile-brand-icon {
+    font-size: 1.25rem;
+    line-height: 1;
+  }
+
+  .adm-mobile-brand-title {
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: var(--text-dark);
+    line-height: 1.1;
+    margin: 0;
+  }
+
+  .adm-mobile-brand-sub {
+    font-size: 0.65rem;
+    color: var(--text-dim);
+    font-weight: 600;
+    margin: 0;
+  }
+
+  .adm-mobile-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .adm-mobile-action-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 9px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--border-input);
+    background: #ffffff;
+    color: var(--text-muted);
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.15s ease;
+  }
+
+  .adm-mobile-action-btn:hover {
+    background: var(--bg-subtle);
+    color: var(--text-dark);
+  }
+
+  .adm-mobile-action-btn.logout:hover {
+    background: #fee2e2;
+    color: #ef4444;
+    border-color: #fecaca;
+  }
+
+  /* Scrollable Tab Strip Horizontal */
+  .adm-mobile-tabs {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .adm-mobile-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .adm-mobile-tab-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 12px;
+    border-radius: 12px;
+    border: 1px solid transparent;
+    background: #f1f5f9;
+    color: var(--text-muted);
+    font-size: 0.76rem;
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: all 0.15s ease;
+  }
+
+  .adm-mobile-tab-btn.active {
+    background: #eef4ff;
+    color: var(--primary);
+    border-color: #cde0fc;
+    font-weight: 700;
+  }
+
+  .adm-mobile-badge {
+    background: var(--primary);
+    color: #ffffff;
+    font-size: 0.65rem;
+    padding: 1px 6px;
+    border-radius: 10px;
+    font-weight: 800;
+  }
+
+  /* Hero Banner di HP */
+  .adm-hero-banner {
+    padding: 16px 16px;
+    border-radius: 14px;
+    margin-bottom: 16px;
+  }
+
+  .adm-hero-tag {
+    padding: 4px 10px;
+    font-size: 0.68rem;
+    margin-bottom: 6px;
+  }
+
+  .adm-hero-text h1 {
+    font-size: 1.25rem;
+    margin-bottom: 4px;
+  }
+
+  .adm-hero-text p {
+    font-size: 0.78rem;
+    margin-bottom: 0;
+    line-height: 1.35;
+  }
+
+  .adm-hero-illustration {
+    font-size: 2.5rem; /* Dikecilkan dari 5.5rem */
+  }
+
+  /* 4 Kartu Statistik di HP: 2 Kolom Kompak */
+  .adm-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin-bottom: 18px;
+  }
+
+  .adm-stat-card {
+    padding: 12px 12px;
+    border-radius: 12px;
+    gap: 10px;
+  }
+
+  .adm-stat-icon {
+    width: 34px; /* Dikecilkan dari 44px */
+    height: 34px;
+    border-radius: 10px;
+  }
+
+  .adm-stat-icon svg {
+    width: 16px !important; /* Dikecilkan dari 20px */
+    height: 16px !important;
+  }
+
+  .adm-stat-info h4 {
+    font-size: 1.15rem; /* Dikecilkan dari 1.35rem */
+  }
+
+  .adm-stat-info p {
+    font-size: 0.68rem;
+    margin-top: 1px;
+  }
+
+  /* Form Card di HP */
+  .adm-form-card {
+    border-radius: 14px;
+    margin-bottom: 16px;
+  }
+
+  .adm-form-card-header {
+    padding: 12px 14px;
+    gap: 10px;
+  }
+
+  .adm-form-card-icon {
+    width: 34px; /* Dikecilkan dari 44px */
+    height: 34px;
+    border-radius: 10px;
+  }
+
+  .adm-form-card-icon svg {
+    width: 16px !important;
+    height: 16px !important;
+  }
+
+  .adm-form-card .adm-card-title {
+    font-size: 0.95rem;
+  }
+
+  .adm-form-card .adm-card-sub {
+    font-size: 0.72rem;
+  }
+
+  .adm-form-card > form {
+    padding: 14px 14px;
+  }
+
+  .adm-card {
+    padding: 16px 14px;
+    border-radius: 14px;
+    margin-bottom: 16px;
+  }
+
+  /* Top search bar di HP */
+  .adm-top-bar {
+    margin-bottom: 14px;
+  }
+
+  .adm-top-bar input {
+    padding: 9px 14px 9px 38px;
+    font-size: 0.82rem;
+  }
+
+  .adm-top-bar svg {
+    left: 14px;
+    width: 14px !important;
+    height: 14px !important;
+  }
+
+  /* Modal di HP */
+  .adm-modal-backdrop {
+    padding: 12px;
+  }
+
+  .adm-modal-card {
+    padding: 18px 16px;
+    border-radius: 16px;
+    max-height: 88vh;
   }
 }
 
-@media (max-width: 1000px) {
-  .dashboard-main {
-    grid-template-columns: 1fr !important;
-    min-height: auto;
+/* ═════════════════════════════════════════════════════════════
+   MOBILE CARDS FOR ACCESS CODES (SCREEN <= 768px)
+   Gantikan tabel 9 kolom dengan kartu rapi di smartphone
+   ═════════════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+  .adm-table-wrap {
+    display: none !important; /* Sembunyikan tabel lebar di HP */
   }
-  .adm-sidebar, .adm-right-sidebar {
-    display: none;
+
+  .adm-mobile-cards-wrap {
+    display: flex !important;
+    flex-direction: column;
+    gap: 10px;
+    padding: 12px;
   }
-  .adm-main-content {
-    padding: 20px;
+
+  .adm-code-card-mobile {
+    background: #ffffff;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 12px 14px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    transition: all 0.15s ease;
   }
-  .adm-stats-grid {
+
+  .adm-code-card-mobile:active {
+    border-color: var(--primary);
+  }
+
+  .adm-code-card-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .adm-code-card-badge-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .adm-code-card-meta {
+    display: grid;
     grid-template-columns: repeat(2, 1fr);
+    gap: 6px 12px;
+    padding: 8px 10px;
+    background: var(--bg-subtle);
+    border-radius: 10px;
+    font-size: 0.74rem;
+  }
+
+  .adm-code-card-meta-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .adm-code-card-meta-label {
+    font-size: 0.65rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    font-weight: 700;
+  }
+
+  .adm-code-card-meta-val {
+    font-weight: 600;
+    color: var(--text-dark);
+  }
+
+  .adm-code-card-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    justify-content: space-between;
+  }
+
+  .adm-btn-mobile-wa {
+    flex: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    padding: 8px 10px;
+    background: #f0fdf4;
+    color: #15803d;
+    border: 1px solid #bbf7d0;
+    border-radius: 10px;
+    font-size: 0.74rem;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .adm-btn-mobile-toggle {
+    padding: 8px 12px;
+    background: #ffffff;
+    border: 1px solid var(--border-input);
+    border-radius: 10px;
+    font-size: 0.74rem;
+    font-weight: 600;
+    color: var(--text-dark);
+    cursor: pointer;
+  }
+
+  .adm-btn-mobile-icon {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 9px;
+    border: 1px solid var(--border-input);
+    background: #ffffff;
+    cursor: pointer;
+    color: var(--text-muted);
+  }
+
+  .adm-btn-mobile-icon.delete {
+    background: #fef2f2;
+    color: #dc2626;
+    border-color: #fecaca;
   }
 }
+

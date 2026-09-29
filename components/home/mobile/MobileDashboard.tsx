@@ -27,6 +27,7 @@ import PreviewCanvas from '@/components/designer/PreviewCanvas';
 import FlowerCountModal from '@/components/designer/FlowerCountModal';
 import PremiumUnlockModal from '@/components/designer/PremiumUnlockModal';
 import VipCardModal from '@/components/designer/VipCardModal';
+import FlowerGardenModal from '@/components/garden/FlowerGardenModal';
 import MobileFlowerPickerModal from './MobileFlowerPickerModal';
 import MobileBucketPickerModal from './MobileBucketPickerModal';
 import MobileCardEditorModal from './MobileCardEditorModal';
@@ -57,6 +58,7 @@ export default function MobileDashboard({ onOpenStudio }: MobileDashboardProps =
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [isUnlockVipOpen, setIsUnlockVipOpen] = useState(false);
   const [isVipCardOpen, setIsVipCardOpen] = useState(false);
+  const [isGardenModalOpen, setIsGardenModalOpen] = useState(false);
 
   // Notification card visibility
   const [isNotifBannerVisible, setIsNotifBannerVisible] = useState(true);
@@ -331,6 +333,56 @@ export default function MobileDashboard({ onOpenStudio }: MobileDashboardProps =
           </div>
         </section>
 
+        {/* ─── FITUR SPESIAL: KEBUN BUNGA HARIAN STREAK ─── */}
+        <section className="mb-section" style={{ marginTop: '-4px' }}>
+          <div
+            onClick={() => setIsGardenModalOpen(true)}
+            style={{
+              background: 'linear-gradient(135deg, #FFF7ED 0%, #FFEDD5 100%)',
+              border: '1.5px solid #FDBA74',
+              borderRadius: '20px',
+              padding: '14px 16px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              cursor: 'pointer',
+              boxShadow: '0 4px 12px rgba(234, 88, 12, 0.08)',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div
+                style={{
+                  width: '42px',
+                  height: '42px',
+                  borderRadius: '14px',
+                  background: '#EA580C',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '20px',
+                  boxShadow: '0 4px 10px rgba(234, 88, 12, 0.25)',
+                }}
+              >
+                🌱
+              </div>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <h4 style={{ margin: 0, fontSize: '13px', fontWeight: 800, color: '#9A3412' }}>
+                    Kebun Bunga Harian
+                  </h4>
+                  <span style={{ fontSize: '10px', fontWeight: 800, background: '#FED7AA', color: '#C2410C', padding: '1px 6px', borderRadius: '9999px' }}>
+                    🔥 Streak
+                  </span>
+                </div>
+                <p style={{ margin: '3px 0 0', fontSize: '11px', color: '#C2410C' }}>
+                  Siram bunga tiap hari & rawat bersama teman / pasangan
+                </p>
+              </div>
+            </div>
+            <ArrowRight size={16} style={{ color: '#EA580C', flexShrink: 0 }} />
+          </div>
+        </section>
+
         {/* ─── 4. NOTIFIKASI SECTION ─── */}
         <section className="mb-section">
           <div className="mb-section-header">
@@ -541,6 +593,7 @@ export default function MobileDashboard({ onOpenStudio }: MobileDashboardProps =
         isOpen={isQuickMenuOpen}
         onClose={() => setIsQuickMenuOpen(false)}
         onOpenUnlockVip={() => setIsUnlockVipOpen(true)}
+        onOpenGarden={() => setIsGardenModalOpen(true)}
       />
 
       <MobileNotificationsModal
@@ -558,6 +611,12 @@ export default function MobileDashboard({ onOpenStudio }: MobileDashboardProps =
       <PremiumUnlockModal
         isOpen={isUnlockVipOpen}
         onClose={() => setIsUnlockVipOpen(false)}
+      />
+
+      <FlowerGardenModal
+        isOpen={isGardenModalOpen}
+        onClose={() => setIsGardenModalOpen(false)}
+        onOpenVipModal={() => setIsUnlockVipOpen(true)}
       />
 
       {isPremiumUnlocked && (

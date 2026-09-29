@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 140" width="120" height="140" fill="none">
+  <defs>
+    <filter id="softShadow" x="-10%" y="-10%" width="120%" height="120%" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="4" stdDeviation="3" flood-opacity="0.25"/>
+    </filter>
+    <radialGradient id="soilGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#45270e" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#2c1808" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <!-- Soil Mound Base -->
+  <ellipse cx="60" cy="132" rx="22" ry="6" fill="url(#soilGlow)" />
+  
+    <!-- Gnarled Bonsai Wood Branch -->
+    <path d="M60 130 Q58 100 52 82 Q46 65 60 48" stroke="#78350f" stroke-width="4.5" stroke-linecap="round"/>
+    <path d="M52 82 Q38 72 32 64" stroke="#78350f" stroke-width="3" stroke-linecap="round"/>
+    <path d="M56 62 Q72 56 82 50" stroke="#78350f" stroke-width="2.5" stroke-linecap="round"/>
+    <!-- Little green baby leaves -->
+    <ellipse cx="30" cy="62" rx="4" ry="2" fill="#86efac"/>
+    <ellipse cx="84" cy="48" rx="4" ry="2" fill="#86efac"/>
+    <!-- 3 Sakura Blossom Clusters -->
+    <g filter="url(#softShadow)">
+      <!-- Top Blossom -->
+      <g transform="translate(60, 44)">
+        <circle cx="0" cy="-7" r="5" fill="#fbcfe8"/>
+        <circle cx="-7" cy="-2" r="5" fill="#fbcfe8"/>
+        <circle cx="-4" cy="6" r="5" fill="#f472b6"/>
+        <circle cx="4" cy="6" r="5" fill="#f472b6"/>
+        <circle cx="7" cy="-2" r="5" fill="#fbcfe8"/>
+        <circle cx="0" cy="0" r="3" fill="#f43f5e"/>
+        <circle cx="0" cy="0" r="1.5" fill="#fef08a"/>
+      </g>
+      <!-- Left Blossom -->
+      <g transform="translate(36, 60)">
+        <circle cx="0" cy="-6" r="4.5" fill="#fbcfe8"/>
+        <circle cx="-6" cy="-2" r="4.5" fill="#fbcfe8"/>
+        <circle cx="-3" cy="5" r="4.5" fill="#f472b6"/>
+        <circle cx="3" cy="5" r="4.5" fill="#f472b6"/>
+        <circle cx="6" cy="-2" r="4.5" fill="#fbcfe8"/>
+        <circle cx="0" cy="0" r="2.5" fill="#f43f5e"/>
+      </g>
+      <!-- Right Blossom -->
+      <g transform="translate(80, 48)">
+        <circle cx="0" cy="-6" r="4.5" fill="#fbcfe8"/>
+        <circle cx="-6" cy="-2" r="4.5" fill="#fbcfe8"/>
+        <circle cx="-3" cy="5" r="4.5" fill="#f472b6"/>
+        <circle cx="3" cy="5" r="4.5" fill="#f472b6"/>
+        <circle cx="6" cy="-2" r="4.5" fill="#fbcfe8"/>
+        <circle cx="0" cy="0" r="2.5" fill="#f43f5e"/>
+      </g>
+    </g>
+  
+</svg>

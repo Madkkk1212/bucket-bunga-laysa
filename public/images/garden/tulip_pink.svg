@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 140" width="120" height="140" fill="none">
+  <defs>
+    <filter id="softShadow" x="-10%" y="-10%" width="120%" height="120%" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="4" stdDeviation="3" flood-opacity="0.25"/>
+    </filter>
+    <radialGradient id="soilGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#45270e" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#2c1808" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <!-- Soil Mound Base -->
+  <ellipse cx="60" cy="132" rx="22" ry="6" fill="url(#soilGlow)" />
+  
+    <!-- Upright Broad Leaves -->
+    <path d="M58 130 Q36 100 42 65 Q50 90 58 115" fill="#15803d" stroke="#166534" stroke-width="1.5"/>
+    <path d="M62 130 Q84 95 78 60 Q70 88 62 115" fill="#16a34a" stroke="#166534" stroke-width="1.5"/>
+    <!-- Stem -->
+    <path d="M60 130 Q60 100 60 68" stroke="#16a34a" stroke-width="4.5" stroke-linecap="round"/>
+    <!-- Tulip Cup -->
+    <g filter="url(#softShadow)">
+      <!-- Back Petals -->
+      <ellipse cx="60" cy="48" rx="18" ry="24" fill="#be123c"/>
+      <!-- Left Petal -->
+      <path d="M60 68 C42 66 40 40 50 32 C58 42 60 55 60 68 Z" fill="#fb7185"/>
+      <!-- Right Petal -->
+      <path d="M60 68 C78 66 80 40 70 32 C62 42 60 55 60 68 Z" fill="#fb7185"/>
+      <!-- Center Front Petal -->
+      <path d="M60 70 C48 68 46 44 60 30 C74 44 72 68 60 70 Z" fill="#fecdd3"/>
+      <!-- Highlight rim -->
+      <path d="M54 36 Q60 30 66 36" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+    </g>
+  
+</svg>

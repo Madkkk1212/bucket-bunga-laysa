@@ -94,7 +94,11 @@ export default function PreviewCanvas({ canvasRef: externalRef }: PreviewCanvasP
   const drawSelectionHandles = (ctx: CanvasRenderingContext2D, item: FlowerRenderItem) => {
     const { x, y, sz, rot } = item;
     const half = sz / 2;
-    const rotatePinDistance = half + 26;
+    const isTouch = typeof window !== 'undefined' && ('ontouchstart' in window || (navigator?.maxTouchPoints ?? 0) > 0);
+    const flowerHandleRadius = isTouch ? 22 : 18;
+    const rotatePinDistance = half + (isTouch ? 38 : 32);
+    const scaleHandleX = half + (isTouch ? 14 : 10);
+    const scaleHandleY = half + (isTouch ? 14 : 10);
 
     ctx.save();
     ctx.translate(x, y);
@@ -102,49 +106,63 @@ export default function PreviewCanvas({ canvasRef: externalRef }: PreviewCanvasP
 
     // Selection dashed boundary
     ctx.beginPath();
-    ctx.roundRect(-half - 6, -half - 6, sz + 12, sz + 12, 10);
+    ctx.roundRect(-half - 8, -half - 8, sz + 16, sz + 16, 12);
     ctx.strokeStyle = '#D97706'; // Vibrant amber gold
-    ctx.lineWidth = 2;
-    ctx.setLineDash([5, 5]);
+    ctx.lineWidth = 2.5;
+    ctx.setLineDash([6, 5]);
+    ctx.shadowColor = 'rgba(217, 119, 6, 0.35)';
+    ctx.shadowBlur = 8;
     ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.shadowBlur = 0;
 
     // Stem line to rotate knob
     ctx.beginPath();
-    ctx.moveTo(0, -half - 6);
+    ctx.moveTo(0, -half - 8);
     ctx.lineTo(0, -rotatePinDistance);
     ctx.strokeStyle = '#D97706';
-    ctx.lineWidth = 1.5;
-    ctx.setLineDash([]);
+    ctx.lineWidth = 2;
     ctx.stroke();
 
     // Rotate Handle (Top circle with rotation icon)
     ctx.beginPath();
-    ctx.arc(0, -rotatePinDistance, 10, 0, Math.PI * 2);
+    ctx.arc(0, -rotatePinDistance, flowerHandleRadius, 0, Math.PI * 2);
     ctx.fillStyle = '#FFFFFF';
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.25)';
+    ctx.shadowBlur = 8;
     ctx.fill();
+    ctx.shadowBlur = 0;
     ctx.strokeStyle = '#D97706';
-    ctx.lineWidth = 2.5;
+    ctx.lineWidth = 3;
     ctx.stroke();
 
     // Rotate icon ↻ inside circle
-    ctx.font = '12px sans-serif';
+    ctx.font = `bold ${isTouch ? 18 : 15}px sans-serif`;
     ctx.fillStyle = '#D97706';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText('↻', 0, -rotatePinDistance);
 
-    // Scale Handle (Bottom-Right corner square with diagonal arrow)
-    const scaleHandleX = half + 6;
-    const scaleHandleY = half + 6;
+    // Scale Handle (Bottom-Right corner with diagonal arrow)
     ctx.beginPath();
-    ctx.arc(scaleHandleX, scaleHandleY, 9, 0, Math.PI * 2);
-    ctx.fillStyle = '#FFFFFF';
-    ctx.fill();
+    ctx.moveTo(half + 8, half + 8);
+    ctx.lineTo(scaleHandleX, scaleHandleY);
     ctx.strokeStyle = '#D97706';
-    ctx.lineWidth = 2.5;
+    ctx.lineWidth = 2;
     ctx.stroke();
 
-    ctx.font = '11px sans-serif';
+    ctx.beginPath();
+    ctx.arc(scaleHandleX, scaleHandleY, flowerHandleRadius, 0, Math.PI * 2);
+    ctx.fillStyle = '#FFFFFF';
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.25)';
+    ctx.shadowBlur = 8;
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = '#D97706';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+
+    ctx.font = `bold ${isTouch ? 17 : 14}px sans-serif`;
     ctx.fillStyle = '#D97706';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
@@ -166,15 +184,18 @@ export default function PreviewCanvas({ canvasRef: externalRef }: PreviewCanvasP
     const bcy = by + bh * 0.52;
 
     const isTouch = typeof window !== 'undefined' && ('ontouchstart' in window || (navigator?.maxTouchPoints ?? 0) > 0);
-    const handleRadius = isTouch ? 15 : 12;
+    const bucketHandleRadius = isTouch ? 26 : 22;
+    const rotPinY = by - (isTouch ? 88 : 76);
+    const scaleHandleX = bx + bw + (isTouch ? 24 : 18);
+    const scaleHandleY = by + bh + (isTouch ? 24 : 18);
 
     ctx.save();
 
     // 1. Dashed Bounding Box around Bucket
     ctx.beginPath();
-    ctx.roundRect(bx - 8, by - 8, bw + 16, bh + 16, 18);
+    ctx.roundRect(bx - 10, by - 10, bw + 20, bh + 20, 20);
     ctx.strokeStyle = isSelected ? '#E11D48' : 'rgba(225, 29, 72, 0.45)';
-    ctx.lineWidth = isSelected ? 2.5 : 1.5;
+    ctx.lineWidth = isSelected ? 2.8 : 1.6;
     ctx.setLineDash(isSelected ? [8, 6] : [6, 6]);
     if (isSelected) {
       ctx.shadowColor = 'rgba(225, 29, 72, 0.35)';
@@ -185,19 +206,19 @@ export default function PreviewCanvas({ canvasRef: externalRef }: PreviewCanvasP
     ctx.shadowBlur = 0;
 
     // 2. Top Pill Badge: "🪣 Buket • Seret / Putar / Ukuran"
-    const pillW = isSelected ? 186 : 136;
-    const pillH = 26;
+    const pillW = isSelected ? 204 : 144;
+    const pillH = 28;
     const pillX = bcx - pillW / 2;
-    const pillY = by - 36;
+    const pillY = by - 40;
     ctx.beginPath();
-    ctx.roundRect(pillX, pillY, pillW, pillH, 13);
+    ctx.roundRect(pillX, pillY, pillW, pillH, 14);
     ctx.fillStyle = isSelected ? '#E11D48' : 'rgba(225, 29, 72, 0.88)';
     ctx.shadowColor = 'rgba(0,0,0,0.18)';
     ctx.shadowBlur = 6;
     ctx.fill();
     ctx.shadowBlur = 0;
 
-    ctx.font = 'bold 10px "Montserrat", -apple-system, sans-serif';
+    ctx.font = 'bold 10.5px "Montserrat", -apple-system, sans-serif';
     ctx.fillStyle = '#FFFFFF';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
@@ -208,16 +229,16 @@ export default function PreviewCanvas({ canvasRef: externalRef }: PreviewCanvasP
     );
 
     // 3. Center Drag Move Icon
-    const moveRadius = isTouch ? 22 : 18;
+    const moveRadius = isTouch ? 24 : 20;
     ctx.beginPath();
     ctx.arc(bcx, bcy, moveRadius, 0, Math.PI * 2);
     ctx.fillStyle = isSelected ? 'rgba(225, 29, 72, 0.18)' : 'rgba(225, 29, 72, 0.10)';
     ctx.fill();
     ctx.strokeStyle = isSelected ? '#E11D48' : 'rgba(225, 29, 72, 0.6)';
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 2.5;
     ctx.stroke();
 
-    ctx.font = '18px sans-serif';
+    ctx.font = '20px sans-serif';
     ctx.fillStyle = isSelected ? '#E11D48' : 'rgba(225, 29, 72, 0.85)';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
@@ -226,29 +247,28 @@ export default function PreviewCanvas({ canvasRef: externalRef }: PreviewCanvasP
     // If bucket is selected, show interactive Rotate Handle and Scale Handle!
     if (isSelected) {
       // 4. ROTATE HANDLE (Top, above badge)
-      const rotPinY = by - 68;
       // Stem line
       ctx.beginPath();
       ctx.moveTo(bcx, pillY);
       ctx.lineTo(bcx, rotPinY);
       ctx.strokeStyle = '#E11D48';
-      ctx.lineWidth = 2;
+      ctx.lineWidth = 2.5;
       ctx.stroke();
 
       // Rotate knob circle
       ctx.beginPath();
-      ctx.arc(bcx, rotPinY, handleRadius, 0, Math.PI * 2);
+      ctx.arc(bcx, rotPinY, bucketHandleRadius, 0, Math.PI * 2);
       ctx.fillStyle = '#FFFFFF';
-      ctx.shadowColor = 'rgba(0,0,0,0.2)';
-      ctx.shadowBlur = 8;
+      ctx.shadowColor = 'rgba(0,0,0,0.25)';
+      ctx.shadowBlur = 10;
       ctx.fill();
       ctx.shadowBlur = 0;
       ctx.strokeStyle = '#E11D48';
-      ctx.lineWidth = 2.5;
+      ctx.lineWidth = 3.5;
       ctx.stroke();
 
       // Rotate icon ↻
-      ctx.font = 'bold 15px sans-serif';
+      ctx.font = `bold ${isTouch ? 22 : 18}px sans-serif`;
       ctx.fillStyle = '#E11D48';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
@@ -256,44 +276,41 @@ export default function PreviewCanvas({ canvasRef: externalRef }: PreviewCanvasP
 
       // Rotation Degree Badge
       const currentRot = Math.round(design.bouquetRotation ?? 0);
-      const rotBadgeW = 42;
-      const rotBadgeH = 18;
+      const rotBadgeW = 48;
+      const rotBadgeH = 22;
       ctx.beginPath();
-      ctx.roundRect(bcx + handleRadius + 6, rotPinY - rotBadgeH / 2, rotBadgeW, rotBadgeH, 9);
+      ctx.roundRect(bcx + bucketHandleRadius + 8, rotPinY - rotBadgeH / 2, rotBadgeW, rotBadgeH, 11);
       ctx.fillStyle = '#E11D48';
       ctx.fill();
-      ctx.font = 'bold 9.5px "Montserrat", sans-serif';
+      ctx.font = 'bold 10.5px "Montserrat", sans-serif';
       ctx.fillStyle = '#FFFFFF';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(`${currentRot}°`, bcx + handleRadius + 6 + rotBadgeW / 2, rotPinY);
+      ctx.fillText(`${currentRot}°`, bcx + bucketHandleRadius + 8 + rotBadgeW / 2, rotPinY);
 
       // 5. SCALE HANDLE (Bottom-Right corner)
-      const scaleHandleX = bx + bw + 14;
-      const scaleHandleY = by + bh + 14;
-
       // Stem line to corner
       ctx.beginPath();
       ctx.moveTo(bx + bw, by + bh);
       ctx.lineTo(scaleHandleX, scaleHandleY);
       ctx.strokeStyle = '#E11D48';
-      ctx.lineWidth = 1.5;
+      ctx.lineWidth = 2.5;
       ctx.stroke();
 
       // Scale knob circle
       ctx.beginPath();
-      ctx.arc(scaleHandleX, scaleHandleY, handleRadius, 0, Math.PI * 2);
+      ctx.arc(scaleHandleX, scaleHandleY, bucketHandleRadius, 0, Math.PI * 2);
       ctx.fillStyle = '#FFFFFF';
-      ctx.shadowColor = 'rgba(0,0,0,0.2)';
-      ctx.shadowBlur = 8;
+      ctx.shadowColor = 'rgba(0,0,0,0.25)';
+      ctx.shadowBlur = 10;
       ctx.fill();
       ctx.shadowBlur = 0;
       ctx.strokeStyle = '#E11D48';
-      ctx.lineWidth = 2.5;
+      ctx.lineWidth = 3.5;
       ctx.stroke();
 
       // Scale icon ⤡
-      ctx.font = 'bold 14px sans-serif';
+      ctx.font = `bold ${isTouch ? 20 : 17}px sans-serif`;
       ctx.fillStyle = '#E11D48';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
@@ -301,17 +318,17 @@ export default function PreviewCanvas({ canvasRef: externalRef }: PreviewCanvasP
 
       // Scale Percentage Badge
       const currentScalePct = Math.round((design.bouquetScale ?? 1.0) * 100);
-      const scaleBadgeW = 48;
-      const scaleBadgeH = 18;
+      const scaleBadgeW = 54;
+      const scaleBadgeH = 22;
       ctx.beginPath();
-      ctx.roundRect(scaleHandleX + handleRadius + 4, scaleHandleY - scaleBadgeH / 2, scaleBadgeW, scaleBadgeH, 9);
+      ctx.roundRect(scaleHandleX + bucketHandleRadius + 6, scaleHandleY - scaleBadgeH / 2, scaleBadgeW, scaleBadgeH, 11);
       ctx.fillStyle = '#BE123C';
       ctx.fill();
-      ctx.font = 'bold 9.5px "Montserrat", sans-serif';
+      ctx.font = 'bold 10.5px "Montserrat", sans-serif';
       ctx.fillStyle = '#FFFFFF';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(`${currentScalePct}%`, scaleHandleX + handleRadius + 4 + scaleBadgeW / 2, scaleHandleY);
+      ctx.fillText(`${currentScalePct}%`, scaleHandleX + bucketHandleRadius + 6 + scaleBadgeW / 2, scaleHandleY);
     }
 
     ctx.restore();
@@ -628,15 +645,18 @@ export default function PreviewCanvas({ canvasRef: externalRef }: PreviewCanvasP
     const localX = dx * cos - dy * sin;
     const localY = dx * sin + dy * cos;
 
-    // 1. Rotate handle is at (0, -half - 26)
-    const rotPinDist = half + 26;
-    const distToRotate = Math.hypot(localX - 0, localY - (-rotPinDist));
     const isTouch = typeof window !== 'undefined' && ('ontouchstart' in window || (navigator?.maxTouchPoints ?? 0) > 0);
-    const handleHitTolerance = isTouch ? 28 : 16;
+    const rotatePinDistance = half + (isTouch ? 38 : 32);
+    const scaleHandleX = half + (isTouch ? 14 : 10);
+    const scaleHandleY = half + (isTouch ? 14 : 10);
+    const handleHitTolerance = isTouch ? 38 : 24;
+
+    // 1. Rotate handle is at (0, -rotatePinDistance)
+    const distToRotate = Math.hypot(localX - 0, localY - (-rotatePinDistance));
     if (distToRotate <= handleHitTolerance) return 'rotate';
 
-    // 2. Scale handle is at (half + 6, half + 6)
-    const distToScale = Math.hypot(localX - (half + 6), localY - (half + 6));
+    // 2. Scale handle is at (scaleHandleX, scaleHandleY)
+    const distToScale = Math.hypot(localX - scaleHandleX, localY - scaleHandleY);
     if (distToScale <= handleHitTolerance) return 'scale';
 
     return null;
@@ -649,12 +669,11 @@ export default function PreviewCanvas({ canvasRef: externalRef }: PreviewCanvasP
   ): 'bucket-rotate' | 'bucket-scale' | 'bucket-move' | null => {
     const { bucketX: bx, bucketY: by, bucketW: bw, bucketH: bh } = dims;
     const bcx = bx + bw / 2;
-    const rotPinY = by - 68;
-    const scaleHandleX = bx + bw + 14;
-    const scaleHandleY = by + bh + 14;
-
     const isTouch = typeof window !== 'undefined' && ('ontouchstart' in window || (navigator?.maxTouchPoints ?? 0) > 0);
-    const handleHitTolerance = isTouch ? 36 : 22;
+    const rotPinY = by - (isTouch ? 88 : 76);
+    const scaleHandleX = bx + bw + (isTouch ? 24 : 18);
+    const scaleHandleY = by + bh + (isTouch ? 24 : 18);
+    const handleHitTolerance = isTouch ? 44 : 30;
 
     // 1. Check Rotate Handle Hit
     if (Math.hypot(flMouseX - bcx, flMouseY - rotPinY) <= handleHitTolerance) {
@@ -668,10 +687,10 @@ export default function PreviewCanvas({ canvasRef: externalRef }: PreviewCanvasP
 
     // 3. Check Bucket Body or Top Pill Badge Hit
     if (
-      flMouseX >= bx - 14 &&
-      flMouseX <= bx + bw + 14 &&
-      flMouseY >= by - 44 &&
-      flMouseY <= by + bh + 14
+      flMouseX >= bx - 16 &&
+      flMouseX <= bx + bw + 16 &&
+      flMouseY >= by - 50 &&
+      flMouseY <= by + bh + 16
     ) {
       return 'bucket-move';
     }

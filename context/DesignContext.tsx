@@ -111,8 +111,11 @@ export function DesignProvider({ children }: { children: React.ReactNode }) {
   const [hoveredFlowerUid, setHoveredFlowerUid] = useState<string | null>(null);
   const [isPremiumUnlocked, setIsPremiumUnlocked] = useState<boolean>(false);
   const [premiumUserName, setPremiumUserName] = useState<string>('');
+  const [premiumTier, setPremiumTier] = useState<'daily' | 'weekly' | 'lifetime' | null>(null);
+  const [premiumExpiresAt, setPremiumExpiresAt] = useState<string | null>(null);
+  const [hasGardenAccess, setHasGardenAccess] = useState<boolean>(false);
 
-  // Validasi sesi VIP aktif ke server — jika admin reset/hapus/nonaktifkan kode, VIP seketika dicabut
+  // Validasi sesi VIP aktif ke server — jika admin reset/hapus/nonaktifkan/expired kode, VIP seketika dicabut
   const validateVipSession = useCallback(async () => {
     if (typeof window === 'undefined') return;
     try {
@@ -135,20 +138,43 @@ export function DesignProvider({ children }: { children: React.ReactNode }) {
       });
 
       const data = await res.json();
-      if (!data.valid || data.revoked) {
-        // Cabut VIP seketika dari semua perangkat
+      if (!data.valid || data.revoked || data.expired) {
+        // Cabut VIP seketika dari semua perangkat jika dicabut / habis masa aktif
         setIsPremiumUnlocked(false);
         setPremiumUserName('');
+        setPremiumTier(null);
+        setPremiumExpiresAt(null);
+        setHasGardenAccess(false);
         try {
           localStorage.removeItem('laysa_premium_unlocked');
           localStorage.removeItem('laysa_premium_user_name');
           localStorage.removeItem('laysa_access_code');
+          localStorage.removeItem('laysa_premium_tier');
+          localStorage.removeItem('laysa_premium_expires_at');
+          localStorage.removeItem('laysa_premium_garden_access');
         } catch { /* ignore */ }
-      } else if (data.userName && data.userName !== savedName) {
-        setPremiumUserName(data.userName);
-        try {
-          localStorage.setItem('laysa_premium_user_name', data.userName);
-        } catch { /* ignore */ }
+      } else {
+        if (data.tier) {
+          setPremiumTier(data.tier);
+          try { localStorage.setItem('laysa_premium_tier', data.tier); } catch { /* ignore */ }
+        }
+        if (data.expiresAt !== undefined) {
+          setPremiumExpiresAt(data.expiresAt);
+          try {
+            if (data.expiresAt) localStorage.setItem('laysa_premium_expires_at', data.expiresAt);
+            else localStorage.removeItem('laysa_premium_expires_at');
+          } catch { /* ignore */ }
+        }
+        if (data.hasGardenAccess !== undefined) {
+          setHasGardenAccess(Boolean(data.hasGardenAccess));
+          try { localStorage.setItem('laysa_premium_garden_access', data.hasGardenAccess ? 'true' : 'false'); } catch { /* ignore */ }
+        }
+        if (data.userName && data.userName !== savedName) {
+          setPremiumUserName(data.userName);
+          try {
+            localStorage.setItem('laysa_premium_user_name', data.userName);
+          } catch { /* ignore */ }
+        }
       }
     } catch {
       // Jika offline, pertahankan status lokal
@@ -166,6 +192,18 @@ export function DesignProvider({ children }: { children: React.ReactNode }) {
       if (savedName) {
         setPremiumUserName(savedName);
       }
+      const savedTier = localStorage.getItem('laysa_premium_tier') as any;
+      if (savedTier) {
+        setPremiumTier(savedTier);
+      }
+      const savedExp = localStorage.getItem('laysa_premium_expires_at');
+      if (savedExp) {
+        setPremiumExpiresAt(savedExp);
+      }
+      const savedGarden = localStorage.getItem('laysa_premium_garden_access');
+      if (savedGarden === 'true') {
+        setHasGardenAccess(true);
+      }
 
       // Validasi langsung saat pertama kali mount
       validateVipSession();
@@ -174,7 +212,7 @@ export function DesignProvider({ children }: { children: React.ReactNode }) {
       const onFocus = () => validateVipSession();
       window.addEventListener('focus', onFocus);
 
-      // Cek berkala setiap 25 detik agar jika admin klik reset, device langsung kick
+      // Cek berkala setiap 25 detik agar jika admin klik reset/expired, device langsung kick
       const interval = setInterval(validateVipSession, 25000);
 
       return () => {
@@ -200,12 +238,27 @@ export function DesignProvider({ children }: { children: React.ReactNode }) {
         if (data.userName) {
           setPremiumUserName(data.userName);
         }
+        if (data.tier) {
+          setPremiumTier(data.tier);
+        }
+        if (data.expiresAt) {
+          setPremiumExpiresAt(data.expiresAt);
+        }
+        setHasGardenAccess(Boolean(data.hasGardenAccess));
+
         try {
           localStorage.setItem('laysa_premium_unlocked', 'true');
           localStorage.setItem('laysa_access_code', data.code || code.trim().toUpperCase());
           if (data.userName) {
             localStorage.setItem('laysa_premium_user_name', data.userName);
           }
+          if (data.tier) {
+            localStorage.setItem('laysa_premium_tier', data.tier);
+          }
+          if (data.expiresAt) {
+            localStorage.setItem('laysa_premium_expires_at', data.expiresAt);
+          }
+          localStorage.setItem('laysa_premium_garden_access', data.hasGardenAccess ? 'true' : 'false');
         } catch {
           // Ignore
         }
@@ -220,10 +273,16 @@ export function DesignProvider({ children }: { children: React.ReactNode }) {
   const revokePremium = useCallback(() => {
     setIsPremiumUnlocked(false);
     setPremiumUserName('');
+    setPremiumTier(null);
+    setPremiumExpiresAt(null);
+    setHasGardenAccess(false);
     try {
       localStorage.removeItem('laysa_premium_unlocked');
       localStorage.removeItem('laysa_premium_user_name');
       localStorage.removeItem('laysa_access_code');
+      localStorage.removeItem('laysa_premium_tier');
+      localStorage.removeItem('laysa_premium_expires_at');
+      localStorage.removeItem('laysa_premium_garden_access');
     } catch {
       // Ignore
     }
@@ -635,6 +694,9 @@ export function DesignProvider({ children }: { children: React.ReactNode }) {
     resetToEdit2D,
     isPremiumUnlocked,
     premiumUserName,
+    premiumTier,
+    premiumExpiresAt,
+    hasGardenAccess,
     unlockPremium,
     revokePremium,
     randomizeFlowers,

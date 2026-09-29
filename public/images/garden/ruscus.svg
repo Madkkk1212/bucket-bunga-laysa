@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 140" width="120" height="140" fill="none">
+  <defs>
+    <filter id="softShadow" x="-10%" y="-10%" width="120%" height="120%" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="4" stdDeviation="3" flood-opacity="0.25"/>
+    </filter>
+    <radialGradient id="soilGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#45270e" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#2c1808" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <!-- Soil Mound Base -->
+  <ellipse cx="60" cy="132" rx="22" ry="6" fill="url(#soilGlow)" />
+  
+    <!-- Zigzag emerald stem -->
+    <path d="M60 130 Q58 80 60 25" stroke="#065f46" stroke-width="3.5" stroke-linecap="round"/>
+    <!-- Pointed Cladodes (Leaves) -->
+    <g filter="url(#softShadow)">
+      <path d="M60 35 Q40 32 36 24 Q50 22 60 30" fill="#10b981" stroke="#065f46" stroke-width="1.2"/>
+      <path d="M60 48 Q80 44 84 36 Q70 34 60 42" fill="#059669" stroke="#065f46" stroke-width="1.2"/>
+      <path d="M60 62 Q38 58 34 50 Q48 48 60 56" fill="#10b981" stroke="#065f46" stroke-width="1.2"/>
+      <path d="M60 76 Q82 72 86 64 Q72 62 60 70" fill="#059669" stroke="#065f46" stroke-width="1.2"/>
+      <path d="M60 92 Q36 88 30 78 Q46 76 60 84" fill="#10b981" stroke="#065f46" stroke-width="1.2"/>
+      <path d="M60 106 Q84 102 88 92 Q74 90 60 100" fill="#059669" stroke="#065f46" stroke-width="1.2"/>
+    </g>
+  
+</svg>

@@ -1,0 +1,60 @@
+[
+  {
+    "id": "4234bfa5-623e-412d-ba0b-a0741558afc4",
+    "gardenCode": "U22Y9E",
+    "gardenName": "KEBUN NEW",
+    "flowerType": "sunflower",
+    "flowerName": "Bunga Matahari Hangat",
+    "growthStage": 1,
+    "streakCount": 1,
+    "ownerName": "biawak",
+    "ownerDeviceId": "dev_d5glqy8_mufrhnqc",
+    "partnerName": null,
+    "partnerDeviceId": null,
+    "lastWateredAt": "2026-09-28T15:32:24.838Z",
+    "lastWateredBy": "biawak",
+    "wateredToday": true,
+    "dailyNotes": [
+      {
+        "id": "note_1790609544838",
+        "author": "biawak",
+        "text": "Bibit pertama berhasil ditanam dengan cinta! 🌱✨",
+        "createdAt": "2026-09-28T15:32:24.838Z"
+      }
+    ],
+    "createdAt": "2026-09-28T15:32:24.838Z",
+    "updatedAt": "2026-09-28T15:32:24.838Z"
+  },
+  {
+    "id": "g_1790594951342_0fg6f",
+    "gardenCode": "NELBBG",
+    "gardenName": "Taman Indah Rian",
+    "flowerType": "rose_red",
+    "flowerName": "Mawar Merah Sejati",
+    "growthStage": 1,
+    "streakCount": 1,
+    "ownerName": "Rian",
+    "ownerDeviceId": "test-dev-001",
+    "partnerName": "Laysa",
+    "partnerDeviceId": "test-dev-002",
+    "lastWateredAt": "2026-09-28T11:29:11.342Z",
+    "lastWateredBy": "Rian",
+    "wateredToday": true,
+    "dailyNotes": [
+      {
+        "id": "note_1790594989344",
+        "author": "Laysa",
+        "text": "🌸 Laysa bergabung ke kebun! Sekarang kita rawat bunga ini berdua ya 💕",
+        "createdAt": "2026-09-28T11:29:49.344Z"
+      },
+      {
+        "id": "note_1790594951342",
+        "author": "Rian",
+        "text": "Bibit pertama berhasil ditanam dengan cinta! 🌱✨",
+        "createdAt": "2026-09-28T11:29:11.342Z"
+      }
+    ],
+    "createdAt": "2026-09-28T11:29:11.342Z",
+    "updatedAt": "2026-09-28T11:29:49.344Z"
+  }
+]

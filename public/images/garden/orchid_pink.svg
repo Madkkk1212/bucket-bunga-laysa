@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 140" width="120" height="140" fill="none">
+  <defs>
+    <filter id="softShadow" x="-10%" y="-10%" width="120%" height="120%" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="4" stdDeviation="3" flood-opacity="0.25"/>
+    </filter>
+    <radialGradient id="soilGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#45270e" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#2c1808" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <!-- Soil Mound Base -->
+  <ellipse cx="60" cy="132" rx="22" ry="6" fill="url(#soilGlow)" />
+  
+    <!-- Thick Basal Leaves -->
+    <path d="M60 130 Q30 132 25 120 Q42 114 60 126" fill="#166534" stroke="#14532d" stroke-width="1.5"/>
+    <path d="M60 130 Q90 132 95 120 Q78 114 60 126" fill="#15803d" stroke="#14532d" stroke-width="1.5"/>
+    <!-- Graceful Arching Stem -->
+    <path d="M60 128 Q62 95 56 68 Q52 48 64 36" stroke="#15803d" stroke-width="3" stroke-linecap="round"/>
+    <!-- Little buds on tip -->
+    <circle cx="64" cy="36" r="3.5" fill="#86efac"/>
+    <circle cx="58" cy="44" r="4" fill="#a7f3d0"/>
+    <!-- Main Blossom -->
+    <g filter="url(#softShadow)">
+      <!-- Back Sepals -->
+      <ellipse cx="58" cy="62" rx="18" ry="8" fill="#db2777" transform="rotate(30 58 62)"/>
+      <ellipse cx="58" cy="62" rx="18" ry="8" fill="#db2777" transform="rotate(-30 58 62)"/>
+      <ellipse cx="58" cy="50" rx="8" ry="16" fill="#f472b6"/>
+      <!-- Front Wings -->
+      <ellipse cx="44" cy="64" rx="14" ry="12" fill="#f472b6"/>
+      <ellipse cx="72" cy="64" rx="14" ry="12" fill="#f472b6"/>
+      <!-- Exotic Center Lip -->
+      <path d="M52 68 Q58 80 64 68 Q58 62 52 68 Z" fill="#9d174d"/>
+      <circle cx="58" cy="66" r="3.5" fill="#facc15"/>
+    </g>
+  
+</svg>

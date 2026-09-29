@@ -10,9 +10,10 @@ interface Props {
   isOpen: boolean;
   onClose: () => void;
   onOpenUnlockVip?: () => void;
+  onOpenGarden?: () => void;
 }
 
-export default function MobileQuickMenuModal({ isOpen, onClose, onOpenUnlockVip }: Props) {
+export default function MobileQuickMenuModal({ isOpen, onClose, onOpenUnlockVip, onOpenGarden }: Props) {
   const { isPremiumUnlocked, premiumUserName, resetDesign } = useDesign();
 
   if (!isOpen) return null;
@@ -86,7 +87,39 @@ export default function MobileQuickMenuModal({ isOpen, onClose, onOpenUnlockVip 
               )}
             </div>
 
-            {/* Menu List */}
+            {/* Menu List: 1. Kebun Bunga Streak */}
+            <button
+              type="button"
+              onClick={() => {
+                onClose();
+                onOpenGarden?.();
+              }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                borderRadius: '16px',
+                border: '1.5px solid #FFEDD5',
+                background: '#FFF7ED',
+                padding: '12px 14px',
+                cursor: 'pointer',
+                textAlign: 'left',
+                width: '100%',
+              }}
+            >
+              <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: '#FED7AA', color: '#EA580C', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>
+                🌱
+              </div>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <p style={{ fontSize: '12.5px', fontWeight: 800, color: '#9A3412' }}>Kebun Bunga Harian</p>
+                  <span style={{ fontSize: '10px', fontWeight: 800, background: '#FED7AA', color: '#9A3412', borderRadius: '9999px', padding: '1px 6px' }}>🔥 Streak</span>
+                </div>
+                <p style={{ fontSize: '11px', color: '#C2410C', marginTop: '2px' }}>Siram bunga setiap hari bersama pasangan / sahabat</p>
+              </div>
+            </button>
+
+            {/* Menu List: 2. Panduan Tutorial */}
             <Link
               href="/tutorial"
               onClick={onClose}

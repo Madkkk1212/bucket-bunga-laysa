@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 140" width="120" height="140" fill="none">
+  <defs>
+    <filter id="softShadow" x="-10%" y="-10%" width="120%" height="120%" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="4" stdDeviation="3" flood-opacity="0.25"/>
+    </filter>
+    <radialGradient id="soilGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#45270e" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#2c1808" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <!-- Soil Mound Base -->
+  <ellipse cx="60" cy="132" rx="22" ry="6" fill="url(#soilGlow)" />
+  
+    <!-- Fine Needle Foliage Base -->
+    <path d="M60 130 Q40 126 30 115" stroke="#4ade80" stroke-width="2"/>
+    <path d="M60 130 Q46 118 36 105" stroke="#22c55e" stroke-width="2"/>
+    <path d="M60 130 Q74 118 84 105" stroke="#22c55e" stroke-width="2"/>
+    <path d="M60 130 Q80 126 90 115" stroke="#4ade80" stroke-width="2"/>
+    <!-- 3 Stems -->
+    <path d="M52 130 Q50 85 46 45" stroke="#15803d" stroke-width="2.5"/>
+    <path d="M60 130 Q60 75 60 30" stroke="#15803d" stroke-width="3"/>
+    <path d="M68 130 Q70 85 74 45" stroke="#15803d" stroke-width="2.5"/>
+    <!-- Flower Whorls -->
+    <g filter="url(#softShadow)">
+      <!-- Center Spire -->
+      <ellipse cx="60" cy="32" rx="4" ry="5" fill="#c084fc"/>
+      <ellipse cx="57" cy="38" rx="4.5" ry="4" fill="#a855f7"/>
+      <ellipse cx="63" cy="38" rx="4.5" ry="4" fill="#a855f7"/>
+      <ellipse cx="56" cy="46" rx="5" ry="4.5" fill="#7e22ce"/>
+      <ellipse cx="64" cy="46" rx="5" ry="4.5" fill="#7e22ce"/>
+      <ellipse cx="55" cy="54" rx="5" ry="4.5" fill="#6b21a8"/>
+      <ellipse cx="65" cy="54" rx="5" ry="4.5" fill="#6b21a8"/>
+      <!-- Left Spire -->
+      <ellipse cx="46" cy="46" rx="3.5" ry="4" fill="#c084fc"/>
+      <ellipse cx="43" cy="52" rx="4" ry="3.5" fill="#a855f7"/>
+      <ellipse cx="49" cy="52" rx="4" ry="3.5" fill="#a855f7"/>
+      <ellipse cx="42" cy="60" rx="4.5" ry="4" fill="#7e22ce"/>
+      <ellipse cx="50" cy="60" rx="4.5" ry="4" fill="#7e22ce"/>
+      <!-- Right Spire -->
+      <ellipse cx="74" cy="46" rx="3.5" ry="4" fill="#c084fc"/>
+      <ellipse cx="71" cy="52" rx="4" ry="3.5" fill="#a855f7"/>
+      <ellipse cx="77" cy="52" rx="4" ry="3.5" fill="#a855f7"/>
+      <ellipse cx="70" cy="60" rx="4.5" ry="4" fill="#7e22ce"/>
+      <ellipse cx="78" cy="60" rx="4.5" ry="4" fill="#7e22ce"/>
+    </g>
+  
+</svg>

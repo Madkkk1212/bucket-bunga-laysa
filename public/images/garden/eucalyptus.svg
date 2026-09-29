@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 140" width="120" height="140" fill="none">
+  <defs>
+    <filter id="softShadow" x="-10%" y="-10%" width="120%" height="120%" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="4" stdDeviation="3" flood-opacity="0.25"/>
+    </filter>
+    <radialGradient id="soilGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#45270e" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#2c1808" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <!-- Soil Mound Base -->
+  <ellipse cx="60" cy="132" rx="22" ry="6" fill="url(#soilGlow)" />
+  
+    <!-- Upright Zigzag Stem -->
+    <path d="M60 130 Q58 80 60 25" stroke="#065f46" stroke-width="3.5" stroke-linecap="round"/>
+    <circle cx="60" cy="24" r="4" fill="#34d399"/>
+    <!-- Silver Dollar Rounded Leaves -->
+    
+    <ellipse cx="46" cy="40" rx="9" ry="7" fill="#6ee7b7" stroke="#047857" stroke-width="1.5" transform="rotate(-20 46 40)" filter="url(#softShadow)"/>
+    <ellipse cx="46" cy="40" rx="6.3" ry="4.8999999999999995" fill="#a7f3d0" opacity="0.6"/>
+  
+
+    <ellipse cx="74" cy="46" rx="10" ry="8" fill="#6ee7b7" stroke="#047857" stroke-width="1.5" transform="rotate(15 74 46)" filter="url(#softShadow)"/>
+    <ellipse cx="74" cy="46" rx="7" ry="5.6" fill="#a7f3d0" opacity="0.6"/>
+  
+
+    <ellipse cx="44" cy="62" rx="11" ry="9" fill="#6ee7b7" stroke="#047857" stroke-width="1.5" transform="rotate(-15 44 62)" filter="url(#softShadow)"/>
+    <ellipse cx="44" cy="62" rx="7.699999999999999" ry="6.3" fill="#a7f3d0" opacity="0.6"/>
+  
+
+    <ellipse cx="76" cy="68" rx="12" ry="9" fill="#6ee7b7" stroke="#047857" stroke-width="1.5" transform="rotate(20 76 68)" filter="url(#softShadow)"/>
+    <ellipse cx="76" cy="68" rx="8.399999999999999" ry="6.3" fill="#a7f3d0" opacity="0.6"/>
+  
+
+    <ellipse cx="42" cy="86" rx="13" ry="10" fill="#6ee7b7" stroke="#047857" stroke-width="1.5" transform="rotate(-10 42 86)" filter="url(#softShadow)"/>
+    <ellipse cx="42" cy="86" rx="9.1" ry="7" fill="#a7f3d0" opacity="0.6"/>
+  
+
+    <ellipse cx="78" cy="92" rx="13" ry="10" fill="#6ee7b7" stroke="#047857" stroke-width="1.5" transform="rotate(15 78 92)" filter="url(#softShadow)"/>
+    <ellipse cx="78" cy="92" rx="9.1" ry="7" fill="#a7f3d0" opacity="0.6"/>
+  
+
+    <ellipse cx="48" cy="110" rx="14" ry="10" fill="#6ee7b7" stroke="#047857" stroke-width="1.5" transform="rotate(-5 48 110)" filter="url(#softShadow)"/>
+    <ellipse cx="48" cy="110" rx="9.799999999999999" ry="7" fill="#a7f3d0" opacity="0.6"/>
+  
+  
+</svg>

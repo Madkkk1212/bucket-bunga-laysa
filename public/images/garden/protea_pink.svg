@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 140" width="120" height="140" fill="none">
+  <defs>
+    <filter id="softShadow" x="-10%" y="-10%" width="120%" height="120%" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="4" stdDeviation="3" flood-opacity="0.25"/>
+    </filter>
+    <radialGradient id="soilGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#45270e" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#2c1808" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <!-- Soil Mound Base -->
+  <ellipse cx="60" cy="132" rx="22" ry="6" fill="url(#soilGlow)" />
+  
+    <!-- Leathery Leaves -->
+    <path d="M60 130 L60 80" stroke="#14532d" stroke-width="6" stroke-linecap="round"/>
+    <path d="M60 120 Q32 112 28 92 Q48 88 60 106" fill="#15803d" stroke="#14532d" stroke-width="1.8"/>
+    <path d="M60 105 Q88 98 92 78 Q72 74 60 92" fill="#15803d" stroke="#14532d" stroke-width="1.8"/>
+    <!-- King Protea Crown Bracts -->
+    <g filter="url(#softShadow)">
+      <!-- Central white dome -->
+      <ellipse cx="60" cy="54" rx="16" ry="20" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.5"/>
+      <!-- Pointed Pink Bracts surrounding -->
+      <path d="M42 66 L34 38 L48 54 Z" fill="#fb7185"/>
+      <path d="M78 66 L86 38 L72 54 Z" fill="#fb7185"/>
+      <path d="M50 72 L44 28 L56 56 Z" fill="#f43f5e"/>
+      <path d="M70 72 L76 28 L64 56 Z" fill="#f43f5e"/>
+      <path d="M60 74 L60 22 L60 58 Z" fill="#e11d48"/>
+      <!-- Base cup -->
+      <ellipse cx="60" cy="72" rx="18" ry="8" fill="#be123c"/>
+    </g>
+  
+</svg>
