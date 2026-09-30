@@ -114,6 +114,7 @@ export function DesignProvider({ children }: { children: React.ReactNode }) {
   const [premiumTier, setPremiumTier] = useState<'daily' | 'weekly' | 'lifetime' | null>(null);
   const [premiumExpiresAt, setPremiumExpiresAt] = useState<string | null>(null);
   const [hasGardenAccess, setHasGardenAccess] = useState<boolean>(false);
+  const [isFlowerLimitModalOpen, setIsFlowerLimitModalOpen] = useState<boolean>(false);
 
   // Validasi sesi VIP aktif ke server — jika admin reset/hapus/nonaktifkan/expired kode, VIP seketika dicabut
   const validateVipSession = useCallback(async () => {
@@ -311,11 +312,14 @@ export function DesignProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const addFlower = useCallback((flower: FlowerDef) => {
-    recordSnapshot();
     setDesign((prev) => {
-      const maxLimit = prev.targetFlowerCount ?? 50;
-      if (prev.selectedFlowers.length >= maxLimit) return prev;
+      const maxLimit = prev.targetFlowerCount ?? 25;
+      if (prev.selectedFlowers.length >= maxLimit) {
+        setIsFlowerLimitModalOpen(true);
+        return prev;
+      }
 
+      recordSnapshot();
       const newFlower: PlacedFlower = {
         uid: `${flower.id}_${Date.now()}_${Math.random()}`,
         flowerId: flower.id,
@@ -337,10 +341,14 @@ export function DesignProvider({ children }: { children: React.ReactNode }) {
   }, [recordSnapshot]);
 
   const addFlowerAtPosition = useCallback((flower: FlowerDef, x: number, y: number) => {
-    recordSnapshot();
     setDesign((prev) => {
-      const maxLimit = prev.targetFlowerCount ?? 50;
-      if (prev.selectedFlowers.length >= maxLimit) return prev;
+      const maxLimit = prev.targetFlowerCount ?? 25;
+      if (prev.selectedFlowers.length >= maxLimit) {
+        setIsFlowerLimitModalOpen(true);
+        return prev;
+      }
+
+      recordSnapshot();
       const newFlower: PlacedFlower = {
         uid: `${flower.id}_${Date.now()}_${Math.random()}`,
         flowerId: flower.id,
@@ -440,13 +448,16 @@ export function DesignProvider({ children }: { children: React.ReactNode }) {
   );
 
   const duplicateFlower = useCallback((uid: string) => {
-    recordSnapshot();
     setDesign((prev) => {
       const target = prev.selectedFlowers.find((f) => f.uid === uid);
       if (!target) return prev;
-      const bucket = getBucketSize(prev.bucketSize);
-      if (prev.selectedFlowers.length >= bucket.maxFlowers) return prev;
+      const maxLimit = prev.targetFlowerCount ?? getBucketSize(prev.bucketSize).maxFlowers;
+      if (prev.selectedFlowers.length >= maxLimit) {
+        setIsFlowerLimitModalOpen(true);
+        return prev;
+      }
 
+      recordSnapshot();
       const newFlower: PlacedFlower = {
         ...target,
         uid: `${target.flowerId}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
@@ -656,6 +667,14 @@ export function DesignProvider({ children }: { children: React.ReactNode }) {
     });
   }, [isPremiumUnlocked]);
 
+  const applyFlowerFormation = useCallback((newFlowers: PlacedFlower[]) => {
+    recordSnapshot();
+    setDesign((prev) => ({
+      ...prev,
+      selectedFlowers: newFlowers,
+    }));
+  }, [recordSnapshot]);
+
   const value: DesignContextType = {
     design,
     setBucketSize,
@@ -700,14 +719,21 @@ export function DesignProvider({ children }: { children: React.ReactNode }) {
     unlockPremium,
     revokePremium,
     randomizeFlowers,
+    applyFlowerFormation,
     clearAllFlowers,
     undo,
     canUndo,
     nudgeFlower,
     recordSnapshot,
+    isFlowerLimitModalOpen,
+    setIsFlowerLimitModalOpen,
   };
 
   return <DesignContext.Provider value={value}>{children}</DesignContext.Provider>;
+}
+
+export function useOptionalDesign(): DesignContextType | null {
+  return useContext(DesignContext);
 }
 
 export function useDesign(): DesignContextType {
@@ -715,3 +741,4 @@ export function useDesign(): DesignContextType {
   if (!ctx) throw new Error('useDesign must be used within DesignProvider');
   return ctx;
 }
+

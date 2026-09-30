@@ -39,6 +39,8 @@ import FlowerGardenModal from '../garden/FlowerGardenModal';
 import { CANVAS_RATIO_DIMENSIONS } from '@/utils/canvasUtils';
 import { CanvasRatio } from '@/types/design';
 import { FLOWERS } from '@/data/flowers';
+import { useLanguage } from '@/context/LanguageContext';
+import LanguageSwitcher from '../ui/LanguageSwitcher';
 import '@/components/home/mobile/mobile-dashboard.css';
 
 interface MobileStudioViewProps {
@@ -70,6 +72,7 @@ const RATIO_ASPECT_MAP: Record<CanvasRatio, string> = {
 };
 
 export default function MobileStudioView({ onBack }: MobileStudioViewProps) {
+  const { t } = useLanguage();
   const {
     design,
     randomizeFlowers,
@@ -214,17 +217,20 @@ export default function MobileStudioView({ onBack }: MobileStudioViewProps) {
           title="Kembali ke Dashboard"
         >
           <ArrowLeft size={15} />
-          <span>Menu</span>
+          <span>{t('menu')}</span>
         </button>
 
         <div className="ms-studio-title-box">
-          <span className="ms-studio-title">Studio Rangkai</span>
+          <span className="ms-studio-title">{t('ms_studio_title')}</span>
           <span className="ms-studio-badge">
-            {flowerCount} / {targetCount} Bunga
+            {flowerCount} / {targetCount} {t('flowers_unit')}
           </span>
         </div>
 
         <div className="ms-studio-right-actions">
+          {/* Language Switcher Compact */}
+          <LanguageSwitcher variant="compact" />
+
           {/* VIP Badge / Unlock */}
           {hasMounted && (
             isPremiumUnlocked ? (
@@ -305,6 +311,17 @@ export default function MobileStudioView({ onBack }: MobileStudioViewProps) {
         {STEPS.map((step, i) => {
           const isDone = mobileStep > step.id;
           const isActive = mobileStep === step.id;
+          const localizedShortLabel =
+            step.id === 1
+              ? t('step_1_short')
+              : step.id === 2
+              ? t('step_2_short')
+              : step.id === 3
+              ? t('step_3_short')
+              : step.id === 4
+              ? t('step_4_short')
+              : t('step_5_short');
+
           return (
             <div key={step.id} className="ms-step-segment">
               <button
@@ -322,7 +339,7 @@ export default function MobileStudioView({ onBack }: MobileStudioViewProps) {
                     <span>{step.id}</span>
                   )}
                 </div>
-                <span className="ms-step-label">{step.shortLabel}</span>
+                <span className="ms-step-label">{localizedShortLabel}</span>
               </button>
               {i < STEPS.length - 1 && (
                 <div className={`ms-step-connector ${isDone ? 'ms-step-connector-done' : ''}`} />
@@ -370,11 +387,11 @@ export default function MobileStudioView({ onBack }: MobileStudioViewProps) {
         <div className="ms-studio-tips">
           <Sparkles size={13} style={{ color: '#6366F1', flexShrink: 0 }} />
           <span>
-            {mobileStep === 1 && 'Pilih model buket favoritmu untuk memulai'}
-            {mobileStep === 2 && 'Sentuh bunga di kanvas atau pilih dari daftar bunga di bawah untuk atur posisi.'}
-            {mobileStep === 3 && 'Tulis pesan kartu ucapan yang spesial'}
-            {mobileStep === 4 && 'Pilih suasana & latar belakang yang sesuai'}
-            {mobileStep === 5 && 'Unduh dalam kualitas HD atau bagikan via WhatsApp'}
+            {mobileStep === 1 && t('ms_tip_1')}
+            {mobileStep === 2 && t('ms_tip_2')}
+            {mobileStep === 3 && t('ms_tip_3')}
+            {mobileStep === 4 && t('ms_tip_4')}
+            {mobileStep === 5 && t('ms_tip_5')}
           </span>
         </div>
 
@@ -386,8 +403,8 @@ export default function MobileStudioView({ onBack }: MobileStudioViewProps) {
                 <Flower2 size={13} style={{ color: '#4F46E5' }} />
                 <span>
                   {selectedFlower
-                    ? `Bunga #${selectedIndex + 1} dari ${flowerCount}`
-                    : `Daftar Bunga Terangkai (${flowerCount})`}
+                    ? t('ms_seq_title_selected', { current: selectedIndex + 1, total: flowerCount })
+                    : t('ms_seq_title_all', { count: flowerCount })}
                 </span>
               </span>
               <div className="ms-sequence-nav">
@@ -395,7 +412,7 @@ export default function MobileStudioView({ onBack }: MobileStudioViewProps) {
                   type="button"
                   onClick={handleSelectPrevFlower}
                   className="ms-seq-nav-btn"
-                  title="Pilih bunga sebelumnya"
+                  title={t('ms_prev_flower')}
                 >
                   <ChevronLeft size={14} />
                 </button>
@@ -403,7 +420,7 @@ export default function MobileStudioView({ onBack }: MobileStudioViewProps) {
                   type="button"
                   onClick={handleSelectNextFlower}
                   className="ms-seq-nav-btn"
-                  title="Pilih bunga berikutnya"
+                  title={t('ms_next_flower')}
                 >
                   <ChevronRight size={14} />
                 </button>
@@ -436,7 +453,7 @@ export default function MobileStudioView({ onBack }: MobileStudioViewProps) {
                     <span>{emoji}</span>
                     <span>{name.split(' ')[0]}</span>
                     <span className={`ms-seq-layer-tag ${layer === 'front' ? 'ms-seq-tag-front' : 'ms-seq-tag-inside'}`}>
-                      {layer === 'front' ? 'Dpn' : 'Dlm'}
+                      {layer === 'front' ? t('ms_tag_front') : t('ms_tag_inside')}
                     </span>
                   </button>
                 );
@@ -462,13 +479,13 @@ export default function MobileStudioView({ onBack }: MobileStudioViewProps) {
                   className="ms-dpad-step-btn"
                   title="Ubah sensitivitas geser (5px / 15px)"
                 >
-                  Geser: {nudgeStep}px
+                  {t('ms_nudge_step', { step: nudgeStep })}
                 </button>
                 <button
                   type="button"
                   onClick={() => setSelectedFlowerUid(null)}
                   style={{ background: 'none', border: 'none', color: '#94A3B8', cursor: 'pointer', padding: '2px' }}
-                  title="Tutup Pilihan"
+                  title={t('ms_close_selection')}
                 >
                   <X size={15} />
                 </button>
@@ -534,7 +551,7 @@ export default function MobileStudioView({ onBack }: MobileStudioViewProps) {
                     title="Perkecil Bunga"
                   >
                     <Minimize2 size={17} />
-                    <span>Kecil</span>
+                    <span>{t('ms_scale_small')}</span>
                   </button>
                   <span className="ms-flower-scale-val">
                     {Math.round((selectedFlower.scale ?? 1) * 100)}%
@@ -546,7 +563,7 @@ export default function MobileStudioView({ onBack }: MobileStudioViewProps) {
                     title="Perbesar Bunga"
                   >
                     <Maximize2 size={17} />
-                    <span>Besar</span>
+                    <span>{t('ms_scale_large')}</span>
                   </button>
                 </div>
 
@@ -693,7 +710,7 @@ export default function MobileStudioView({ onBack }: MobileStudioViewProps) {
             <div className="ms-launcher-icon-box" style={{ background: '#FFF1F2', color: '#E11D48' }}>
               <Package size={19} />
             </div>
-            <span className="ms-launcher-label">Buket</span>
+            <span className="ms-launcher-label">{t('step_1_short')}</span>
           </button>
 
           <button
@@ -704,7 +721,7 @@ export default function MobileStudioView({ onBack }: MobileStudioViewProps) {
             <div className="ms-launcher-icon-box" style={{ background: '#EEF2FF', color: '#4F46E5' }}>
               <Flower2 size={19} />
             </div>
-            <span className="ms-launcher-label">Bunga</span>
+            <span className="ms-launcher-label">{t('step_2_short')}</span>
           </button>
 
           <button
@@ -715,7 +732,7 @@ export default function MobileStudioView({ onBack }: MobileStudioViewProps) {
             <div className="ms-launcher-icon-box" style={{ background: '#FEF3C7', color: '#D97706' }}>
               <Mail size={19} />
             </div>
-            <span className="ms-launcher-label">Kartu</span>
+            <span className="ms-launcher-label">{t('step_3_short')}</span>
           </button>
 
           <button
@@ -726,7 +743,7 @@ export default function MobileStudioView({ onBack }: MobileStudioViewProps) {
             <div className="ms-launcher-icon-box" style={{ background: '#FDF4FF', color: '#C026D3' }}>
               <Palette size={19} />
             </div>
-            <span className="ms-launcher-label">Suasana</span>
+            <span className="ms-launcher-label">{t('step_4_short')}</span>
           </button>
         </div>
 
@@ -736,7 +753,13 @@ export default function MobileStudioView({ onBack }: MobileStudioViewProps) {
           className="ms-next-step-btn"
           onClick={handleNextStep}
         >
-          <span>{NEXT_LABEL[mobileStep]}</span>
+          <span>
+            {mobileStep === 1 && t('ms_next_step_1')}
+            {mobileStep === 2 && t('ms_next_step_2')}
+            {mobileStep === 3 && t('ms_next_step_3')}
+            {mobileStep === 4 && t('ms_next_step_4')}
+            {mobileStep === 5 && t('ms_next_step_5')}
+          </span>
           <ChevronRight size={18} strokeWidth={2.5} />
         </button>
       </div>

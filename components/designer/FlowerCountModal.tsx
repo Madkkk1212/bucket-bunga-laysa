@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Sparkles, Check, ChevronRight } from 'lucide-react';
 import ModalPortal from '../ui/ModalPortal';
 import { FlowerCountVariant } from '@/types/design';
+import { useLanguage } from '@/context/LanguageContext';
 
 interface FlowerCountModalProps {
   isOpen: boolean;
@@ -80,6 +81,7 @@ export default function FlowerCountModal({
   onClose,
   canDismiss = false,
 }: FlowerCountModalProps) {
+  const { t, isEn } = useLanguage();
   const [selected, setSelected] = useState<FlowerCountVariant>(initialCount);
 
   const handleSelect = (count: FlowerCountVariant) => {
@@ -109,10 +111,10 @@ export default function FlowerCountModal({
               </span>
             </div>
             <h2 id="flower-count-title" className="flower-count-modal-title">
-              Pilih Jumlah Bunga
+              {t('count_modal_title')}
             </h2>
             <p className="flower-count-modal-desc">
-              Pilih kapasitas karangan bunga impianmu sebelum mulai merangkai di studio.
+              {t('count_modal_sub')}
             </p>
           </div>
 
@@ -177,11 +179,13 @@ export default function FlowerCountModal({
               className="btn-confirm-flower-count"
               onClick={handleConfirm}
             >
-              <span>Mulai Rangkai {selected} Bunga</span>
+              <span>{isEn ? `Start Arranging ${selected} Flowers` : `Mulai Rangkai ${selected} Bunga`}</span>
               <ChevronRight size={18} />
             </button>
             <p className="flower-count-footer-hint">
-              Kapasitas {selected} bunga • Bebas atur posisi, jenis bunga &amp; pembungkus di dalam studio
+              {isEn
+                ? `Capacity ${selected} flowers • Freely adjust position, flower blooms & wrapping in studio`
+                : `Kapasitas ${selected} bunga • Bebas atur posisi, jenis bunga & pembungkus di dalam studio`}
             </p>
           </div>
         </div>

@@ -1136,7 +1136,12 @@ html, body {
 
 .ms-studio-root {
   min-height: 100vh;
-  background: #F8F9FE;
+  background-color: #faf8f5;
+  background-image:
+    radial-gradient(ellipse 360px 280px at 10% 8%, rgba(254, 226, 226, 0.45) 0%, transparent 68%),
+    radial-gradient(ellipse 320px 240px at 90% 92%, rgba(250, 232, 255, 0.38) 0%, transparent 70%),
+    radial-gradient(circle, rgba(148, 163, 184, 0.08) 1px, transparent 1px);
+  background-size: auto, auto, 24px 24px;
   padding-bottom: 95px;
   color: #1E293B;
   user-select: none;
@@ -1221,20 +1226,24 @@ html, body {
 
 /* Canvas Area */
 .ms-studio-canvas-container {
-  padding: 14px 16px 8px;
+  padding: 12px 14px 8px;
   max-width: 440px;
   margin: 0 auto;
+}
+
+.ms-studio-canvas-container .canvas-interaction-guide {
+  display: none !important;
 }
 
 .ms-studio-canvas-box {
   position: relative;
   width: 100%;
   aspect-ratio: 1 / 1;
-  border-radius: 24px;
-  background: #FEFAF7;
+  border-radius: 20px;
+  background: transparent;
   overflow: hidden;
-  box-shadow: 0 12px 36px -6px rgba(79, 70, 229, 0.12);
-  border: 2px solid rgba(79, 70, 229, 0.15);
+  box-shadow: 0 16px 40px -8px rgba(15, 23, 42, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.85);
 }
 
 /* Quick Gesture Tips Pill */
@@ -1399,6 +1408,41 @@ html, body {
 .mb-header-vip-unlock-btn:active {
   transform: scale(0.94);
   background: #FEF3C7;
+}
+
+/* VIP Title Pill beside Buket Laysa. */
+.mb-vip-title-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  color: #ffffff;
+  padding: 2.5px 8px;
+  border-radius: 9999px;
+  font-family: 'Fredoka', 'Outfit', sans-serif;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  box-shadow: 0 2px 8px rgba(217, 119, 6, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  animation: pulseGlow 2.5s ease-in-out infinite alternate;
+}
+
+@keyframes pulseGlow {
+  0% { box-shadow: 0 2px 8px rgba(217, 119, 6, 0.35); }
+  100% { box-shadow: 0 2px 14px rgba(245, 158, 11, 0.65); }
+}
+
+/* VIP Hero Tag */
+.mb-hero-tag-vip {
+  background: linear-gradient(135deg, #1e1b4b 0%, #2e1065 100%) !important;
+  color: #fbbf24 !important;
+  border: 1.2px solid #fbbf24 !important;
+  font-weight: 800 !important;
+  box-shadow: 0 2px 10px rgba(251, 191, 36, 0.25) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 5px !important;
 }
 
 /* VIP Banner inside modals */

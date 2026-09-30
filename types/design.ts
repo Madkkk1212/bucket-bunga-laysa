@@ -211,6 +211,8 @@ export interface DesignContextType {
   revokePremium: () => void;
   /** Acak susunan bunga sesuai kuota target bunga */
   randomizeFlowers: () => void;
+  /** Terapkan formasi preset bunga (kubah, kipas, hati, dsb) */
+  applyFlowerFormation: (flowers: PlacedFlower[]) => void;
   /** Kosongkan seluruh bunga pada buket */
   clearAllFlowers: () => void;
   /** Undo last flower add/remove/layer change */
@@ -221,5 +223,8 @@ export interface DesignContextType {
   nudgeFlower: (uid: string, dx: number, dy: number) => void;
   /** Simpan snapshot sebelum aksi canvas atau interaksi manual */
   recordSnapshot: (snapshot?: DesignState) => void;
+  /** Status modal peringatan ketika kuota maksimal bunga telah tercapai */
+  isFlowerLimitModalOpen: boolean;
+  setIsFlowerLimitModalOpen: (open: boolean) => void;
 }
 

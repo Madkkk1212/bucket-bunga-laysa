@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { 
   CheckCircle2, MessageCircle, X, ArrowRight, ArrowLeft, ShieldCheck, 
   KeyRound, User, Crown, Clock, Calendar, Sparkles, Ticket
@@ -64,12 +65,14 @@ export default function PremiumUnlockModal({
   defaultTier = 'lifetime',
   onOpenGarden,
 }: PremiumUnlockModalProps) {
+  const router = useRouter();
   const { unlockPremium, isPremiumUnlocked, premiumUserName } = useDesign();
   const [step, setStep] = useState<ModalStep>('VOUCHERS');
   const [code, setCode] = useState('');
   const [verifiedCode, setVerifiedCode] = useState('');
   const [verifiedTier, setVerifiedTier] = useState<PricingTierKey>('lifetime');
   const [userName, setUserName] = useState(premiumUserName || '');
+  const [gardenNameInput, setGardenNameInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
@@ -239,6 +242,12 @@ export default function PremiumUnlockModal({
       return;
     }
 
+    const isLifetime = verifiedTier === 'lifetime' || Boolean(codeInfo?.hasGardenAccess);
+    if (isLifetime && !gardenNameInput.trim()) {
+      setErrorMsg('Sebagai pemilik VIP Sultan, kebun bunga Anda wajib dinamai terlebih dahulu 🌸');
+      return;
+    }
+
     setIsLoading(true);
     setErrorMsg('');
 
@@ -247,6 +256,21 @@ export default function PremiumUnlockModal({
     setIsLoading(false);
 
     if (res.success) {
+      if (isLifetime && gardenNameInput.trim()) {
+        try {
+          const trimmedGarden = gardenNameInput.trim();
+          const existing = localStorage.getItem('bucket_garden_info_v3');
+          let info: any = { name: trimmedGarden, partner: '', streak: 14 };
+          if (existing) {
+            try {
+              const parsed = JSON.parse(existing);
+              info = { ...parsed, name: trimmedGarden };
+            } catch {}
+          }
+          localStorage.setItem('bucket_garden_info_v3', JSON.stringify(info));
+          localStorage.setItem('bucket_garden_named', 'true');
+        } catch {}
+      }
       setSuccessMsg(res.message || `Akses VIP aktif untuk ${userName.trim()}!`);
       // Lanjut ke popup Terima Kasih
       setStep('THANK_YOU');
@@ -688,10 +712,57 @@ export default function PremiumUnlockModal({
                   </div>
                 </div>
 
+                {(verifiedTier === 'lifetime' || Boolean(codeInfo?.hasGardenAccess)) && (
+                  <div className="boutique-form-field">
+                    <label className="boutique-input-label flex items-center justify-between">
+                      <span className="flex items-center gap-1">
+                        <span>Nama Kebun Bunga Anda</span>
+                        <span className="text-rose-500 font-bold">*</span>
+                      </span>
+                      <span className="text-[10px] text-amber-700 font-extrabold px-1.5 py-0.5 rounded bg-amber-100">
+                        WAJIB VIP SULTAN 👑
+                      </span>
+                    </label>
+                    <div className="boutique-input-shell">
+                      <span className="boutique-input-icon text-sm">🌸</span>
+                      <input
+                        type="text"
+                        className="boutique-input"
+                        placeholder="Misal: Kebun Cinta Laysa, Taman Mawar Kita..."
+                        value={gardenNameInput}
+                        onChange={(e) => {
+                          setGardenNameInput(e.target.value);
+                          if (errorMsg) setErrorMsg('');
+                        }}
+                        disabled={isLoading || isPremiumUnlocked}
+                        required
+                      />
+                    </div>
+                    <div className="flex gap-1 mt-1.5 flex-wrap">
+                      <span className="text-[10px] text-stone-500 self-center">Pilihan:</span>
+                      {['Taman Mawar Kita 🌹', 'Kebun Kasih Laysa ✨', 'Puspa Bahagia 🌼'].map((preset) => (
+                        <button
+                          key={preset}
+                          type="button"
+                          onClick={() => setGardenNameInput(preset)}
+                          className="text-[10px] px-2 py-0.5 rounded bg-stone-100 hover:bg-amber-100 text-stone-700 font-medium transition"
+                        >
+                          {preset}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 <button
                   type="submit"
                   className="boutique-submit-btn-full"
-                  disabled={isLoading || isPremiumUnlocked || !userName.trim()}
+                  disabled={
+                    isLoading || 
+                    isPremiumUnlocked || 
+                    !userName.trim() || 
+                    ((verifiedTier === 'lifetime' || Boolean(codeInfo?.hasGardenAccess)) && !gardenNameInput.trim())
+                  }
                   id="btn-claim-vip-access"
                 >
                   {isLoading ? <span>Mengaktifkan Akses...</span> : <span>Aktifkan Akses Sekarang ✨</span>}
@@ -788,19 +859,23 @@ export default function PremiumUnlockModal({
                   <span>Mulai Merangkai Buket Sekarang</span>
                 </button>
 
-                {(verifiedTier === 'lifetime' || codeInfo?.hasGardenAccess) && onOpenGarden && (
+                {(verifiedTier === 'lifetime' || codeInfo?.hasGardenAccess) && (
                   <button
                     type="button"
                     onClick={() => {
                       onClose();
-                      onOpenGarden();
+                      if (onOpenGarden) {
+                        onOpenGarden();
+                      } else {
+                        router.push('/kebun');
+                      }
                     }}
                     style={{
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                       gap: '8px',
-                      padding: '10px',
+                      padding: '11px',
                       borderRadius: '12px',
                       background: '#fff7ed',
                       border: '1.5px solid #fdba74',
@@ -811,7 +886,7 @@ export default function PremiumUnlockModal({
                       transition: 'all 0.15s',
                     }}
                   >
-                    <span>🌱 Buka Kebun Bunga Streak 🔥</span>
+                    <span>🌱 Buka Kebun Bunga {gardenNameInput ? `"${gardenNameInput}"` : ''} 🔥</span>
                     <ArrowRight size={14} />
                   </button>
                 )}

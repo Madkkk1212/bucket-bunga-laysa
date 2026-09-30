@@ -4,12 +4,14 @@ import { CheckCircle2, Edit3, ShieldCheck } from 'lucide-react';
 import { useDesign } from '@/context/DesignContext';
 import { getBucketSize } from '@/data/buckets';
 import NavigationButtons from '../designer/NavigationButtons';
+import { useLanguage } from '@/context/LanguageContext';
 
 interface StepPreviewProps {
   canvasRef: React.RefObject<HTMLCanvasElement | null>;
 }
 
 export default function StepPreview({ canvasRef }: StepPreviewProps) {
+  const { t, isEn } = useLanguage();
   const { design, getTotalFlowers, setStep, saveFinal2D, resetToEdit2D } = useDesign();
   const total = getTotalFlowers();
   const bucket = getBucketSize(design.bucketSize);
@@ -27,11 +29,11 @@ export default function StepPreview({ canvasRef }: StepPreviewProps) {
       <div className="step-header">
         <div className="flex items-center gap-2 mb-1">
           <span className="text-xs font-semibold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-300">
-            KONFIRMASI DESAIN
+            {isEn ? 'DESIGN CONFIRMATION' : 'KONFIRMASI DESAIN'}
           </span>
         </div>
-        <h2 className="step-title">Pratinjau Rangkaian Buket</h2>
-        <p className="step-desc">Pastikan susunan bunga, posisi, dan kartu ucapan sudah sempurna.</p>
+        <h2 className="step-title">{t('step_4_title')}</h2>
+        <p className="step-desc">{t('step_4_desc')}</p>
       </div>
 
       <div className="preview-summary-card">
@@ -76,7 +78,7 @@ export default function StepPreview({ canvasRef }: StepPreviewProps) {
           id="btn-save-final-2d"
         >
           <CheckCircle2 size={18} />
-          Simpan Sebagai Produk Final
+          {t('finalize_btn')}
         </button>
 
         <button
@@ -86,7 +88,7 @@ export default function StepPreview({ canvasRef }: StepPreviewProps) {
           id="btn-edit-2d-from-preview"
         >
           <Edit3 size={15} />
-          Edit Kembali Desain
+          {t('edit_again')}
         </button>
       </div>
 

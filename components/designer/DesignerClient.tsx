@@ -6,7 +6,7 @@ import MobileDashboard from '../home/mobile/MobileDashboard';
 import MobileStudioView from './MobileStudioView';
 
 export default function DesignerClient() {
-  const [mobileTab, setMobileTab] = useState<'dashboard' | 'studio'>('dashboard');
+  const [mobileTab, setMobileTab] = useState<'dashboard' | 'studio'>('studio');
 
   return (
     <>

@@ -9,6 +9,7 @@ import { CANVAS_RATIO_DIMENSIONS, BACKGROUND_THEMES } from '@/utils/canvasUtils'
 import { CanvasRatio, BucketSizeCategory, BucketTheme } from '@/types/design';
 import ModalPortal from '../ui/ModalPortal';
 import PremiumUnlockModal from '../designer/PremiumUnlockModal';
+import { useLanguage } from '@/context/LanguageContext';
 
 type ThemeFilterType = 'all' | BucketTheme;
 
@@ -31,6 +32,7 @@ const THEME_FILTER_TABS: { id: ThemeFilterType; label: string }[] = [
 ];
 
 export default function StepSize() {
+  const { t } = useLanguage();
   const {
     design,
     setBucketSize,
@@ -141,8 +143,8 @@ export default function StepSize() {
       {/* ─── HEADER DENGAN TOMBOL NEXT DI ATAS ─── */}
       <div className="step-header-with-top-action">
         <div className="step-header-text">
-          <h2 className="step-title">Pilih Jenis Bucket</h2>
-          <p className="step-desc">Pilih tema dan model pembungkus bucket favoritmu dari koleksi Laysa</p>
+          <h2 className="step-title">{t('bucket_model_title')}</h2>
+          <p className="step-desc">{t('bucket_model_sub')}</p>
         </div>
 
         <button
@@ -150,9 +152,9 @@ export default function StepSize() {
           className="btn btn-primary step-top-next-btn"
           onClick={() => setStep(2)}
           id="btn-step1-next-top"
-          aria-label="Lanjut ke langkah berikutnya"
+          aria-label={t('next')}
         >
-          <span>Lanjut: Rangkai Bunga</span>
+          <span>{t('next')}: {t('step_2_short')}</span>
           <ChevronRight size={16} />
         </button>
       </div>
@@ -160,7 +162,7 @@ export default function StepSize() {
       {/* ─── FILTER TABS (TEMA BUCKET) ─── */}
       <div className="bucket-filter-section">
         <div className="bucket-filter-row-wrap">
-          <span className="bucket-filter-label">Tema:</span>
+          <span className="bucket-filter-label">{t('bucket_filter_theme')}</span>
           <div className="bucket-filter-pills-row" role="tablist" aria-label="Filter Tema Bucket">
             {THEME_FILTER_TABS.map((tab) => (
               <button
@@ -261,7 +263,7 @@ export default function StepSize() {
           title="Buka popup untuk memilih dari semua koleksi bucket Laysa"
         >
           <Layers size={15} />
-          <span>Lihat Semua Jenis Bucket ({BUCKET_SIZES.length} Pilihan)</span>
+          <span>{t('bucket_see_all', { count: BUCKET_SIZES.length })}</span>
           <ChevronRight size={14} className="see-all-arrow" />
         </button>
       </div>
@@ -269,8 +271,8 @@ export default function StepSize() {
       {/* ─── PILIHAN RASIO KANVAS ─── */}
       <div className="step-section-group">
         <div className="step-section-header">
-          <h3 className="step-section-title">Format Rasio Kanvas</h3>
-          <p className="step-section-sub">Pilih ukuran proporsi kanvas untuk media sosial atau cetak</p>
+          <h3 className="step-section-title">{t('canvas_ratio_title')}</h3>
+          <p className="step-section-sub">{t('canvas_ratio_sub')}</p>
         </div>
 
         <div className="ratio-cards-grid">
@@ -305,8 +307,8 @@ export default function StepSize() {
       {/* ─── PILIHAN TEMA LATAR KANVAS ─── */}
       <div className="step-section-group">
         <div className="step-section-header">
-          <h3 className="step-section-title">Tema Latar Studio</h3>
-          <p className="step-section-sub">Pilih pencahayaan dan warna latar belakang studio foto buket</p>
+          <h3 className="step-section-title">{t('studio_theme_title')}</h3>
+          <p className="step-section-sub">{t('studio_theme_sub')}</p>
         </div>
 
         <div className="theme-options-grid">

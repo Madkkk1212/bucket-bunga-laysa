@@ -5,9 +5,11 @@ import Image from 'next/image';
 import { Plus, Minus, Search, ChevronDown, ChevronLeft, ChevronRight, Crown, Lock } from 'lucide-react';
 import { useDesign } from '@/context/DesignContext';
 import { FLOWERS } from '@/data/flowers';
-import { FlowerCategory } from '@/types/design';
+import { FlowerCategory, FlowerDef } from '@/types/design';
+import { consoleAudio } from '@/utils/consoleAudio';
 import NavigationButtons from '../designer/NavigationButtons';
 import PremiumUnlockModal from '../designer/PremiumUnlockModal';
+import { useLanguage } from '@/context/LanguageContext';
 
 type CategoryFilter = 'all' | FlowerCategory;
 
@@ -21,6 +23,7 @@ const CATEGORY_TABS: { id: CategoryFilter; label: string }[] = [
 const ITEMS_PER_PAGE = 9; // 3 baris x 3 kolom = 9 bunga per halaman
 
 export default function StepFlowers() {
+  const { t } = useLanguage();
   const {
     addFlower,
     removeFlowerByType,
@@ -29,6 +32,7 @@ export default function StepFlowers() {
     getMaxFlowers,
     setStep,
     isPremiumUnlocked,
+    setIsFlowerLimitModalOpen,
   } = useDesign();
 
   const [search, setSearch] = useState('');
@@ -39,6 +43,16 @@ export default function StepFlowers() {
   const total = getTotalFlowers();
   const max = getMaxFlowers();
   const isMaxed = total >= max;
+
+  const handleAddFlower = (flower: FlowerDef) => {
+    if (isMaxed) {
+      consoleAudio.play('warning');
+      setIsFlowerLimitModalOpen(true);
+      return;
+    }
+    consoleAudio.play('soft');
+    addFlower(flower);
+  };
 
   const handleCategoryChange = (tabId: CategoryFilter) => {
     setCategoryFilter(tabId);
@@ -87,7 +101,7 @@ export default function StepFlowers() {
 
         {/* Count badge */}
         <span className={`sf-count-badge ${total >= max ? 'sf-count-full' : ''}`}>
-          {total}/{max} bunga
+          {total}/{max} {t('flowers_unit')}
         </span>
       </div>
 
@@ -97,17 +111,17 @@ export default function StepFlowers() {
         <input
           id="flower-search"
           type="text"
-          placeholder="Cari jenis bunga (cth: Mawar, Tulip, Krisan)..."
+          placeholder={t('search_flower_name')}
           value={search}
           onChange={(e) => handleSearchChange(e.target.value)}
           className="sf-search-input"
-          aria-label="Cari jenis bunga"
+          aria-label={t('search_flower_name')}
         />
       </div>
 
       {/* ── Petunjuk Ringkas ── */}
       <div className="sf-hint-bar">
-        <span>💡 Pilih bunga favoritmu untuk langsung ditambahkan ke dalam buket</span>
+        <span>💡 {t('catalog_sub')}</span>
       </div>
 
       {/* ── Flower Grid: 3 Baris x 3 Kolom (Tepat 9 Bunga per Halaman) ── */}
@@ -126,15 +140,13 @@ export default function StepFlowers() {
                   setPremiumModalItem(flower.name);
                   return;
                 }
-                if (!isMaxed) {
-                  addFlower(flower);
-                }
+                handleAddFlower(flower);
               }}
               title={
                 isLocked
                   ? `Item VIP Eksklusif: Klik untuk membuka ${flower.name}`
                   : isMaxed
-                  ? 'Buket sudah penuh'
+                  ? `Kapasitas bunga penuh (${max} bunga). Klik untuk opsi kuota.`
                   : `Klik untuk menambahkan ${flower.name}`
               }
             >
@@ -192,9 +204,8 @@ export default function StepFlowers() {
                     <button
                       type="button"
                       className="sf-btn sf-btn-plus"
-                      onClick={() => addFlower(flower)}
-                      disabled={isMaxed}
-                      title={isMaxed ? 'Buket sudah penuh' : `Tambah 1 ${flower.name}`}
+                      onClick={() => handleAddFlower(flower)}
+                      title={isMaxed ? 'Kapasitas maksimal tercapai' : `Tambah 1 ${flower.name}`}
                       aria-label={`Tambah 1 ${flower.name}`}
                     >
                       <Plus size={13} />
@@ -204,9 +215,8 @@ export default function StepFlowers() {
                   <button
                     type="button"
                     className="sf-btn sf-btn-add"
-                    onClick={() => addFlower(flower)}
-                    disabled={isMaxed}
-                    title={isMaxed ? 'Buket sudah penuh' : `Tambah 1 ${flower.name}`}
+                    onClick={() => handleAddFlower(flower)}
+                    title={isMaxed ? 'Kapasitas maksimal tercapai' : `Tambah 1 ${flower.name}`}
                   >
                     <Plus size={13} />
                     <span className="sf-btn-text">Tambah</span>

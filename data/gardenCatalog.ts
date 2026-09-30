@@ -556,3 +556,60 @@ export const GARDEN_CATEGORIES = [
 export function getFlowerByKey(key: string): GardenFlowerDef | undefined {
   return GARDEN_40_FLOWERS.find(f => f.key === key);
 }
+
+// ── ORNAMEN & DEKORASI KEBUN CINTA ──
+export interface GardenOrnamentDef {
+  key: string;
+  name: string;
+  emoji: string;
+  category: 'Dekorasi';
+  meaning: string;
+  description: string;
+}
+
+export const GARDEN_ORNAMENTS: GardenOrnamentDef[] = [
+  {
+    key: 'ornament_fountain',
+    name: 'Air Mancur Cinta Klasik',
+    emoji: '⛲',
+    category: 'Dekorasi',
+    meaning: 'Aliran Kasih yang Tak Pernah Kering',
+    description: 'Air mancur marmer putih bertingkat dengan riak air berkilau menenangkan jiwa.'
+  },
+  {
+    key: 'ornament_bench',
+    name: 'Bangku Kayu Romantis',
+    emoji: '🪑',
+    category: 'Dekorasi',
+    meaning: 'Tempat Bernaung Berdua Selamanya',
+    description: 'Bangku kayu taman klasik tempat beristirahat dan menikmati pemandangan kebun bunga.'
+  },
+  {
+    key: 'ornament_lantern',
+    name: 'Lentera Peri (Fairy Lamp)',
+    emoji: '🏮',
+    category: 'Dekorasi',
+    meaning: 'Cahaya Penerang di Tengah Gulita',
+    description: 'Lampu lentera besi tempa antik yang memancarkan pendar hangat saat senja dan malam.'
+  },
+  {
+    key: 'ornament_cat',
+    name: 'Kucing Putih Tidur',
+    emoji: '🐱',
+    category: 'Dekorasi',
+    meaning: 'Kedamaian Rumah Tangga & Kehangatan',
+    description: 'Kucing putih berbulu lebat yang tidur nyenyak di samping semak bunga.'
+  },
+  {
+    key: 'ornament_arch',
+    name: 'Gapura Lengkung Mawar',
+    emoji: '💐',
+    category: 'Dekorasi',
+    meaning: 'Pintu Gerbang Menuju Janji Suci',
+    description: 'Gapura kayu lengkung yang dirambati oleh kuntum bunga mawar merekah harum.'
+  }
+];
+
+export function getOrnamentByKey(key: string): GardenOrnamentDef | undefined {
+  return GARDEN_ORNAMENTS.find(o => o.key === key);
+}

@@ -18,6 +18,7 @@ import {
   drawCanvasBackground,
 } from '@/utils/canvasUtils';
 import { CanvasRatio, BackgroundTheme } from '@/types/design';
+import { useLanguage } from '@/context/LanguageContext';
 
 interface PreviewCanvasProps {
   canvasRef?: React.RefObject<HTMLCanvasElement | null>;
@@ -37,6 +38,7 @@ interface DragState {
 }
 
 export default function PreviewCanvas({ canvasRef: externalRef }: PreviewCanvasProps) {
+  const { t } = useLanguage();
   const internalRef = useRef<HTMLCanvasElement>(null);
   const canvasRef = externalRef ?? internalRef;
 
@@ -1171,7 +1173,7 @@ export default function PreviewCanvas({ canvasRef: externalRef }: PreviewCanvasP
       >
         {isDragOver && (
           <div className="canvas-drop-overlay">
-            <span>✨ Lepaskan Bunga di Posisi Ini</span>
+            <span>{t('canvas_drop_overlay')}</span>
           </div>
         )}
         <canvas
@@ -1194,16 +1196,14 @@ export default function PreviewCanvas({ canvasRef: externalRef }: PreviewCanvasP
         {design.selectedFlowers.length === 0 && (
           <div className="canvas-empty-hint">
             <span className="canvas-hint-emoji">🌸</span>
-            <p>Pilih bunga di menu atas untuk mulai merangkai!</p>
+            <p>{t('canvas_empty_hint')}</p>
           </div>
         )}
       </div>
 
       {/* User Helper Caption */}
       <div className="canvas-interaction-guide">
-        <span>
-          💡 <strong>Tips Interaktif:</strong> Ketuk <strong>🪣 buket</strong> di kanvas untuk atur (tarik pin <strong>↻</strong> untuk putar, pin <strong>⤡</strong> untuk ubah ukuran, atau seret buket) — ketuk <strong>bunga</strong> untuk geser/putar manual — double-click buket untuk reset.
-        </span>
+        <span>{t('canvas_tips_interactive')}</span>
       </div>
     </div>
   );

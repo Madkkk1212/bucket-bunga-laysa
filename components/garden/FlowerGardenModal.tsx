@@ -109,6 +109,10 @@ export default function FlowerGardenModal({
       setActionError('Silakan masukkan nama Anda.');
       return;
     }
+    if (!gardenName.trim()) {
+      setActionError('Nama kebun bunga wajib diisi sebelum mulai menanam 🌸');
+      return;
+    }
     setIsLoading(true);
     setActionError('');
     try {
@@ -120,13 +124,26 @@ export default function FlowerGardenModal({
           action: 'create',
           deviceId,
           ownerName: ownerName.trim(),
-          gardenName: gardenName.trim() || `Taman Bunga ${ownerName.trim()}`,
+          gardenName: gardenName.trim(),
           flowerType: selectedFlower,
         }),
       });
       const data = await res.json();
       if (data.success && data.garden) {
         setGarden(data.garden);
+        try {
+          const trimmedGarden = gardenName.trim();
+          const existing = localStorage.getItem('bucket_garden_info_v3');
+          let info: any = { name: trimmedGarden, partner: '', streak: 14 };
+          if (existing) {
+            try {
+              const parsed = JSON.parse(existing);
+              info = { ...parsed, name: trimmedGarden };
+            } catch {}
+          }
+          localStorage.setItem('bucket_garden_info_v3', JSON.stringify(info));
+          localStorage.setItem('bucket_garden_named', 'true');
+        } catch {}
         setSuccessToast('🌱 Kebun bunga berhasil ditanam!');
         setTimeout(() => setSuccessToast(''), 3000);
       } else {
@@ -430,13 +447,22 @@ export default function FlowerGardenModal({
                       </div>
 
                       <div className="boutique-form-field">
-                        <label className="boutique-input-label">Nama Kebun / Pasangan (Opsional)</label>
+                        <label className="boutique-input-label flex items-center justify-between">
+                          <span className="flex items-center gap-1">
+                            <span>Nama Kebun Bunga Anda</span>
+                            <span className="text-rose-500 font-bold">*</span>
+                          </span>
+                          <span className="text-[10px] text-amber-700 font-extrabold px-1.5 py-0.5 rounded bg-amber-100">
+                            WAJIB *
+                          </span>
+                        </label>
                         <input
                           type="text"
                           className="boutique-input"
-                          placeholder="Cth: Kebun Cinta Sarah & Reza"
+                          placeholder="Cth: Kebun Cinta Sarah & Reza, Taman Mawar Kita..."
                           value={gardenName}
                           onChange={(e) => setGardenName(e.target.value)}
+                          required
                         />
                       </div>
 

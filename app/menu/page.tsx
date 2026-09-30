@@ -12,8 +12,10 @@ import HomeBackgroundVideo from '@/components/home/HomeBackgroundVideo';
 import FlowerCountModal from '@/components/designer/FlowerCountModal';
 import FlowerGardenModal from '@/components/garden/FlowerGardenModal';
 import PremiumUnlockModal from '@/components/designer/PremiumUnlockModal';
+import LanguageSwitcher from '@/components/ui/LanguageSwitcher';
+import { useLanguage } from '@/context/LanguageContext';
 import { FlowerCountVariant } from '@/types/design';
-import { DesignProvider } from '@/context/DesignContext';
+import { DesignProvider, useDesign } from '@/context/DesignContext';
 
 export default function GameMenuPage() {
   return (
@@ -25,6 +27,8 @@ export default function GameMenuPage() {
 
 function GameMenuContent() {
   const router = useRouter();
+  const { isPremiumUnlocked } = useDesign();
+  const { t } = useLanguage();
 
   // Modals state
   const [isCountModalOpen, setIsCountModalOpen] = useState(false);
@@ -91,6 +95,10 @@ function GameMenuContent() {
 
   const handleOpenKebun = () => {
     playSfx('select');
+    if (!isPremiumUnlocked) {
+      setIsVipModalOpen(true);
+      return;
+    }
     router.push('/kebun');
   };
 
@@ -107,25 +115,28 @@ function GameMenuContent() {
             href="/"
             className="game-hud-back-btn"
             onClick={() => playSfx('hover')}
-            aria-label="Kembali ke Beranda"
+            aria-label={t('menu_back_home')}
           >
             <ArrowLeft size={15} />
-            <span>KEMBALI KE BERANDA</span>
+            <span>{t('menu_back_home')}</span>
           </Link>
 
           {/* Judul Arena / Header Mode */}
           <div className="game-hud-title-wrap">
-            <span className="game-hud-subbadge">✦ FLORIST ATELIER HUB ✦</span>
-            <h1 className="game-hud-heading">PILIH MODE PERMAINAN</h1>
+            <span className="game-hud-subbadge">{t('menu_atelier_hub')}</span>
+            <h1 className="game-hud-heading">{t('menu_heading')}</h1>
           </div>
 
-          {/* Status Pemain / Atelier Badge */}
-          <div className="game-hud-player-status">
-            <span className="game-hud-badge-icon">👑</span>
-            <div className="game-hud-badge-info">
-              <span className="game-hud-player-rank">MASTER FLORIST</span>
-              <span className="game-hud-player-level">LVL. 99 • UNLIMITED</span>
+          {/* Right cluster: Player Status & Language Switcher */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div className="game-hud-player-status">
+              <span className="game-hud-badge-icon">👑</span>
+              <div className="game-hud-badge-info">
+                <span className="game-hud-player-rank">{t('menu_player_rank')}</span>
+                <span className="game-hud-player-level">{t('menu_player_level')}</span>
+              </div>
             </div>
+            <LanguageSwitcher variant="compact" />
           </div>
         </div>
       </header>
@@ -152,12 +163,12 @@ function GameMenuContent() {
             role="button"
             tabIndex={0}
             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleOpenBuatBucket(); }}
-            aria-label="Pilih Mode Buat Bucket"
+            aria-label={t('menu_card1_title')}
           >
             {/* Rarity & Mode Badge */}
             <div className="game-card-tag tag-craft">
               <Sparkles size={12} className="text-amber-300 animate-spin" />
-              <span>MODE UTAMA • CRAFT STUDIO</span>
+              <span>{t('menu_card1_tag')}</span>
             </div>
 
             {/* Visual Icon / Artwork Preview */}
@@ -166,7 +177,7 @@ function GameMenuContent() {
               <div className="game-card-img-box">
                 <Image
                   src="/images/home.png"
-                  alt="Buat Buket Bunga"
+                  alt={t('menu_card1_title')}
                   width={130}
                   height={130}
                   className="game-card-img-float"
@@ -177,17 +188,17 @@ function GameMenuContent() {
 
             {/* Content Details */}
             <div className="game-card-body">
-              <h2 className="game-card-title">BUAT BUCKET</h2>
-              <p className="game-card-tagline">Studio Rangkai Bunga Aesthetic</p>
+              <h2 className="game-card-title">{t('menu_card1_title')}</h2>
+              <p className="game-card-tagline">{t('menu_card1_sub')}</p>
               
               <ul className="game-card-features">
                 <li>
                   <Sparkles size={13} className="feature-icon text-rose-500" />
-                  <span>Susun 100+ Bunga & Kertas Buket</span>
+                  <span>{t('menu_card1_feat1')}</span>
                 </li>
                 <li>
                   <Zap size={13} className="feature-icon text-amber-500" />
-                  <span>Kartu Ucapan & Ekspor Ultra HD 4K</span>
+                  <span>{t('menu_card1_feat2')}</span>
                 </li>
               </ul>
             </div>
@@ -203,7 +214,7 @@ function GameMenuContent() {
                   handleOpenBuatBucket();
                 }}
               >
-                <span>MULAI MERANGKAI</span>
+                <span>{t('menu_card1_btn')}</span>
                 <ArrowRight size={16} />
               </button>
             </div>
@@ -217,12 +228,12 @@ function GameMenuContent() {
             role="button"
             tabIndex={0}
             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleOpenTutorial(); }}
-            aria-label="Pilih Mode Tutorial"
+            aria-label={t('menu_card2_title')}
           >
             {/* Rarity & Mode Badge */}
             <div className="game-card-tag tag-tutorial">
               <BookOpen size={12} className="text-cyan-300" />
-              <span>PANDUAN • ACADEMY</span>
+              <span>{t('menu_card2_tag')}</span>
             </div>
 
             {/* Visual Icon / Artwork Preview */}
@@ -236,17 +247,17 @@ function GameMenuContent() {
 
             {/* Content Details */}
             <div className="game-card-body">
-              <h2 className="game-card-title">TUTORIAL</h2>
-              <p className="game-card-tagline">Panduan & Trik Florist Handal</p>
+              <h2 className="game-card-title">{t('menu_card2_title')}</h2>
+              <p className="game-card-tagline">{t('menu_card2_sub')}</p>
               
               <ul className="game-card-features">
                 <li>
                   <Layers size={13} className="feature-icon text-indigo-500" />
-                  <span>Teknik Layering Bunga & Komposisi</span>
+                  <span>{t('menu_card2_feat1')}</span>
                 </li>
                 <li>
                   <Award size={13} className="feature-icon text-teal-500" />
-                  <span>Panduan Mengganti Kertas & Tips HD</span>
+                  <span>{t('menu_card2_feat2')}</span>
                 </li>
               </ul>
             </div>
@@ -262,7 +273,7 @@ function GameMenuContent() {
                   handleOpenTutorial();
                 }}
               >
-                <span>BACA PANDUAN</span>
+                <span>{t('menu_card2_btn')}</span>
                 <ArrowRight size={16} />
               </button>
             </div>
@@ -276,12 +287,21 @@ function GameMenuContent() {
             role="button"
             tabIndex={0}
             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleOpenKebun(); }}
-            aria-label="Pilih Mode Kebun Bunga"
+            aria-label={t('menu_card3_title')}
           >
             {/* Rarity & Mode Badge */}
-            <div className="game-card-tag tag-garden">
-              <Flame size={12} className="text-amber-300 animate-bounce" />
-              <span>HARIAN • DAILY STREAK 🔥</span>
+            <div className={`game-card-tag tag-garden ${!isPremiumUnlocked ? 'tag-locked' : ''}`}>
+              {isPremiumUnlocked ? (
+                <>
+                  <Flame size={12} className="text-amber-300 animate-bounce" />
+                  <span>{t('menu_card3_tag_unlocked')}</span>
+                </>
+              ) : (
+                <>
+                  <Crown size={12} className="text-amber-300" />
+                  <span>{t('menu_card3_tag_locked')}</span>
+                </>
+              )}
             </div>
 
             {/* Visual Icon / Artwork Preview */}
@@ -295,17 +315,17 @@ function GameMenuContent() {
 
             {/* Content Details */}
             <div className="game-card-body">
-              <h2 className="game-card-title">KEBUN BUNGA</h2>
-              <p className="game-card-tagline">Rawat Bunga Bersama Pasangan</p>
+              <h2 className="game-card-title">{t('menu_card3_title')}</h2>
+              <p className="game-card-tagline">{t('menu_card3_sub')}</p>
               
               <ul className="game-card-features">
                 <li>
                   <Heart size={13} className="feature-icon text-rose-500" />
-                  <span>Tanam Bunga Cinta & Rawat Berdua</span>
+                  <span>{t('menu_card3_feat1')}</span>
                 </li>
                 <li>
                   <Flame size={13} className="feature-icon text-amber-500" />
-                  <span>Siram Tiap Hari & Jaga Api Streak 🔥</span>
+                  <span>{t('menu_card3_feat2')}</span>
                 </li>
               </ul>
             </div>
@@ -315,14 +335,14 @@ function GameMenuContent() {
               <button
                 type="button"
                 id="btn-menu-garden"
-                className="game-card-btn btn-garden"
+                className={`game-card-btn btn-garden ${!isPremiumUnlocked ? 'btn-garden-locked' : ''}`}
                 onClick={(e) => {
                   e.stopPropagation();
                   handleOpenKebun();
                 }}
               >
-                <span>BUKA KEBUN BUNGA</span>
-                <Flame size={16} />
+                <span>{isPremiumUnlocked ? t('menu_card3_btn_unlocked') : t('menu_card3_btn_locked')}</span>
+                {isPremiumUnlocked ? <Flame size={16} /> : <Crown size={16} className="text-amber-300" />}
               </button>
             </div>
           </div>
@@ -334,13 +354,13 @@ function GameMenuContent() {
       <footer className="game-bottom-hud" aria-label="Game Hub Status">
         <div className="game-hud-status">
           <span className="game-status-dot" />
-          <span>SERVER: ONLINE • ATELIER READY</span>
+          <span>{t('menu_hud_status')}</span>
         </div>
         <div className="game-hud-hint">
-          <span>💡 TIPS: KLIK KARTU &quot;BUAT BUCKET&quot; UNTUK MEMULAI MERANGKAI BUNGA IMPIANMU</span>
+          <span>{t('menu_hud_hint')}</span>
         </div>
         <div className="game-hud-version">
-          <span>VER 2.5 • LAYSA STUDIO</span>
+          <span>{t('home_hud_version')}</span>
         </div>
       </footer>
 
@@ -367,9 +387,10 @@ function GameMenuContent() {
       <PremiumUnlockModal
         isOpen={isVipModalOpen}
         onClose={() => setIsVipModalOpen(false)}
+        defaultTier="lifetime"
         onOpenGarden={() => {
           setIsVipModalOpen(false);
-          setIsGardenModalOpen(true);
+          router.push('/kebun');
         }}
       />
     </div>

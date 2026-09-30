@@ -17,6 +17,7 @@ import {
 import { useDesign } from '@/context/DesignContext';
 import { downloadDesign } from '@/utils/downloadUtils';
 import NavigationButtons from '../designer/NavigationButtons';
+import { useLanguage } from '@/context/LanguageContext';
 
 interface StepDownloadProps {
   canvasRef: React.RefObject<HTMLCanvasElement | null>;
@@ -30,6 +31,7 @@ const MUSIC_OPTIONS = [
 ];
 
 export default function StepDownload({ canvasRef }: StepDownloadProps) {
+  const { t, isEn } = useLanguage();
   const { design, resetDesign, setStep, resetToEdit2D } = useDesign();
   const [format, setFormat] = useState<'png' | 'jpg'>('png');
   const [status, setStatus] = useState<'idle' | 'downloading' | 'done'>('idle');
@@ -350,26 +352,28 @@ export default function StepDownload({ canvasRef }: StepDownloadProps) {
         {status === 'idle' && (
           <>
             <Download size={18} />
-            Unduh Desain Buket ({format.toUpperCase()})
+            {isEn ? `Download Bouquet Design (${format.toUpperCase()})` : `Unduh Desain Buket (${format.toUpperCase()})`}
           </>
         )}
         {status === 'downloading' && (
           <>
             <span className="spinner" />
-            Menyiapkan gambar HD...
+            {isEn ? 'Preparing HD image...' : 'Menyiapkan gambar HD...'}
           </>
         )}
         {status === 'done' && (
           <>
             <CheckCircle size={18} />
-            Berhasil Diunduh! ✓
+            {isEn ? 'Downloaded Successfully! ✓' : 'Berhasil Diunduh! ✓'}
           </>
         )}
       </button>
 
       {status === 'done' && (
         <div className="success-banner">
-          🎉 Gambar desain buket Anda berhasil disimpan ke perangkat!
+          {isEn
+            ? '🎉 Your bouquet design image has been saved to your device!'
+            : '🎉 Gambar desain buket Anda berhasil disimpan ke perangkat!'}
         </div>
       )}
 
@@ -382,7 +386,7 @@ export default function StepDownload({ canvasRef }: StepDownloadProps) {
           title="Kembali ke kanvas editor untuk mengubah rangkaian bunga"
         >
           <Edit3 size={15} />
-          Edit Kembali Desain
+          {t('edit_again')}
         </button>
         <button
           id="btn-new-design"
@@ -390,7 +394,7 @@ export default function StepDownload({ canvasRef }: StepDownloadProps) {
           onClick={handleReset}
         >
           <RotateCcw size={15} />
-          Mulai Desain Baru
+          {t('start_new_btn')}
         </button>
       </div>
 

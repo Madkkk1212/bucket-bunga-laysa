@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import {
@@ -21,6 +21,7 @@ import {
   Crown,
 } from 'lucide-react';
 import { useDesign } from '@/context/DesignContext';
+import { useLanguage } from '@/context/LanguageContext';
 import { getBucketSize } from '@/data/buckets';
 import { FlowerCountVariant } from '@/types/design';
 import PreviewCanvas from '@/components/designer/PreviewCanvas';
@@ -35,6 +36,7 @@ import MobileThemePickerModal from './MobileThemePickerModal';
 import MobileQuickMenuModal from './MobileQuickMenuModal';
 import MobileNotificationsModal from './MobileNotificationsModal';
 import MobileShareModal from './MobileShareModal';
+import LanguageSwitcher from '@/components/ui/LanguageSwitcher';
 import './mobile-dashboard.css';
 
 interface MobileDashboardProps {
@@ -44,8 +46,71 @@ interface MobileDashboardProps {
 export default function MobileDashboard({ onOpenStudio }: MobileDashboardProps = {}) {
   const router = useRouter();
   const { design, setTargetFlowerCount, randomizeFlowers, isPremiumUnlocked, premiumUserName, revokePremium } = useDesign();
+  const { t, language } = useLanguage();
+  const isEn = language === 'en';
   const [hasMounted, setHasMounted] = useState(false);
   useEffect(() => { setHasMounted(true); }, []);
+
+  // ── Nuansa Waktu Mengikuti Jam Lokal (Pagi, Siang, Sore, Malam) ──
+  const [currentHour, setCurrentHour] = useState<number>(() => new Date().getHours());
+
+  useEffect(() => {
+    const updateHour = () => setCurrentHour(new Date().getHours());
+    updateHour();
+    const timer = setInterval(updateHour, 30000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const timeGreeting = useMemo(() => {
+    if (isEn) {
+      if (currentHour >= 4 && currentHour < 11) {
+        return {
+          header: 'Good morning,',
+          card: 'Good Morning, My Love! ☀️🌸',
+        };
+      }
+      if (currentHour >= 11 && currentHour < 15) {
+        return {
+          header: 'Good afternoon,',
+          card: 'Good Afternoon, Sweetheart! 🌼✨',
+        };
+      }
+      if (currentHour >= 15 && currentHour < 19) {
+        return {
+          header: 'Good evening,',
+          card: 'Good Evening, Beloved! 🌅💐',
+        };
+      }
+      return {
+        header: 'Good night,',
+        card: 'Good Night, My Love! 🌙💖',
+      };
+    }
+
+    // Indonesian: Pagi (04:00-10:59), Siang (11:00-14:59), Sore (15:00-18:59), Malam (19:00-03:59)
+    if (currentHour >= 4 && currentHour < 11) {
+      return {
+        header: 'Selamat pagi,',
+        card: 'Selamat Pagi Sayang! ☀️🌸',
+      };
+    }
+    if (currentHour >= 11 && currentHour < 15) {
+      return {
+        header: 'Selamat siang,',
+        card: 'Selamat Siang Manis! 🌼✨',
+      };
+    }
+    if (currentHour >= 15 && currentHour < 19) {
+      return {
+        header: 'Selamat sore,',
+        card: 'Selamat Sore Tercinta! 🌅💐',
+      };
+    }
+    return {
+      header: 'Selamat malam,',
+      card: 'Selamat Malam Sayang! 🌙💖',
+    };
+  }, [currentHour, isEn]);
 
   // Modals state
   const [isCountModalOpen, setIsCountModalOpen] = useState(false);
@@ -70,7 +135,7 @@ export default function MobileDashboard({ onOpenStudio }: MobileDashboardProps =
   const flowerCount = design.targetFlowerCount || 25;
   const currentCardTitle = design.text.content?.trim()
     ? (design.text.content.length > 28 ? design.text.content.substring(0, 28) + '...' : design.text.content)
-    : 'Untuk Happy Birthday Sayang! 💖';
+    : timeGreeting.card;
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -104,13 +169,24 @@ export default function MobileDashboard({ onOpenStudio }: MobileDashboardProps =
         {/* ─── 1. TOP HEADER BAR ─── */}
         <header className="mb-header">
           <div>
-            <p className="mb-header-sub">Selamat datang di,</p>
-            <h1 className="mb-header-title">
-              Buket Laysa.
-            </h1>
+            <p className="mb-header-sub">{timeGreeting.header}</p>
+            <div className="flex items-center gap-2">
+              <h1 className="mb-header-title">
+                Buket Laysa.
+              </h1>
+              {hasMounted && isPremiumUnlocked && (
+                <span className="mb-vip-title-pill" title="Status Akun VIP Sultan Aktif">
+                  <Crown size={11} className="text-amber-300" />
+                  VIP
+                </span>
+              )}
+            </div>
           </div>
 
           <div className="mb-header-right-cluster">
+            {/* Language Switcher Compact */}
+            <LanguageSwitcher variant="compact" />
+
             {/* VIP Badge / Unlock Button */}
             {hasMounted && (
               isPremiumUnlocked ? (
@@ -121,8 +197,8 @@ export default function MobileDashboard({ onOpenStudio }: MobileDashboardProps =
                   title="Status VIP Aktif"
                   id="mobile-btn-vip-badge"
                 >
-                  <Crown size={13} />
-                  <span>{premiumUserName ? premiumUserName.split(' ')[0] : 'VIP'}</span>
+                  <Crown size={13} className="text-amber-400" />
+                  <span>VIP{premiumUserName ? ` • ${premiumUserName.split(' ')[0]}` : ''}</span>
                 </button>
               ) : (
                 <button
@@ -164,9 +240,16 @@ export default function MobileDashboard({ onOpenStudio }: MobileDashboardProps =
             <div className="mb-hero-left">
               {/* Top Tag & Active Dot */}
               <div className="mb-hero-tag-row">
-                <span className="mb-hero-tag">
-                  #LAYSA-2026-BKT
-                </span>
+                {hasMounted && isPremiumUnlocked ? (
+                  <span className="mb-hero-tag mb-hero-tag-vip">
+                    <Crown size={11} className="text-amber-300 animate-pulse" />
+                    VIP SULTAN • #LAYSA-2026-BKT
+                  </span>
+                ) : (
+                  <span className="mb-hero-tag">
+                    #LAYSA-2026-BKT
+                  </span>
+                )}
                 <span className="mb-hero-dot" />
               </div>
 

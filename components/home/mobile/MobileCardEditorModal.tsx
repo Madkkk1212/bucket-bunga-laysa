@@ -25,6 +25,26 @@ interface Props {
 
 const PRESET_MESSAGES = [
   {
+    title: 'Selamat Malam Sayang! 🌙💖',
+    text: 'Selamat malam sayangku. Istirahat yang nyenyak ya, semoga mimpi indah ditemani harumnya bunga ini. Love you always!',
+    label: 'Malam 🌙',
+  },
+  {
+    title: 'Selamat Pagi Sayang! ☀️🌸',
+    text: 'Selamat pagi bidadariku! Semoga harimu menyenangkan, penuh senyuman dan berkah. Semangat untuk hari ini!',
+    label: 'Pagi ☀️',
+  },
+  {
+    title: 'Selamat Siang Manis! 🌼✨',
+    text: 'Selamat siang manis! Jangan lupa istirahat sejenak dan makan siang ya. Sending virtual flowers & hugs for you!',
+    label: 'Siang 🌼',
+  },
+  {
+    title: 'Selamat Sore Tercinta! 🌅💐',
+    text: 'Selamat sore cinta! Melepas lelah hari ini bersama segarnya buket bunga spesial ini. Semoga harimu indah.',
+    label: 'Sore 🌅',
+  },
+  {
     title: 'Untuk Happy Birthday Sayang! 💖',
     text: 'Selamat ulang tahun cintaku! Semoga setiap harimu dipenuhi kebahagiaan, tawa, dan cinta yang tak pernah pudar.',
     label: 'Ulang Tahun 🎂',

@@ -1,6 +1,7 @@
 'use client';
 
 import { useDesign } from '@/context/DesignContext';
+import { useLanguage } from '@/context/LanguageContext';
 import NavigationButtons from '../designer/NavigationButtons';
 import { Sparkles, Move, GraduationCap, Heart, RotateCcw } from 'lucide-react';
 import SmartNumberInput from '../ui/SmartNumberInput';
@@ -31,34 +32,35 @@ interface CardTemplate {
   size: number;
 }
 
-const CARD_TEMPLATES: CardTemplate[] = [
-  {
-    id: 'graduation',
-    name: 'Wisuda & Kelulusan',
-    tag: 'Contoh 1 • Elegan',
-    icon: GraduationCap,
-    content: 'Happy Graduation! 🎓✨\nSelamat atas pencapaian luar biasamu.\nSemoga langkah ke depan selalu sukses!\n~ Sahabat Tercinta ~',
-    font: 'Playfair Display',
-    cardStyle: 'elegant',
-    color: '#4A2515',
-    size: 13,
-  },
-  {
-    id: 'birthday',
-    name: 'Ulang Tahun & Kasih Sayang',
-    tag: 'Contoh 2 • Romantis',
-    icon: Heart,
-    content: 'Happy Birthday, My Dear! 🎂🌸\nSemoga harimu seindah bunga ini,\npenuh tawa, cinta & bahagia selamanya.\n~ Forever & Always ❤️ ~',
-    font: 'Montserrat',
-    cardStyle: 'simple',
-    color: '#1E293B',
-    size: 13,
-  },
-];
-
 export default function StepText() {
   const { design, setText, setStep } = useDesign();
+  const { t } = useLanguage();
   const { text } = design;
+
+  const cardTemplates: CardTemplate[] = [
+    {
+      id: 'graduation',
+      name: t('card_tpl_grad_name'),
+      tag: t('card_tpl_grad_tag'),
+      icon: GraduationCap,
+      content: t('card_tpl_grad_content'),
+      font: 'Playfair Display',
+      cardStyle: 'elegant',
+      color: '#4A2515',
+      size: 13,
+    },
+    {
+      id: 'birthday',
+      name: t('card_tpl_bday_name'),
+      tag: t('card_tpl_bday_tag'),
+      icon: Heart,
+      content: t('card_tpl_bday_content'),
+      font: 'Montserrat',
+      cardStyle: 'simple',
+      color: '#1E293B',
+      size: 13,
+    },
+  ];
 
   const handleApplyTemplate = (tpl: CardTemplate) => {
     setText({
@@ -77,9 +79,9 @@ export default function StepText() {
   return (
     <div className="step-content">
       <div className="step-header">
-        <h2 className="step-title">Kartu Ucapan Buket</h2>
+        <h2 className="step-title">{t('card_header_title')}</h2>
         <p className="step-desc">
-          Kartu ucapan eksklusif seperti kartu nama pada buket, dapat diseret & diatur bebas posisinya.
+          {t('card_header_sub')}
         </p>
       </div>
 
@@ -87,10 +89,10 @@ export default function StepText() {
       <div className="form-group">
         <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <Sparkles size={14} className="text-amber-500" />
-          Pilih Contoh Template Kartu Rapi (2 Pilihan)
+          {t('card_preset_title')}
         </label>
         <div className="card-preset-grid">
-          {CARD_TEMPLATES.map((tpl) => {
+          {cardTemplates.map((tpl) => {
             const Icon = tpl.icon;
             const isSelected = text.content === tpl.content;
 
@@ -110,7 +112,7 @@ export default function StepText() {
                   {tpl.content.split('\n')[0]}
                 </p>
                 <span className="card-preset-apply-btn">
-                  {isSelected ? '✓ Terpasang' : 'Gunakan Template'}
+                  {isSelected ? t('card_tpl_installed') : t('card_tpl_use')}
                 </span>
               </button>
             );
@@ -124,52 +126,52 @@ export default function StepText() {
           <Move size={16} />
         </div>
         <div className="card-drag-notice-text">
-          <strong>Bisa Diseret Bebas di Layar Canvas!</strong>
-          <p>Klik dan seret (drag & drop) kartu ucapan di area pratinjau untuk menempatkannya di manapun.</p>
+          <strong>{t('card_drag_notice_title')}</strong>
+          <p>{t('card_drag_notice_desc')}</p>
         </div>
       </div>
 
       {/* Quick Position Shortcuts */}
       <div className="form-group">
-        <label className="form-label">Pintasan Posisi Kartu</label>
+        <label className="form-label">{t('card_shortcuts_title')}</label>
         <div className="card-position-shortcuts">
           <button
             type="button"
             className="pos-shortcut-btn"
             onClick={() => handleQuickPosition(300, 495)}
-            title="Letakkan di bawah dekat pita"
+            title={t('card_pos_bottom')}
           >
-            ⬇️ Bawah (Pita)
+            {t('card_pos_bottom')}
           </button>
           <button
             type="button"
             className="pos-shortcut-btn"
             onClick={() => handleQuickPosition(300, 110)}
-            title="Letakkan di atas buket"
+            title={t('card_pos_top')}
           >
-            ⬆️ Atas
+            {t('card_pos_top')}
           </button>
           <button
             type="button"
             className="pos-shortcut-btn"
             onClick={() => handleQuickPosition(145, 160)}
-            title="Letakkan di kiri atas"
+            title={t('card_pos_top_left')}
           >
-            ↖️ Kiri Atas
+            {t('card_pos_top_left')}
           </button>
           <button
             type="button"
             className="pos-shortcut-btn"
             onClick={() => handleQuickPosition(455, 160)}
-            title="Letakkan di kanan atas"
+            title={t('card_pos_top_right')}
           >
-            ↗️ Kanan Atas
+            {t('card_pos_top_right')}
           </button>
           <button
             type="button"
             className="pos-shortcut-btn reset-pos"
             onClick={() => handleQuickPosition(300, 495)}
-            title="Reset ke posisi default"
+            title="Reset"
           >
             <RotateCcw size={12} /> Reset
           </button>
@@ -178,7 +180,7 @@ export default function StepText() {
 
       {/* Card Visual Style (Putih vs Gold Foil) */}
       <div className="form-group">
-        <label className="form-label">Desain Kartu Ucapan</label>
+        <label className="form-label">{t('card_style_title')}</label>
         <div className="card-style-picker">
           <label
             className={`card-style-option ${text.cardStyle === 'simple' || !text.cardStyle ? 'active' : ''}`}
@@ -191,9 +193,9 @@ export default function StepText() {
               onChange={() => setText({ cardStyle: 'simple' })}
             />
             <div className="card-style-preview style-simple">
-              <span className="card-style-chip">KLIP</span>
-              <span className="card-style-label">Kartu Putih Minimalis</span>
-              <span className="card-style-sub">Kertas putih bersih, klip metalik modern</span>
+              <span className="card-style-chip">CLIP</span>
+              <span className="card-style-label">{t('card_style_simple_title')}</span>
+              <span className="card-style-sub">{t('card_style_simple_sub')}</span>
             </div>
           </label>
 
@@ -208,9 +210,9 @@ export default function StepText() {
               onChange={() => setText({ cardStyle: 'elegant' })}
             />
             <div className="card-style-preview style-elegant">
-              <span className="card-style-chip gold">EMAS</span>
-              <span className="card-style-label">Kartu Luxury Gold Foil</span>
-              <span className="card-style-sub">Kertas linen krem, bingkai emas ganda & ornamen</span>
+              <span className="card-style-chip gold">GOLD</span>
+              <span className="card-style-label">{t('card_style_elegant_title')}</span>
+              <span className="card-style-sub">{t('card_style_elegant_sub')}</span>
             </div>
           </label>
         </div>
@@ -220,14 +222,14 @@ export default function StepText() {
       <div className="form-group">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
           <label htmlFor="text-content" className="form-label" style={{ margin: 0 }}>
-            Tulis / Edit Pesan Kartu Ucapan
+            {t('card_edit_label')}
           </label>
           <span className="char-count">{text.content.length}/200</span>
         </div>
         <textarea
           id="text-content"
           className="text-input"
-          placeholder="Tulis pesan personal Anda di sini..."
+          placeholder={t('card_edit_placeholder')}
           maxLength={200}
           value={text.content}
           onChange={(e) => setText({ content: e.target.value })}
@@ -237,7 +239,7 @@ export default function StepText() {
 
       {/* Font Selection */}
       <div className="form-group">
-        <label htmlFor="text-font" className="form-label">Gaya Tulisan (Font)</label>
+        <label htmlFor="text-font" className="form-label">{t('card_font_label')}</label>
         <select
           id="text-font"
           className="form-select"
@@ -256,14 +258,14 @@ export default function StepText() {
       <div className="form-group">
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
           <label htmlFor="card-scale" className="form-label" style={{ marginBottom: 0 }}>
-            Skala Ukuran Kartu
+            {t('card_scale_label')}
           </label>
           {(text.cardScale ?? 1.0) !== 1.0 && (
             <button
               type="button"
               className="scale-reset-chip"
               onClick={() => setText({ cardScale: 1.0 })}
-              title="Kembalikan ukuran kartu ke 100%"
+              title="Reset"
             >
               Reset
             </button>
@@ -278,7 +280,7 @@ export default function StepText() {
                 cardScale: Math.max(0.6, Number(((text.cardScale ?? 1.0) - 0.05).toFixed(2))),
               })
             }
-            title="Perkecil 5%"
+            title="−5%"
           >
             −
           </button>
@@ -299,8 +301,8 @@ export default function StepText() {
             step={1}
             unit="%"
             onChange={(val) => setText({ cardScale: val / 100 })}
-            ariaLabel="Ketik skala ukuran kartu (%)"
-            title="Ketik skala ukuran kartu (%)"
+            ariaLabel={t('card_scale_label')}
+            title={t('card_scale_label')}
           />
           <button
             type="button"
@@ -310,15 +312,15 @@ export default function StepText() {
                 cardScale: Math.min(2.0, Number(((text.cardScale ?? 1.0) + 0.05).toFixed(2))),
               })
             }
-            title="Perbesar 5%"
+            title="+5%"
           >
             +
           </button>
         </div>
         <div className="range-labels">
-          <span>Kompak (60%)</span>
-          <span>Standar (100%)</span>
-          <span>Besar (200%)</span>
+          <span>{t('card_scale_compact')}</span>
+          <span>{t('card_scale_standard')}</span>
+          <span>{t('card_scale_large')}</span>
         </div>
       </div>
 
@@ -326,14 +328,14 @@ export default function StepText() {
       <div className="form-group">
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
           <label htmlFor="text-size" className="form-label" style={{ marginBottom: 0 }}>
-            Ukuran Tulisan Kartu
+            {t('card_font_size_label')}
           </label>
           {(text.size || 13) !== 13 && (
             <button
               type="button"
               className="scale-reset-chip"
               onClick={() => setText({ size: 13 })}
-              title="Kembalikan ukuran font ke default 13px"
+              title="Reset"
             >
               Reset
             </button>
@@ -344,7 +346,7 @@ export default function StepText() {
             type="button"
             className="scale-step-btn"
             onClick={() => setText({ size: Math.max(11, (text.size || 13) - 1) })}
-            title="Perkecil 1px"
+            title="−1px"
           >
             −
           </button>
@@ -365,28 +367,28 @@ export default function StepText() {
             step={1}
             unit="px"
             onChange={(val) => setText({ size: val })}
-            ariaLabel="Ketik ukuran tulisan kartu (px)"
-            title="Ketik ukuran tulisan kartu (px)"
+            ariaLabel={t('card_font_size_label')}
+            title={t('card_font_size_label')}
           />
           <button
             type="button"
             className="scale-step-btn"
             onClick={() => setText({ size: Math.min(24, (text.size || 13) + 1) })}
-            title="Perbesar 1px"
+            title="+1px"
           >
             +
           </button>
         </div>
         <div className="range-labels">
-          <span>Kecil (11px)</span>
-          <span>Standar (13px)</span>
-          <span>Besar (24px)</span>
+          <span>{t('card_font_size_small')}</span>
+          <span>{t('card_font_size_standard')}</span>
+          <span>{t('card_font_size_large')}</span>
         </div>
       </div>
 
       {/* Text Color */}
       <div className="form-group">
-        <label className="form-label">Warna Tulisan</label>
+        <label className="form-label">{t('card_color_label')}</label>
         <div className="color-palettes">
           {TEXT_COLORS.map((c) => (
             <button
@@ -395,7 +397,7 @@ export default function StepText() {
               className={`color-swatch ${text.color === c ? 'active' : ''}`}
               style={{ backgroundColor: c }}
               onClick={() => setText({ color: c })}
-              aria-label={`Warna ${c}`}
+              aria-label={`Color ${c}`}
             />
           ))}
           <input
@@ -404,7 +406,7 @@ export default function StepText() {
             value={text.color}
             onChange={(e) => setText({ color: e.target.value })}
             className="color-picker-input"
-            title="Pilih warna kustom"
+            title={t('card_color_label')}
           />
         </div>
       </div>
@@ -414,7 +416,7 @@ export default function StepText() {
         totalSteps={5}
         onBack={() => setStep(2)}
         onNext={() => setStep(4)}
-        nextLabel="Pratinjau Buket"
+        nextLabel={t('card_preview_btn')}
       />
     </div>
   );
