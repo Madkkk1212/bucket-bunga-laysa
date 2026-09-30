@@ -58,6 +58,7 @@ export default function DesignerLayout({ onBackToDashboard }: DesignerLayoutProp
     revokePremium,
     isFlowerLimitModalOpen,
     setIsFlowerLimitModalOpen,
+    cloudSyncStatus,
   } = useDesign();
 
   const searchParams = useSearchParams();
@@ -178,16 +179,47 @@ export default function DesignerLayout({ onBackToDashboard }: DesignerLayoutProp
               type="button"
               onClick={() => setIsEditingName(true)}
               className="canva-title-display-btn"
-              title="Klik untuk mengubah nama karya buket"
+              title={language === 'en' ? 'Click to rename bouquet design' : 'Klik untuk mengubah nama karya buket'}
             >
               <span>{projectName}</span>
               <Edit3 size={12} style={{ color: '#94a3b8' }} />
             </button>
           )}
 
-          <div className="canva-autosave-badge">
-            <span className="canva-dot-emerald" />
-            <span>{t('saved')}</span>
+          <div
+            className="canva-autosave-badge"
+            title={
+              isPremiumUnlocked
+                ? (language === 'en'
+                    ? 'Encrypted AES-256 Cloud Vault Active (Multi-device Sync)'
+                    : 'Cloud Vault Terenkripsi AES-256 Aktif (Bisa Lanjut di HP/Laptop Lain)')
+                : (language === 'en'
+                    ? 'Saved locally to browser'
+                    : 'Tersimpan di browser lokal')
+            }
+          >
+            {isPremiumUnlocked ? (
+              cloudSyncStatus === 'saving' ? (
+                <>
+                  <span className="canva-dot-amber animate-pulse" />
+                  <span style={{ color: '#d97706', fontWeight: 600 }}>
+                    {language === 'en' ? '🔒 Encrypting...' : '🔒 Menyimpan Cloud...'}
+                  </span>
+                </>
+              ) : (
+                <>
+                  <span className="canva-dot-emerald" />
+                  <span style={{ color: '#059669', fontWeight: 600 }}>
+                    {language === 'en' ? '🔒 Cloud Synced' : '🔒 VIP Cloud Tersimpan'}
+                  </span>
+                </>
+              )
+            ) : (
+              <>
+                <span className="canva-dot-emerald" />
+                <span>{t('saved')}</span>
+              </>
+            )}
           </div>
         </div>
 
@@ -204,7 +236,7 @@ export default function DesignerLayout({ onBackToDashboard }: DesignerLayoutProp
               consoleAudio.play('soft');
               setIsCountModalOpen(true);
             }}
-            title="Ubah kuota jumlah bunga"
+            title={language === 'en' ? 'Change flower quota capacity' : 'Ubah kuota jumlah bunga'}
           >
             <span>🌸</span>
             <span className="font-semibold text-slate-800">
@@ -222,7 +254,7 @@ export default function DesignerLayout({ onBackToDashboard }: DesignerLayoutProp
                 consoleAudio.play('soft');
                 setIsVipMenuOpen(true);
               }}
-              title="Lihat status keanggotaan VIP"
+              title={language === 'en' ? 'View VIP membership status' : 'Lihat status keanggotaan VIP'}
             >
               <Sparkles size={13} className="text-amber-500" />
               <span>{t('vip_active', { name: premiumUserName || 'Aktif' })}</span>
@@ -235,7 +267,7 @@ export default function DesignerLayout({ onBackToDashboard }: DesignerLayoutProp
                 consoleAudio.play('chime');
                 setIsUnlockModalOpen(true);
               }}
-              title="Buka seluruh koleksi bunga VIP"
+              title={language === 'en' ? 'Unlock all VIP flowers & wraps' : 'Buka seluruh koleksi bunga VIP'}
             >
               <Crown size={13} className="text-amber-500" />
               <span>{t('vip_unlock')}</span>
@@ -248,7 +280,7 @@ export default function DesignerLayout({ onBackToDashboard }: DesignerLayoutProp
               type="button"
               className="canva-next-btn"
               onClick={handleNextStep}
-              title="Lanjut ke langkah berikutnya"
+              title={language === 'en' ? 'Proceed to next step' : 'Lanjut ke langkah berikutnya'}
             >
               <span>{t('next')}</span>
               <ChevronRight size={14} />

@@ -49,7 +49,7 @@ export default function CanvaLeftRail({
   stepContent,
   stepTitle,
 }: CanvaLeftRailProps) {
-  const { t } = useLanguage();
+  const { t, isEn } = useLanguage();
   const [isMuted, setIsMuted] = useState(false);
 
   useEffect(() => {
@@ -72,9 +72,9 @@ export default function CanvaLeftRail({
   return (
     <div className="canva-sidebar-wrapper">
       {/* ── 1. NARROW ICON RAIL (68px) ── */}
-      <nav className="canva-icon-rail" aria-label="Navigasi Studio Canva">
+      <nav className="canva-icon-rail" aria-label={isEn ? 'Canva Studio Navigation' : 'Navigasi Studio Canva'}>
         {/* Brand Icon */}
-        <Link href="/" className="canva-rail-brand" title="Beranda Laysa Bouquet">
+        <Link href="/" className="canva-rail-brand" title={isEn ? 'Laysa Bouquet Home' : 'Beranda Laysa Bouquet'}>
           <div className="canva-rail-brand-icon">
             <Sparkles size={16} className="text-pink-600" />
           </div>
@@ -88,10 +88,10 @@ export default function CanvaLeftRail({
               onBackToDashboard();
             }}
             className="canva-rail-btn text-slate-500 hover:text-slate-900"
-            title="Kembali ke Menu Utama"
+            title={isEn ? 'Back to Main Menu' : 'Kembali ke Menu Utama'}
           >
             <ArrowLeft size={16} />
-            <span className="canva-rail-btn-label">Menu</span>
+            <span className="canva-rail-btn-label">{isEn ? 'Menu' : 'Menu'}</span>
           </button>
         )}
 
@@ -155,7 +155,11 @@ export default function CanvaLeftRail({
             type="button"
             onClick={handleToggleMute}
             className="canva-rail-btn text-slate-500 hover:text-slate-800"
-            title={isMuted ? 'Aktifkan Suara Studio' : 'Matikan Suara Studio'}
+            title={
+              isMuted
+                ? (isEn ? 'Unmute Studio Audio' : 'Aktifkan Suara Studio')
+                : (isEn ? 'Mute Studio Audio' : 'Matikan Suara Studio')
+            }
           >
             {isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
             <span className="canva-rail-btn-label">{isMuted ? t('rail_bisu') : t('rail_suara')}</span>
@@ -165,7 +169,7 @@ export default function CanvaLeftRail({
           <Link
             href="/tutorial"
             className="canva-rail-btn text-slate-500 hover:text-slate-800"
-            title="Panduan Tutorial Merangkai Buket"
+            title={isEn ? 'Bouquet Arranging Tutorial' : 'Panduan Tutorial Merangkai Buket'}
           >
             <BookOpen size={16} />
             <span className="canva-rail-btn-label">{t('rail_panduan')}</span>
@@ -175,7 +179,7 @@ export default function CanvaLeftRail({
 
       {/* ── 2. COLLAPSIBLE FLYOUT PANEL (370px) ── */}
       {isSidebarExpanded && (
-        <aside className="canva-flyout-panel" aria-label="Panel Opsi Langkah">
+        <aside className="canva-flyout-panel" aria-label={isEn ? 'Step Options Panel' : 'Panel Opsi Langkah'}>
           {/* Flyout Header */}
           <div className="canva-flyout-header">
             <h2 className="canva-flyout-title">{stepTitle}</h2>
@@ -186,7 +190,7 @@ export default function CanvaLeftRail({
                 onToggleSidebar();
               }}
               className="canva-flyout-collapse-btn"
-              title="Ciutkan Panel (Perluas Kanvas)"
+              title={isEn ? 'Collapse Panel (Expand Canvas)' : 'Ciutkan Panel (Perluas Kanvas)'}
             >
               <ChevronLeft size={16} />
             </button>

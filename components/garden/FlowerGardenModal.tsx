@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import ModalPortal from '../ui/ModalPortal';
 import { useDesign, getOrCreateDeviceId } from '@/context/DesignContext';
+import { useLanguage } from '@/context/LanguageContext';
 
 interface DailyNote {
   id: string;
@@ -40,11 +41,11 @@ interface FlowerGardenModalProps {
 }
 
 const FLOWER_OPTIONS = [
-  { id: 'rose_red', name: 'Mawar Merah Sejati', emoji: '🌹', desc: 'Simbol cinta abadi dan ketulusan mendalam' },
-  { id: 'tulip_pink', name: 'Tulip Pastel Romantis', emoji: '🌷', desc: 'Kasih sayang lembut dan kehangatan hati' },
-  { id: 'sunflower', name: 'Bunga Matahari Hangat', emoji: '🌻', desc: 'Keceriaan, kesetiaan, dan sinar harapan' },
-  { id: 'hydrangea_blue', name: 'Hortensia Biru Syahdu', emoji: '🪻', desc: 'Rasa syukur dan ketenangan jiwa' },
-  { id: 'lavender_purple', name: 'Lavender Kedamaian', emoji: '💐', desc: 'Keanggunan, ketenangan, dan kesetiaan' },
+  { id: 'rose_red', name: 'Mawar Merah Sejati', nameEn: 'True Red Rose', emoji: '🌹', desc: 'Simbol cinta abadi dan ketulusan mendalam', descEn: 'Symbol of eternal love and deep sincerity' },
+  { id: 'tulip_pink', name: 'Tulip Pastel Romantis', nameEn: 'Romantic Pastel Tulip', emoji: '🌷', desc: 'Kasih sayang lembut dan kehangatan hati', descEn: 'Gentle affection and heartwarming tenderness' },
+  { id: 'sunflower', name: 'Bunga Matahari Hangat', nameEn: 'Warm Sunflower', emoji: '🌻', desc: 'Keceriaan, kesetiaan, dan sinar harapan', descEn: 'Joy, faithfulness, and rays of hope' },
+  { id: 'hydrangea_blue', name: 'Hortensia Biru Syahdu', nameEn: 'Serene Blue Hydrangea', emoji: '🪻', desc: 'Rasa syukur dan ketenangan jiwa', descEn: 'Heartfelt gratitude and inner peace' },
+  { id: 'lavender_purple', name: 'Lavender Kedamaian', nameEn: 'Peaceful Lavender', emoji: '💐', desc: 'Keanggunan, ketenangan, dan kesetiaan', descEn: 'Elegance, calm serenity, and devotion' },
 ];
 
 export default function FlowerGardenModal({
@@ -53,6 +54,7 @@ export default function FlowerGardenModal({
   onOpenVipModal,
 }: FlowerGardenModalProps) {
   const { hasGardenAccess, premiumUserName } = useDesign();
+  const { isEn } = useLanguage();
   
   // State
   const [garden, setGarden] = useState<GardenData | null>(null);
@@ -106,11 +108,11 @@ export default function FlowerGardenModal({
   const handleCreateGarden = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!ownerName.trim()) {
-      setActionError('Silakan masukkan nama Anda.');
+      setActionError(isEn ? 'Please enter your name.' : 'Silakan masukkan nama Anda.');
       return;
     }
     if (!gardenName.trim()) {
-      setActionError('Nama kebun bunga wajib diisi sebelum mulai menanam 🌸');
+      setActionError(isEn ? 'Garden name is required before planting 🌸' : 'Nama kebun bunga wajib diisi sebelum mulai menanam 🌸');
       return;
     }
     setIsLoading(true);
@@ -144,13 +146,13 @@ export default function FlowerGardenModal({
           localStorage.setItem('bucket_garden_info_v3', JSON.stringify(info));
           localStorage.setItem('bucket_garden_named', 'true');
         } catch {}
-        setSuccessToast('🌱 Kebun bunga berhasil ditanam!');
+        setSuccessToast(isEn ? '🌱 Flower garden planted successfully!' : '🌱 Kebun bunga berhasil ditanam!');
         setTimeout(() => setSuccessToast(''), 3000);
       } else {
-        setActionError(data.message || 'Gagal membuat kebun.');
+        setActionError(data.message || (isEn ? 'Failed to create garden.' : 'Gagal membuat kebun.'));
       }
     } catch {
-      setActionError('Koneksi terputus. Silakan coba lagi.');
+      setActionError(isEn ? 'Connection lost. Please try again.' : 'Koneksi terputus. Silakan coba lagi.');
     } finally {
       setIsLoading(false);
     }
@@ -160,11 +162,11 @@ export default function FlowerGardenModal({
   const handleJoinGarden = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!joinCode.trim()) {
-      setActionError('Masukkan 6 digit kode kebun.');
+      setActionError(isEn ? 'Please enter 6-digit garden code.' : 'Masukkan 6 digit kode kebun.');
       return;
     }
     if (!partnerJoinName.trim()) {
-      setActionError('Silakan masukkan nama Anda.');
+      setActionError(isEn ? 'Please enter your name.' : 'Silakan masukkan nama Anda.');
       return;
     }
     setIsLoading(true);
@@ -184,13 +186,13 @@ export default function FlowerGardenModal({
       const data = await res.json();
       if (data.success) {
         await fetchGarden();
-        setSuccessToast('💕 Berhasil bergabung ke kebun!');
+        setSuccessToast(isEn ? '💕 Joined garden successfully!' : '💕 Berhasil bergabung ke kebun!');
         setTimeout(() => setSuccessToast(''), 3000);
       } else {
-        setActionError(data.message || 'Gagal bergabung ke kebun.');
+        setActionError(data.message || (isEn ? 'Failed to join garden.' : 'Gagal bergabung ke kebun.'));
       }
     } catch {
-      setActionError('Koneksi terputus. Silakan coba lagi.');
+      setActionError(isEn ? 'Connection lost. Please try again.' : 'Koneksi terputus. Silakan coba lagi.');
     } finally {
       setIsLoading(false);
     }
@@ -203,7 +205,8 @@ export default function FlowerGardenModal({
     setActionError('');
     try {
       const deviceId = getOrCreateDeviceId();
-      const userName = (garden.ownerDeviceId === deviceId ? garden.ownerName : garden.partnerName) || premiumUserName || 'Pencinta Bunga';
+      const defaultName = isEn ? 'Flower Lover' : 'Pencinta Bunga';
+      const userName = (garden.ownerDeviceId === deviceId ? garden.ownerName : garden.partnerName) || premiumUserName || defaultName;
       
       const res = await fetch('/api/garden', {
         method: 'POST',
@@ -221,15 +224,15 @@ export default function FlowerGardenModal({
       if (data.success) {
         setShowWateringFx(true);
         setDailyNoteText('');
-        setSuccessToast(`✨ Api streak naik ke ${data.streakCount} hari 🔥!`);
+        setSuccessToast(isEn ? `✨ Streak increased to ${data.streakCount} days 🔥!` : `✨ Api streak naik ke ${data.streakCount} hari 🔥!`);
         await fetchGarden();
         setTimeout(() => setShowWateringFx(false), 2400);
         setTimeout(() => setSuccessToast(''), 4000);
       } else {
-        setActionError(data.message || 'Gagal menyiram bunga.');
+        setActionError(data.message || (isEn ? 'Failed to water flower.' : 'Gagal menyiram bunga.'));
       }
     } catch {
-      setActionError('Koneksi terputus saat menyiram.');
+      setActionError(isEn ? 'Connection lost while watering.' : 'Koneksi terputus saat menyiram.');
     } finally {
       setIsWatering(false);
     }
@@ -248,30 +251,30 @@ export default function FlowerGardenModal({
     const stage = garden.growthStage;
     
     // Label dan ikon berdasarkan stage
-    let stageTitle = 'Tahap 1: Bibit Tertanam';
+    let stageTitle = isEn ? 'Stage 1: Seed Planted' : 'Tahap 1: Bibit Tertanam';
     let stageEmoji = '🌱';
-    let stageBadge = 'Bibit Mungil';
+    let stageBadge = isEn ? 'Tiny Seed' : 'Bibit Mungil';
     let plantScale = 'scale-90';
 
     if (stage === 2) {
-      stageTitle = 'Tahap 2: Tunas Daun Rimbun';
+      stageTitle = isEn ? 'Stage 2: Lush Green Sprout' : 'Tahap 2: Tunas Daun Rimbun';
       stageEmoji = '🌿';
-      stageBadge = 'Tunas Segar';
+      stageBadge = isEn ? 'Fresh Sprout' : 'Tunas Segar';
       plantScale = 'scale-100';
     } else if (stage === 3) {
-      stageTitle = 'Tahap 3: Kuncup Bunga Cantik';
+      stageTitle = isEn ? 'Stage 3: Delicate Flower Bud' : 'Tahap 3: Kuncup Bunga Cantik';
       stageEmoji = '🌷';
-      stageBadge = 'Kuncup Merekah';
+      stageBadge = isEn ? 'Opening Bud' : 'Kuncup Merekah';
       plantScale = 'scale-110';
     } else if (stage === 4) {
-      stageTitle = 'Tahap 4: Bunga Mekar Sempurna';
+      stageTitle = isEn ? 'Stage 4: Full Blossom' : 'Tahap 4: Bunga Mekar Sempurna';
       stageEmoji = '🌸';
-      stageBadge = 'Mekar Indah';
+      stageBadge = isEn ? 'Beautiful Bloom' : 'Mekar Indah';
       plantScale = 'scale-125';
     } else if (stage >= 5) {
-      stageTitle = 'Tahap 5: Bunga Kristal Abadi';
+      stageTitle = isEn ? 'Stage 5: Crystal Bloom' : 'Tahap 5: Bunga Kristal Abadi';
       stageEmoji = '✨👑';
-      stageBadge = 'Legendaris Bercahaya';
+      stageBadge = isEn ? 'Radiant Legend' : 'Legendaris Bercahaya';
       plantScale = 'scale-140';
     }
 
@@ -300,8 +303,8 @@ export default function FlowerGardenModal({
           <h4 className="garden-stage-title">{stageTitle}</h4>
           <p className="garden-stage-hint">
             {stage < 5 
-              ? `Siram setiap hari bersama untuk menumbuhkan bunga ke tahap berikutnya!`
-              : `Luar biasa! Bunga cinta kalian telah mekar abadi di tingkat maksimal!`
+              ? (isEn ? 'Water every day together to grow flower to the next stage!' : 'Siram setiap hari bersama untuk menumbuhkan bunga ke tahap berikutnya!')
+              : (isEn ? 'Incredible! Your shared flower has bloomed perpetually at maximum level!' : 'Luar biasa! Bunga cinta kalian telah mekar abadi di tingkat maksimal!')
             }
           </p>
         </div>
@@ -323,7 +326,7 @@ export default function FlowerGardenModal({
             type="button"
             className="boutique-modal-close"
             onClick={onClose}
-            aria-label="Tutup"
+            aria-label={isEn ? 'Close' : 'Tutup'}
           >
             <X size={18} />
           </button>
@@ -335,10 +338,16 @@ export default function FlowerGardenModal({
                 <div className="garden-crown-badge">
                   <Crown size={22} className="text-amber-500" />
                 </div>
-                <span className="boutique-eyebrow text-amber-700">Fitur Eksklusif Member VIP Selamanya</span>
-                <h3 className="boutique-modal-title">Kebun Bunga Harian (Api Streak 🔥)</h3>
+                <span className="boutique-eyebrow text-amber-700">
+                  {isEn ? 'Exclusive Feature for Lifetime VIP Members' : 'Fitur Eksklusif Member VIP Selamanya'}
+                </span>
+                <h3 className="boutique-modal-title">
+                  {isEn ? 'Daily Flower Garden (Fire Streak 🔥)' : 'Kebun Bunga Harian (Api Streak 🔥)'}
+                </h3>
                 <p className="boutique-modal-desc">
-                  Siram bunga bersama pasangan atau sahabat setiap harinya seperti fitur Api di TikTok. Bunga bertumbuh mekar seiring konsistensi kalian!
+                  {isEn
+                    ? 'Water flowers together with your partner or friend every day like the Fire streak on TikTok. Watch your flowers bloom with your shared consistency!'
+                    : 'Siram bunga bersama pasangan atau sahabat setiap harinya seperti fitur Api di TikTok. Bunga bertumbuh mekar seiring konsistensi kalian!'}
                 </p>
               </div>
 
@@ -347,22 +356,22 @@ export default function FlowerGardenModal({
                 <div className="garden-perk-card">
                   <div className="garden-perk-icon">🔥</div>
                   <div className="garden-perk-text">
-                    <strong>Streak Api TikTok</strong>
-                    <span>Catat konsistensi hari kalian tanpa putus.</span>
+                    <strong>{isEn ? 'TikTok Fire Streak' : 'Streak Api TikTok'}</strong>
+                    <span>{isEn ? 'Keep track of your consecutive days together.' : 'Catat konsistensi hari kalian tanpa putus.'}</span>
                   </div>
                 </div>
                 <div className="garden-perk-card">
                   <div className="garden-perk-icon">🌱➡️🌸</div>
                   <div className="garden-perk-text">
-                    <strong>Evolusi Bunga Nyata</strong>
-                    <span>Dari bibit, tunas, hingga mekar berkilau legendaris.</span>
+                    <strong>{isEn ? 'Real Flower Evolution' : 'Evolusi Bunga Nyata'}</strong>
+                    <span>{isEn ? 'From seed, sprout, to dazzling legendary bloom.' : 'Dari bibit, tunas, hingga mekar berkilau legendaris.'}</span>
                   </div>
                 </div>
                 <div className="garden-perk-card">
                   <div className="garden-perk-icon">💌</div>
                   <div className="garden-perk-text">
-                    <strong>Undang Berdua via Kode</strong>
-                    <span>Kirim kode 6 digit ke pasangan &amp; titip pesan cinta tiap hari.</span>
+                    <strong>{isEn ? 'Invite Together via Code' : 'Undang Berdua via Kode'}</strong>
+                    <span>{isEn ? 'Send 6-digit code to partner & leave sweet notes daily.' : 'Kirim kode 6 digit ke pasangan & titip pesan cinta tiap hari.'}</span>
                   </div>
                 </div>
               </div>
@@ -377,10 +386,12 @@ export default function FlowerGardenModal({
                   className="boutique-submit-btn-full bg-gradient-to-r from-amber-500 to-rose-500 hover:from-amber-600 hover:to-rose-600 text-white font-bold"
                 >
                   <Crown size={18} className="mr-2 inline" />
-                  Buka VIP Selamanya Sekarang
+                  {isEn ? 'Unlock Lifetime VIP Now' : 'Buka VIP Selamanya Sekarang'}
                 </button>
                 <p className="boutique-subnote mt-2">
-                  Tersedia di Paket Selamanya (Sekali bayar aktif tanpa batas waktu).
+                  {isEn
+                    ? 'Available in Lifetime Package (One-time payment, active forever).'
+                    : 'Tersedia di Paket Selamanya (Sekali bayar aktif tanpa batas waktu).'}
                 </p>
               </div>
             </div>
@@ -392,12 +403,14 @@ export default function FlowerGardenModal({
                 <div className="flex items-center gap-2">
                   <span className="garden-streak-chip">
                     <Flame size={16} className="text-orange-500 animate-pulse fill-orange-500" />
-                    <strong>{garden?.streakCount || 1} Hari</strong>
+                    <strong>{garden?.streakCount || 1} {isEn ? 'Days' : 'Hari'}</strong>
                   </span>
-                  <span className="text-xs text-stone-500 font-medium">Kebun Bunga Harian</span>
+                  <span className="text-xs text-stone-500 font-medium">
+                    {isEn ? 'Daily Flower Garden' : 'Kebun Bunga Harian'}
+                  </span>
                 </div>
                 <h3 className="boutique-modal-title mt-1">
-                  {garden ? garden.gardenName : 'Kebun Bunga Eksklusif'}
+                  {garden ? garden.gardenName : (isEn ? 'Exclusive Flower Garden' : 'Kebun Bunga Eksklusif')}
                 </h3>
               </div>
 
@@ -421,25 +434,25 @@ export default function FlowerGardenModal({
                       className={`garden-setup-tab ${mode === 'create' ? 'active' : ''}`}
                       onClick={() => setMode('create')}
                     >
-                      🌱 Tanam Bunga Baru
+                      {isEn ? '🌱 Plant New Flower' : '🌱 Tanam Bunga Baru'}
                     </button>
                     <button
                       type="button"
                       className={`garden-setup-tab ${mode === 'join' ? 'active' : ''}`}
                       onClick={() => setMode('join')}
                     >
-                      💌 Gabung Kebun Pasangan
+                      {isEn ? '💌 Join Partner Garden' : '💌 Gabung Kebun Pasangan'}
                     </button>
                   </div>
 
                   {mode === 'create' ? (
                     <form onSubmit={handleCreateGarden} className="garden-form">
                       <div className="boutique-form-field">
-                        <label className="boutique-input-label">Nama Kamu</label>
+                        <label className="boutique-input-label">{isEn ? 'Your Name' : 'Nama Kamu'}</label>
                         <input
                           type="text"
                           className="boutique-input"
-                          placeholder="Cth: Sarah"
+                          placeholder={isEn ? 'e.g. Sarah' : 'Cth: Sarah'}
                           value={ownerName}
                           onChange={(e) => setOwnerName(e.target.value)}
                           required
@@ -449,17 +462,17 @@ export default function FlowerGardenModal({
                       <div className="boutique-form-field">
                         <label className="boutique-input-label flex items-center justify-between">
                           <span className="flex items-center gap-1">
-                            <span>Nama Kebun Bunga Anda</span>
+                            <span>{isEn ? 'Your Flower Garden Name' : 'Nama Kebun Bunga Anda'}</span>
                             <span className="text-rose-500 font-bold">*</span>
                           </span>
                           <span className="text-[10px] text-amber-700 font-extrabold px-1.5 py-0.5 rounded bg-amber-100">
-                            WAJIB *
+                            {isEn ? 'REQUIRED *' : 'WAJIB *'}
                           </span>
                         </label>
                         <input
                           type="text"
                           className="boutique-input"
-                          placeholder="Cth: Kebun Cinta Sarah & Reza, Taman Mawar Kita..."
+                          placeholder={isEn ? 'e.g. Sarah & Reza Love Garden, Our Sanctuary...' : 'Cth: Kebun Cinta Sarah & Reza, Taman Mawar Kita...'}
                           value={gardenName}
                           onChange={(e) => setGardenName(e.target.value)}
                           required
@@ -467,7 +480,7 @@ export default function FlowerGardenModal({
                       </div>
 
                       <div className="boutique-form-field">
-                        <label className="boutique-input-label">Pilih Bibit Bunga Pertama</label>
+                        <label className="boutique-input-label">{isEn ? 'Select First Flower Seed' : 'Pilih Bibit Bunga Pertama'}</label>
                         <div className="garden-flower-selector">
                           {FLOWER_OPTIONS.map((f) => (
                             <button
@@ -478,8 +491,8 @@ export default function FlowerGardenModal({
                             >
                               <span className="text-2xl">{f.emoji}</span>
                               <div className="text-left">
-                                <div className="font-semibold text-xs text-stone-800">{f.name}</div>
-                                <div className="text-[10px] text-stone-500 line-clamp-1">{f.desc}</div>
+                                <div className="font-semibold text-xs text-stone-800">{isEn ? f.nameEn : f.name}</div>
+                                <div className="text-[10px] text-stone-500 line-clamp-1">{isEn ? f.descEn : f.desc}</div>
                               </div>
                             </button>
                           ))}
@@ -491,13 +504,15 @@ export default function FlowerGardenModal({
                         disabled={isLoading}
                         className="boutique-submit-btn-full"
                       >
-                        {isLoading ? 'Menanam Bibit...' : 'Tanam Bunga Sekarang 🌱'}
+                        {isLoading
+                          ? (isEn ? 'Planting Seed...' : 'Menanam Bibit...')
+                          : (isEn ? 'Plant Flower Now 🌱' : 'Tanam Bunga Sekarang 🌱')}
                       </button>
                     </form>
                   ) : (
                     <form onSubmit={handleJoinGarden} className="garden-form">
                       <div className="boutique-form-field">
-                        <label className="boutique-input-label">Kode Kebun (6 Karakter)</label>
+                        <label className="boutique-input-label">{isEn ? 'Garden Code (6 Characters)' : 'Kode Kebun (6 Karakter)'}</label>
                         <input
                           type="text"
                           className="boutique-input uppercase-text font-mono tracking-widest text-center text-lg"
@@ -508,16 +523,16 @@ export default function FlowerGardenModal({
                           required
                         />
                         <span className="text-[11px] text-stone-500 mt-1">
-                          Minta kode kebun 6 digit dari pasangan / temanmu.
+                          {isEn ? 'Ask for the 6-digit garden code from your partner / friend.' : 'Minta kode kebun 6 digit dari pasangan / temanmu.'}
                         </span>
                       </div>
 
                       <div className="boutique-form-field">
-                        <label className="boutique-input-label">Nama Kamu</label>
+                        <label className="boutique-input-label">{isEn ? 'Your Name' : 'Nama Kamu'}</label>
                         <input
                           type="text"
                           className="boutique-input"
-                          placeholder="Cth: Reza"
+                          placeholder={isEn ? 'e.g. Reza' : 'Cth: Reza'}
                           value={partnerJoinName}
                           onChange={(e) => setPartnerJoinName(e.target.value)}
                           required
@@ -529,7 +544,9 @@ export default function FlowerGardenModal({
                         disabled={isLoading}
                         className="boutique-submit-btn-full"
                       >
-                        {isLoading ? 'Menghubungkan...' : 'Gabung ke Kebun 💕'}
+                        {isLoading
+                          ? (isEn ? 'Connecting...' : 'Menghubungkan...')
+                          : (isEn ? 'Join Garden 💕' : 'Gabung ke Kebun 💕')}
                       </button>
                     </form>
                   )}
@@ -539,19 +556,19 @@ export default function FlowerGardenModal({
                 <div className="garden-dashboard">
                   {/* Kode Undang & Partner Bar */}
                   <div className="garden-partner-bar">
-                    <div className="garden-code-chip" onClick={handleCopyCode} title="Klik untuk salin kode">
-                      <span className="text-[11px] text-stone-500">Kode:</span>
+                    <div className="garden-code-chip" onClick={handleCopyCode} title={isEn ? 'Click to copy code' : 'Klik untuk salin kode'}>
+                      <span className="text-[11px] text-stone-500">{isEn ? 'Code:' : 'Kode:'}</span>
                       <strong className="font-mono text-sm tracking-wider text-stone-800">{garden.gardenCode}</strong>
                       {copiedCode ? <Check size={14} className="text-emerald-600" /> : <Copy size={13} className="text-stone-400" />}
                     </div>
 
                     <div className="garden-members-view">
-                      <div className="garden-member-badge" title="Pemilik">
+                      <div className="garden-member-badge" title={isEn ? 'Owner' : 'Pemilik'}>
                         👑 {garden.ownerName}
                       </div>
                       <span className="text-stone-400 text-xs">&amp;</span>
                       {garden.partnerName ? (
-                        <div className="garden-member-badge partner" title="Pasangan">
+                        <div className="garden-member-badge partner" title={isEn ? 'Partner' : 'Pasangan'}>
                           💕 {garden.partnerName}
                         </div>
                       ) : (
@@ -561,7 +578,7 @@ export default function FlowerGardenModal({
                           className="garden-invite-pill"
                         >
                           <UserPlus size={12} />
-                          <span>Undang Pasangan</span>
+                          <span>{isEn ? 'Invite Partner' : 'Undang Pasangan'}</span>
                         </button>
                       )}
                     </div>
@@ -576,8 +593,12 @@ export default function FlowerGardenModal({
                       <div className="garden-watered-notice">
                         <Sparkles size={16} className="text-amber-500" />
                         <div>
-                          <strong>Bunga Segar Hari Ini!</strong>
-                          <p>Sudah disiram oleh {garden.lastWateredBy}. Kembali lagi besok untuk menjaga api streak 🔥</p>
+                          <strong>{isEn ? 'Fresh Bloom Today!' : 'Bunga Segar Hari Ini!'}</strong>
+                          <p>
+                            {isEn
+                              ? `Already watered by ${garden.lastWateredBy}. Come back tomorrow to keep the fire streak burning 🔥`
+                              : `Sudah disiram oleh ${garden.lastWateredBy}. Kembali lagi besok untuk menjaga api streak 🔥`}
+                          </p>
                         </div>
                       </div>
                     ) : (
@@ -586,7 +607,7 @@ export default function FlowerGardenModal({
                           <input
                             type="text"
                             className="boutique-input text-xs"
-                            placeholder="Tulis pesan manis hari ini... (opsional)"
+                            placeholder={isEn ? 'Write a sweet note today... (optional)' : 'Tulis pesan manis hari ini... (opsional)'}
                             value={dailyNoteText}
                             onChange={(e) => setDailyNoteText(e.target.value)}
                             maxLength={100}
@@ -600,7 +621,11 @@ export default function FlowerGardenModal({
                           className="garden-water-btn"
                         >
                           <Droplets size={18} className="animate-bounce" />
-                          <span>{isWatering ? 'Sedang Menyiram...' : 'Siram Bunga Hari Ini 💧 (+1 🔥 Streak)'}</span>
+                          <span>
+                            {isWatering
+                              ? (isEn ? 'Watering...' : 'Sedang Menyiram...')
+                              : (isEn ? 'Water Flower Today 💧 (+1 🔥 Streak)' : 'Siram Bunga Hari Ini 💧 (+1 🔥 Streak)')}
+                          </span>
                         </button>
                       </div>
                     )}
@@ -609,7 +634,7 @@ export default function FlowerGardenModal({
                   {/* Catatan Harian (Love Notes Board) */}
                   <div className="garden-notes-section">
                     <h5 className="garden-notes-title">
-                      💌 Catatan Harian Kebun
+                      {isEn ? '💌 Garden Daily Notes' : '💌 Catatan Harian Kebun'}
                     </h5>
                     <div className="garden-notes-list">
                       {garden.dailyNotes && garden.dailyNotes.length > 0 ? (
@@ -620,7 +645,9 @@ export default function FlowerGardenModal({
                           </div>
                         ))
                       ) : (
-                        <p className="text-xs text-stone-400 italic">Belum ada catatan.</p>
+                        <p className="text-xs text-stone-400 italic">
+                          {isEn ? 'No notes yet.' : 'Belum ada catatan.'}
+                        </p>
                       )}
                     </div>
                   </div>

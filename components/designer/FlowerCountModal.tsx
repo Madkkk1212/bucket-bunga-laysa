@@ -119,9 +119,33 @@ export default function FlowerCountModal({
           </div>
 
           {/* 5 Variants Grid */}
-          <div className="flower-count-grid" role="radiogroup" aria-label="Pilih jumlah bunga">
+          <div className="flower-count-grid" role="radiogroup" aria-label={isEn ? 'Select flower count' : 'Pilih jumlah bunga'}>
             {FLOWER_COUNT_VARIANTS.map((v) => {
               const isSelected = selected === v.count;
+              const displayTitle = isEn ? `${v.count} Flowers` : v.title;
+              const displayBadge = isEn
+                ? (v.count === 5
+                    ? 'Minimalist'
+                    : v.count === 10
+                    ? 'Compact'
+                    : v.count === 15
+                    ? 'Harmonious'
+                    : v.count === 25
+                    ? '⭐ Most Popular'
+                    : '👑 Mega Luxury')
+                : v.badge;
+              const displayDesc = isEn
+                ? (v.count === 5
+                    ? 'Petite, sweet & space-saving for simple greetings'
+                    : v.count === 10
+                    ? 'Compact bouquet, perfect for birthdays & friends'
+                    : v.count === 15
+                    ? 'Balanced proportion between main blooms & fillers'
+                    : v.count === 25
+                    ? 'Lush & luxurious arrangement with dramatic volume'
+                    : 'Spectacular grand royal collection for lavish celebrations')
+                : v.desc;
+
               return (
                 <div
                   key={v.count}
@@ -140,21 +164,21 @@ export default function FlowerCountModal({
                   {/* Popular ribbon */}
                   {v.isPopular && (
                     <div className="flower-count-popular-tag">
-                      <span>Favorit</span>
+                      <span>{isEn ? 'Favorite' : 'Favorit'}</span>
                     </div>
                   )}
 
                   <div className="flower-count-card-top">
                     <span className="flower-count-emoji">{v.icon}</span>
                     <span className="flower-count-badge-pill" style={{ color: v.colorHex }}>
-                      {v.badge}
+                      {displayBadge}
                     </span>
                   </div>
 
                   <div className="flower-count-card-body">
-                    <div className="flower-count-number">{v.title}</div>
+                    <div className="flower-count-number">{displayTitle}</div>
                     <div className="flower-count-subtitle">{v.subtitle}</div>
-                    <p className="flower-count-card-desc">{v.desc}</p>
+                    <p className="flower-count-card-desc">{displayDesc}</p>
                   </div>
 
                   <div className="flower-count-check-wrap">

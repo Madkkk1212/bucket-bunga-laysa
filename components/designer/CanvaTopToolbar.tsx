@@ -47,7 +47,7 @@ export default function CanvaTopToolbar({
   isSidebarExpanded = true,
   onToggleSidebar,
 }: CanvaTopToolbarProps) {
-  const { t } = useLanguage();
+  const { t, isEn } = useLanguage();
   const {
     design,
     undo,
@@ -260,7 +260,7 @@ export default function CanvaTopToolbar({
               type="button"
               className="canva-stepper-btn"
               onClick={() => handleRotate(-15)}
-              title="Putar -15°"
+              title={isEn ? 'Rotate -15°' : 'Putar -15°'}
             >
               <RotateCcw size={13} />
             </button>
@@ -269,7 +269,7 @@ export default function CanvaTopToolbar({
               type="button"
               className="canva-stepper-btn"
               onClick={() => handleRotate(15)}
-              title="Putar +15°"
+              title={isEn ? 'Rotate +15°' : 'Putar +15°'}
             >
               <RotateCw size={13} />
             </button>
@@ -281,7 +281,7 @@ export default function CanvaTopToolbar({
               type="button"
               className="canva-stepper-btn"
               onClick={() => handleScale(0.9)}
-              title="Perkecil Ukuran"
+              title={isEn ? 'Decrease Size' : 'Perkecil Ukuran'}
             >
               <Minus size={13} />
             </button>
@@ -290,7 +290,7 @@ export default function CanvaTopToolbar({
               type="button"
               className="canva-stepper-btn"
               onClick={() => handleScale(1.1)}
-              title="Perbesar Ukuran"
+              title={isEn ? 'Increase Size' : 'Perbesar Ukuran'}
             >
               <Plus size={13} />
             </button>
@@ -306,10 +306,10 @@ export default function CanvaTopToolbar({
               consoleAudio.play('switch');
               changeFlowerLayer(selectedFlower.uid, 'up');
             }}
-            title="Maju Satu Lapisan"
+            title={isEn ? 'Bring Forward' : 'Maju Satu Lapisan'}
           >
             <ArrowUpToLine size={14} />
-            <span>Maju</span>
+            <span>{isEn ? 'Forward' : 'Maju'}</span>
           </button>
 
           <button
@@ -319,10 +319,10 @@ export default function CanvaTopToolbar({
               consoleAudio.play('switch');
               changeFlowerLayer(selectedFlower.uid, 'down');
             }}
-            title="Mundur Satu Lapisan"
+            title={isEn ? 'Send Backward' : 'Mundur Satu Lapisan'}
           >
             <ArrowDownToLine size={14} />
-            <span>Mundur</span>
+            <span>{isEn ? 'Back' : 'Mundur'}</span>
           </button>
 
           {/* Duplicate */}
@@ -333,10 +333,10 @@ export default function CanvaTopToolbar({
               consoleAudio.play('soft');
               duplicateFlower(selectedFlower.uid);
             }}
-            title="Duplikat Bunga Ini"
+            title={isEn ? 'Duplicate Flower' : 'Duplikat Bunga Ini'}
           >
             <Copy size={14} />
-            <span>Duplikat</span>
+            <span>{isEn ? 'Clone' : 'Duplikat'}</span>
           </button>
 
           {/* Delete */}
@@ -347,10 +347,10 @@ export default function CanvaTopToolbar({
               consoleAudio.play('snip');
               removeFlowerByUid(selectedFlower.uid);
             }}
-            title="Hapus Bunga Ini"
+            title={isEn ? 'Delete Flower' : 'Hapus Bunga Ini'}
           >
             <Trash2 size={14} />
-            <span>Hapus</span>
+            <span>{isEn ? 'Delete' : 'Hapus'}</span>
           </button>
 
           {/* Deselect / Done */}
@@ -361,7 +361,7 @@ export default function CanvaTopToolbar({
               consoleAudio.play('soft');
               setSelectedFlowerUid(null);
             }}
-            title="Tutup Pilihan Bunga (Esc)"
+            title={isEn ? 'Close Selection (Esc)' : 'Tutup Pilihan Bunga (Esc)'}
           >
             <X size={15} />
           </button>
@@ -512,10 +512,10 @@ export default function CanvaTopToolbar({
               consoleAudio.play('soft');
               onToggleAnalyzer();
             }}
-            title="Buka Panel Analisis & Skor Estetika Buket"
+            title={isEn ? 'Open Analysis & Bouquet Aesthetics Score' : 'Buka Panel Analisis & Skor Estetika Buket'}
           >
             <BarChart2 size={14} style={{ color: '#4f46e5' }} />
-            <span style={{ fontWeight: 600, color: '#334155' }}>Analisis</span>
+            <span style={{ fontWeight: 600, color: '#334155' }}>{isEn ? 'Analysis' : 'Analisis'}</span>
             <span style={{
               padding: '2px 6px',
               borderRadius: '9999px',
@@ -524,7 +524,7 @@ export default function CanvaTopToolbar({
               background: '#e0e7ff',
               color: '#3730a3'
             }}>
-              {score > 0 ? `${score}%` : 'Lihat'}
+              {score > 0 ? `${score}%` : (isEn ? 'View' : 'Lihat')}
             </span>
           </button>
         </div>
@@ -546,14 +546,14 @@ export default function CanvaTopToolbar({
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
               <Flower2 size={13} style={{ color: '#ec4899' }} />
               <span className="canva-dropdown-title">
-                Bunga di Buket ({design.selectedFlowers.length})
+                {isEn ? 'Flowers in Bouquet' : 'Bunga di Buket'} ({design.selectedFlowers.length})
               </span>
             </div>
             <button
               type="button"
               className="canva-dropdown-close"
               onClick={() => setIsFlowerMenuOpen(false)}
-              title="Tutup menu"
+              title={isEn ? 'Close menu' : 'Tutup menu'}
             >
               <X size={13} />
             </button>
@@ -572,13 +572,13 @@ export default function CanvaTopToolbar({
                     setSelectedFlowerUid(f.uid);
                     setIsFlowerMenuOpen(false);
                   }}
-                  title={`Pilih ${flowerDef?.name || 'Bunga'}`}
+                  title={isEn ? `Select ${flowerDef?.name || 'Flower'}` : `Pilih ${flowerDef?.name || 'Bunga'}`}
                 >
                   <span className="canva-dropdown-item-emoji">
                     {flowerDef?.emoji || '🌸'}
                   </span>
                   <span className="canva-dropdown-item-name">
-                    {flowerDef?.name || `Bunga #${i + 1}`}
+                    {flowerDef?.name || (isEn ? `Flower #${i + 1}` : `Bunga #${i + 1}`)}
                   </span>
                   <span className="canva-dropdown-item-badge">
                     #{i + 1}
@@ -597,10 +597,10 @@ export default function CanvaTopToolbar({
                 setStep(2);
                 setIsFlowerMenuOpen(false);
               }}
-              title="Buka katalog lengkap untuk menambah bunga baru"
+              title={isEn ? 'Open complete catalog to add flowers' : 'Buka katalog lengkap untuk menambah bunga baru'}
             >
               <Plus size={13} />
-              <span>Katalog Bunga (Langkah 2)</span>
+              <span>{isEn ? 'Flower Catalog (Step 2)' : 'Katalog Bunga (Langkah 2)'}</span>
             </button>
           </div>
         </div>,
@@ -623,7 +623,7 @@ export default function CanvaTopToolbar({
             type="button"
             className="canva-nudge-btn"
             onClick={() => handleNudge(0, -6)}
-            title="Geser Atas"
+            title={isEn ? 'Nudge Up' : 'Geser Atas'}
           >
             <ChevronUp size={14} />
           </button>
@@ -632,7 +632,7 @@ export default function CanvaTopToolbar({
               type="button"
               className="canva-nudge-btn"
               onClick={() => handleNudge(-6, 0)}
-              title="Geser Kiri"
+              title={isEn ? 'Nudge Left' : 'Geser Kiri'}
             >
               <ChevronLeft size={14} />
             </button>
@@ -641,7 +641,7 @@ export default function CanvaTopToolbar({
               type="button"
               className="canva-nudge-btn"
               onClick={() => handleNudge(6, 0)}
-              title="Geser Kanan"
+              title={isEn ? 'Nudge Right' : 'Geser Kanan'}
             >
               <ChevronRight size={14} />
             </button>
@@ -650,7 +650,7 @@ export default function CanvaTopToolbar({
             type="button"
             className="canva-nudge-btn"
             onClick={() => handleNudge(0, 6)}
-            title="Geser Bawah"
+            title={isEn ? 'Nudge Down' : 'Geser Bawah'}
           >
             <ChevronDown size={14} />
           </button>

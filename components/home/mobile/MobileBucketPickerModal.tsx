@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { X, Check, Package, Crown, Lock, ArrowRight } from 'lucide-react';
 import ModalPortal from '@/components/ui/ModalPortal';
 import { useDesign } from '@/context/DesignContext';
+import { useLanguage } from '@/context/LanguageContext';
 import { BUCKET_SIZES } from '@/data/buckets';
 import PremiumUnlockModal from '@/components/designer/PremiumUnlockModal';
 import './mobile-dashboard.css';
@@ -16,6 +17,8 @@ interface Props {
 
 export default function MobileBucketPickerModal({ isOpen, onClose }: Props) {
   const { design, setBucketSize, isPremiumUnlocked } = useDesign();
+  const { language } = useLanguage();
+  const isEn = language === 'en';
   const [activeTheme, setActiveTheme] = useState<'all' | 'korean' | 'luxury' | 'anime'>('all');
   const [isUnlockModalOpen, setIsUnlockModalOpen] = useState(false);
   const [lockedItemName, setLockedItemName] = useState<string | undefined>(undefined);
@@ -58,15 +61,17 @@ export default function MobileBucketPickerModal({ isOpen, onClose }: Props) {
                   <Package size={20} />
                 </div>
                 <div>
-                  <h3 className="ms-title">Pilih Model Buket</h3>
-                  <p className="ms-subtitle">Koleksi Signature, Korean Origami & Luxury Wrap</p>
+                  <h3 className="ms-title">{isEn ? 'Select Bouquet Wrap' : 'Pilih Model Buket'}</h3>
+                  <p className="ms-subtitle">
+                    {isEn ? 'Signature Collection, Korean Origami & Luxury Wrap' : 'Koleksi Signature, Korean Origami & Luxury Wrap'}
+                  </p>
                 </div>
               </div>
               <button
                 type="button"
                 onClick={onClose}
                 className="ms-close-btn"
-                aria-label="Tutup"
+                aria-label={isEn ? 'Close' : 'Tutup'}
               >
                 <X size={16} />
               </button>
@@ -80,7 +85,13 @@ export default function MobileBucketPickerModal({ isOpen, onClose }: Props) {
                 onClick={() => { setLockedItemName(undefined); setIsUnlockModalOpen(true); }}
               >
                 <Crown size={14} style={{ color: '#F59E0B', flexShrink: 0 }} />
-                <span>Buka <strong>VIP</strong> untuk akses semua model buket eksklusif</span>
+                <span>
+                  {isEn ? (
+                    <>Unlock <strong>VIP</strong> to access all exclusive bouquet wraps</>
+                  ) : (
+                    <>Buka <strong>VIP</strong> untuk akses semua model buket eksklusif</>
+                  )}
+                </span>
                 <ArrowRight size={13} style={{ flexShrink: 0, marginLeft: 'auto' }} />
               </button>
             )}
@@ -89,10 +100,10 @@ export default function MobileBucketPickerModal({ isOpen, onClose }: Props) {
             <div style={{ padding: '10px 12px 8px', borderBottom: '1px solid #F1F5F9', width: '100%', boxSizing: 'border-box' }}>
               <div className="ms-chip-row">
                 {[
-                  { id: 'all', label: 'Semua Model' },
+                  { id: 'all', label: isEn ? 'All Styles' : 'Semua Model' },
                   { id: 'korean', label: 'Korean Signature' },
                   { id: 'luxury', label: 'Royal Luxury' },
-                  { id: 'anime', label: 'Karakter & Anime' },
+                  { id: 'anime', label: isEn ? 'Character & Anime' : 'Karakter & Anime' },
                 ].map((t) => (
                   <button
                     key={t.id}
@@ -151,12 +162,14 @@ export default function MobileBucketPickerModal({ isOpen, onClose }: Props) {
                           {bucket.label}
                           {isLocked && <span className="ms-vip-tag"> VIP</span>}
                         </p>
-                        <p className="ms-bucket-tag">{bucket.themeName || bucket.tag || 'Buket Elegan'}</p>
+                        <p className="ms-bucket-tag">{bucket.themeName || bucket.tag || (isEn ? 'Elegant Wrap' : 'Buket Elegan')}</p>
                         <span className="ms-bucket-badge">
                           {isLocked ? (
-                            <><Lock size={8} style={{ display: 'inline', marginRight: '2px' }} />Buka VIP</>
+                            <><Lock size={8} style={{ display: 'inline', marginRight: '2px' }} />{isEn ? 'Unlock VIP' : 'Buka VIP'}</>
                           ) : (
-                            bucket.capacity || 'Kapasitas 25 Bunga'
+                            bucket.capacity
+                              ? (isEn ? bucket.capacity.replace('Bunga', 'Flowers').replace('Kapasitas', 'Capacity:') : bucket.capacity)
+                              : (isEn ? 'Capacity: 25 Flowers' : 'Kapasitas 25 Bunga')
                           )}
                         </span>
                       </div>
@@ -174,7 +187,7 @@ export default function MobileBucketPickerModal({ isOpen, onClose }: Props) {
                 className="ms-btn-primary"
                 style={{ background: '#E11D48', boxShadow: '0 4px 14px rgba(225, 29, 72, 0.28)' }}
               >
-                <span>Simpan Pilihan Model</span>
+                <span>{isEn ? 'Save Selected Wrap' : 'Simpan Pilihan Model'}</span>
               </button>
             </div>
           </div>

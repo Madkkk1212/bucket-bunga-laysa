@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { X, Search, Plus, Minus, Sparkles, ArrowRight, Flower2, Crown, Lock } from 'lucide-react';
 import ModalPortal from '@/components/ui/ModalPortal';
 import { useDesign } from '@/context/DesignContext';
+import { useLanguage } from '@/context/LanguageContext';
 import { FLOWERS } from '@/data/flowers';
 import PremiumUnlockModal from '@/components/designer/PremiumUnlockModal';
 import './mobile-dashboard.css';
@@ -17,6 +18,8 @@ interface Props {
 
 export default function MobileFlowerPickerModal({ isOpen, onClose, onOpenStudio }: Props) {
   const { design, addFlower, removeFlowerByType, isPremiumUnlocked, randomizeFlowers } = useDesign();
+  const { language } = useLanguage();
+  const isEn = language === 'en';
   const [search, setSearch] = useState('');
   const [selectedCat, setSelectedCat] = useState<'all' | 'main' | 'filler' | 'greenery'>('all');
   const [isUnlockModalOpen, setIsUnlockModalOpen] = useState(false);
@@ -68,9 +71,13 @@ export default function MobileFlowerPickerModal({ isOpen, onClose, onOpenStudio 
                   <Flower2 size={20} />
                 </div>
                 <div>
-                  <h3 className="ms-title">Pilih Koleksi Bunga</h3>
+                  <h3 className="ms-title">{isEn ? 'Select Flowers' : 'Pilih Koleksi Bunga'}</h3>
                   <p className="ms-subtitle">
-                    Terpasang: <strong style={{ color: '#4F46E5' }}>{currentTotal}</strong> / {maxQuota} Tangkai
+                    {isEn ? (
+                      <>Arranged: <strong style={{ color: '#4F46E5' }}>{currentTotal}</strong> / {maxQuota} Stems</>
+                    ) : (
+                      <>Terpasang: <strong style={{ color: '#4F46E5' }}>{currentTotal}</strong> / {maxQuota} Tangkai</>
+                    )}
                   </p>
                 </div>
               </div>
@@ -78,7 +85,7 @@ export default function MobileFlowerPickerModal({ isOpen, onClose, onOpenStudio 
                 type="button"
                 onClick={onClose}
                 className="ms-close-btn"
-                aria-label="Tutup"
+                aria-label={isEn ? 'Close' : 'Tutup'}
               >
                 <X size={16} />
               </button>
@@ -103,7 +110,13 @@ export default function MobileFlowerPickerModal({ isOpen, onClose, onOpenStudio 
                 onClick={() => { setLockedItemName(undefined); setIsUnlockModalOpen(true); }}
               >
                 <Crown size={14} style={{ color: '#F59E0B', flexShrink: 0 }} />
-                <span>Buka <strong>VIP</strong> untuk akses 40+ bunga premium eksklusif</span>
+                <span>
+                  {isEn ? (
+                    <>Unlock <strong>VIP</strong> to access 40+ exclusive premium flowers</>
+                  ) : (
+                    <>Buka <strong>VIP</strong> untuk akses 40+ bunga premium eksklusif</>
+                  )}
+                </span>
                 <ArrowRight size={13} style={{ flexShrink: 0, marginLeft: 'auto' }} />
               </button>
             )}
@@ -114,7 +127,7 @@ export default function MobileFlowerPickerModal({ isOpen, onClose, onOpenStudio 
                 <Search size={15} className="ms-search-icon" />
                 <input
                   type="text"
-                  placeholder="Cari mawar, tulip, krisan..."
+                  placeholder={isEn ? 'Search roses, tulips, chrysanthemums...' : 'Cari mawar, tulip, krisan...'}
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   className="ms-search-input"
@@ -124,10 +137,10 @@ export default function MobileFlowerPickerModal({ isOpen, onClose, onOpenStudio 
               {/* Category tabs */}
               <div className="ms-chip-row">
                 {[
-                  { id: 'all', label: 'Semua Bunga' },
-                  { id: 'main', label: 'Bunga Utama' },
-                  { id: 'filler', label: 'Filler / Manis' },
-                  { id: 'greenery', label: 'Dedaunan' },
+                  { id: 'all', label: isEn ? 'All Flowers' : 'Semua Bunga' },
+                  { id: 'main', label: isEn ? 'Main Blooms' : 'Bunga Utama' },
+                  { id: 'filler', label: isEn ? 'Fillers' : 'Filler / Manis' },
+                  { id: 'greenery', label: isEn ? 'Foliage' : 'Dedaunan' },
                 ].map((cat) => (
                   <button
                     key={cat.id}
@@ -154,7 +167,7 @@ export default function MobileFlowerPickerModal({ isOpen, onClose, onOpenStudio 
                     >
                       {/* VIP Lock Badge */}
                       {isLocked && (
-                        <div className="ms-vip-lock-badge" title="Item VIP Premium">
+                        <div className="ms-vip-lock-badge" title={isEn ? 'VIP Premium Item' : 'Item VIP Premium'}>
                           <Crown size={9} />
                         </div>
                       )}
@@ -174,7 +187,7 @@ export default function MobileFlowerPickerModal({ isOpen, onClose, onOpenStudio 
                           {flower.name}
                           {isLocked && <span className="ms-vip-tag"> VIP</span>}
                         </p>
-                        <p className="ms-flower-sub">{flower.colorName || 'Segar'}</p>
+                        <p className="ms-flower-sub">{flower.colorName || (isEn ? 'Fresh' : 'Segar')}</p>
 
                         {isLocked ? (
                           /* Locked: Show unlock button */
@@ -184,7 +197,7 @@ export default function MobileFlowerPickerModal({ isOpen, onClose, onOpenStudio 
                             onClick={() => handleLockedTap(flower.name)}
                           >
                             <Lock size={9} />
-                            <span>Buka VIP</span>
+                            <span>{isEn ? 'Unlock VIP' : 'Buka VIP'}</span>
                           </button>
                         ) : (
                           /* Unlocked: Normal counter */
@@ -223,7 +236,7 @@ export default function MobileFlowerPickerModal({ isOpen, onClose, onOpenStudio 
                 className="ms-btn-secondary"
               >
                 <Sparkles size={14} style={{ color: '#D97706' }} />
-                <span>Acak Semua</span>
+                <span>{isEn ? 'Randomize' : 'Acak Semua'}</span>
               </button>
 
               <button
@@ -234,7 +247,7 @@ export default function MobileFlowerPickerModal({ isOpen, onClose, onOpenStudio 
                 }}
                 className="ms-btn-primary"
               >
-                <span>Terapkan & Rangkai</span>
+                <span>{isEn ? 'Apply & Arrange' : 'Terapkan & Rangkai'}</span>
                 <ArrowRight size={14} />
               </button>
             </div>

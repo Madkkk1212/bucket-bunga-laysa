@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { X, BookOpen, Crown, Palette, MessageCircle, RotateCcw, Sparkles } from 'lucide-react';
 import ModalPortal from '@/components/ui/ModalPortal';
 import { useDesign } from '@/context/DesignContext';
+import { useLanguage } from '@/context/LanguageContext';
 import './mobile-dashboard.css';
 
 interface Props {
@@ -15,6 +16,8 @@ interface Props {
 
 export default function MobileQuickMenuModal({ isOpen, onClose, onOpenUnlockVip, onOpenGarden }: Props) {
   const { isPremiumUnlocked, premiumUserName, resetDesign } = useDesign();
+  const { language } = useLanguage();
+  const isEn = language === 'en';
 
   if (!isOpen) return null;
 
@@ -25,14 +28,14 @@ export default function MobileQuickMenuModal({ isOpen, onClose, onOpenUnlockVip,
           {/* Header */}
           <div className="ms-header">
             <div>
-              <h3 className="ms-title">Menu Buket Laysa</h3>
-              <p className="ms-subtitle">Layanan & Akses Studio Rangkaian</p>
+              <h3 className="ms-title">{isEn ? 'Studio Menu' : 'Menu Buket Laysa'}</h3>
+              <p className="ms-subtitle">{isEn ? 'Services & Studio Navigation' : 'Layanan & Akses Studio Rangkaian'}</p>
             </div>
             <button
               type="button"
               onClick={onClose}
               className="ms-close-btn"
-              aria-label="Tutup"
+              aria-label={isEn ? 'Close' : 'Tutup'}
             >
               <X size={16} />
             </button>
@@ -44,15 +47,15 @@ export default function MobileQuickMenuModal({ isOpen, onClose, onOpenUnlockVip,
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <Crown size={18} style={{ color: '#D97706' }} />
-                  <span style={{ fontSize: '13px', fontWeight: 800, color: '#92400E' }}>Akses VIP Atelier</span>
+                  <span style={{ fontSize: '13px', fontWeight: 800, color: '#92400E' }}>{isEn ? 'Atelier VIP Access' : 'Akses VIP Atelier'}</span>
                 </div>
                 {isPremiumUnlocked ? (
                   <span style={{ borderRadius: '9999px', background: '#FDE68A', padding: '3px 8px', fontSize: '10.5px', fontWeight: 800, color: '#92400E' }}>
-                    Aktif ({premiumUserName || 'VIP'})
+                    {isEn ? 'Active' : 'Aktif'} ({premiumUserName || 'VIP'})
                   </span>
                 ) : (
                   <span style={{ borderRadius: '9999px', background: '#FFFFFF', padding: '3px 8px', fontSize: '10.5px', fontWeight: 700, color: '#B45309' }}>
-                    Koleksi Standar
+                    {isEn ? 'Standard Collection' : 'Koleksi Standar'}
                   </span>
                 )}
               </div>
@@ -82,7 +85,7 @@ export default function MobileQuickMenuModal({ isOpen, onClose, onOpenUnlockVip,
                   }}
                 >
                   <Sparkles size={14} />
-                  <span>Buka Akses Koleksi Bunga & Buket VIP</span>
+                  <span>{isEn ? 'Unlock VIP Flowers & Bouquet Wraps' : 'Buka Akses Koleksi Bunga & Buket VIP'}</span>
                 </button>
               )}
             </div>
@@ -112,10 +115,12 @@ export default function MobileQuickMenuModal({ isOpen, onClose, onOpenUnlockVip,
               </div>
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <p style={{ fontSize: '12.5px', fontWeight: 800, color: '#9A3412' }}>Kebun Bunga Harian</p>
+                  <p style={{ fontSize: '12.5px', fontWeight: 800, color: '#9A3412' }}>{isEn ? 'Daily Flower Garden' : 'Kebun Bunga Harian'}</p>
                   <span style={{ fontSize: '10px', fontWeight: 800, background: '#FED7AA', color: '#9A3412', borderRadius: '9999px', padding: '1px 6px' }}>🔥 Streak</span>
                 </div>
-                <p style={{ fontSize: '11px', color: '#C2410C', marginTop: '2px' }}>Siram bunga setiap hari bersama pasangan / sahabat</p>
+                <p style={{ fontSize: '11px', color: '#C2410C', marginTop: '2px' }}>
+                  {isEn ? 'Water flowers daily & nurture together with partner' : 'Siram bunga setiap hari bersama pasangan / sahabat'}
+                </p>
               </div>
             </button>
 
@@ -138,8 +143,8 @@ export default function MobileQuickMenuModal({ isOpen, onClose, onOpenUnlockVip,
                 <BookOpen size={20} />
               </div>
               <div>
-                <p style={{ fontSize: '12.5px', fontWeight: 800, color: '#1E293B' }}>Panduan Tutorial</p>
-                <p style={{ fontSize: '11px', color: '#64748B', marginTop: '2px' }}>Langkah mudah merangkai buket bunga virtual</p>
+                <p style={{ fontSize: '12.5px', fontWeight: 800, color: '#1E293B' }}>{isEn ? 'Interactive Tutorial' : 'Panduan Tutorial'}</p>
+                <p style={{ fontSize: '11px', color: '#64748B', marginTop: '2px' }}>{isEn ? 'Simple steps to create virtual bouquets' : 'Langkah mudah merangkai buket bunga virtual'}</p>
               </div>
             </Link>
 
@@ -163,8 +168,8 @@ export default function MobileQuickMenuModal({ isOpen, onClose, onOpenUnlockVip,
                 <MessageCircle size={20} />
               </div>
               <div>
-                <p style={{ fontSize: '12.5px', fontWeight: 800, color: '#1E293B' }}>Konsultasi WhatsApp</p>
-                <p style={{ fontSize: '11px', color: '#64748B', marginTop: '2px' }}>Bantuan pesan khusus dan custom order</p>
+                <p style={{ fontSize: '12.5px', fontWeight: 800, color: '#1E293B' }}>{isEn ? 'WhatsApp Consultation' : 'Konsultasi WhatsApp'}</p>
+                <p style={{ fontSize: '11px', color: '#64748B', marginTop: '2px' }}>{isEn ? 'Direct support for custom bouquets & orders' : 'Bantuan pesan khusus dan custom order'}</p>
               </div>
             </a>
 
@@ -172,7 +177,7 @@ export default function MobileQuickMenuModal({ isOpen, onClose, onOpenUnlockVip,
             <button
               type="button"
               onClick={() => {
-                if (window.confirm('Reset rangkaian buket ke pengaturan awal?')) {
+                if (window.confirm(isEn ? 'Reset bouquet arrangement to initial defaults?' : 'Reset rangkaian buket ke pengaturan awal?')) {
                   resetDesign();
                   onClose();
                 }
@@ -194,8 +199,8 @@ export default function MobileQuickMenuModal({ isOpen, onClose, onOpenUnlockVip,
                 <RotateCcw size={18} />
               </div>
               <div>
-                <p style={{ fontSize: '12.5px', fontWeight: 800, color: '#DC2626' }}>Reset Rangkaian</p>
-                <p style={{ fontSize: '11px', color: '#EF4444', marginTop: '2px' }}>Hapus seluruh pilihan bunga & ulangi dari awal</p>
+                <p style={{ fontSize: '12.5px', fontWeight: 800, color: '#DC2626' }}>{isEn ? 'Reset Bouquet' : 'Reset Rangkaian'}</p>
+                <p style={{ fontSize: '11px', color: '#EF4444', marginTop: '2px' }}>{isEn ? 'Clear all selected flowers & start over' : 'Hapus seluruh pilihan bunga & ulangi dari awal'}</p>
               </div>
             </button>
           </div>

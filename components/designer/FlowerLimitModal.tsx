@@ -21,7 +21,7 @@ export default function FlowerLimitModal({
   currentCount,
   maxLimit,
 }: FlowerLimitModalProps) {
-  const { t } = useLanguage();
+  const { t, isEn } = useLanguage();
   const handleUpgrade = () => {
     consoleAudio.play('soft');
     onClose();
@@ -48,7 +48,7 @@ export default function FlowerLimitModal({
             type="button"
             className="flower-limit-close-btn"
             onClick={handleDismiss}
-            title="Tutup dialog"
+            title={isEn ? 'Close dialog' : 'Tutup dialog'}
           >
             <X size={16} />
           </button>
@@ -72,8 +72,8 @@ export default function FlowerLimitModal({
           {/* Capacity Status Box */}
           <div className="flower-limit-status-box">
             <div className="flower-limit-status-row">
-              <span className="flower-limit-status-label">Kapasitas Saat Ini</span>
-              <span className="flower-limit-status-badge">100% Penuh</span>
+              <span className="flower-limit-status-label">{isEn ? 'Current Capacity' : 'Kapasitas Saat Ini'}</span>
+              <span className="flower-limit-status-badge">{isEn ? '100% Full' : '100% Penuh'}</span>
             </div>
 
             <div className="flower-limit-progress-track">
@@ -81,17 +81,18 @@ export default function FlowerLimitModal({
             </div>
 
             <div className="flower-limit-status-details">
-              <span>🌸 Terangkai: <strong>{currentCount} tangkai</strong></span>
-              <span>Batas: <strong>{maxLimit} tangkai</strong></span>
+              <span>🌸 {isEn ? 'Arranged:' : 'Terangkai:'} <strong>{currentCount} {isEn ? 'stems' : 'tangkai'}</strong></span>
+              <span>{isEn ? 'Limit:' : 'Batas:'} <strong>{maxLimit} {isEn ? 'stems' : 'tangkai'}</strong></span>
             </div>
           </div>
 
           {/* Tip Box */}
           <div className="flower-limit-tip-box">
             <p>
-              💡 <strong>Ingin merangkai lebih banyak?</strong> Anda dapat menambah kuota bunga
-              hingga <strong>50 tangkai</strong> tanpa kehilangan susunan bunga yang sudah ada, atau
-              hapus beberapa bunga dari kanvas.
+              💡 <strong>{isEn ? 'Want to arrange more?' : 'Ingin merangkai lebih banyak?'}</strong>{' '}
+              {isEn
+                ? 'You can increase flower capacity up to 50 stems without losing existing flowers, or remove some flowers from the canvas.'
+                : 'Anda dapat menambah kuota bunga hingga 50 tangkai tanpa kehilangan susunan bunga yang sudah ada, atau hapus beberapa bunga dari kanvas.'}
             </p>
           </div>
 

@@ -23,7 +23,7 @@ const CATEGORY_TABS: { id: CategoryFilter; label: string }[] = [
 const ITEMS_PER_PAGE = 9; // 3 baris x 3 kolom = 9 bunga per halaman
 
 export default function StepFlowers() {
-  const { t } = useLanguage();
+  const { t, isEn } = useLanguage();
   const {
     addFlower,
     removeFlowerByType,
@@ -94,7 +94,13 @@ export default function StepFlowers() {
               className={`sf-cat-pill ${categoryFilter === tab.id ? 'sf-cat-pill-active' : ''}`}
               onClick={() => handleCategoryChange(tab.id)}
             >
-              {tab.label}
+              {tab.id === 'all'
+                ? (isEn ? 'All Flowers' : 'Semua Bunga')
+                : tab.id === 'main'
+                ? (isEn ? '🌹 Main Flowers' : '🌹 Utama')
+                : tab.id === 'filler'
+                ? (isEn ? '✨ Fillers' : '✨ Filler')
+                : (isEn ? '🌿 Greenery' : '🌿 Dedaunan')}
             </button>
           ))}
         </div>
@@ -205,8 +211,8 @@ export default function StepFlowers() {
                       type="button"
                       className="sf-btn sf-btn-plus"
                       onClick={() => handleAddFlower(flower)}
-                      title={isMaxed ? 'Kapasitas maksimal tercapai' : `Tambah 1 ${flower.name}`}
-                      aria-label={`Tambah 1 ${flower.name}`}
+                      title={isMaxed ? (isEn ? 'Maximum capacity reached' : 'Kapasitas maksimal tercapai') : `${isEn ? 'Add 1' : 'Tambah 1'} ${flower.name}`}
+                      aria-label={`${isEn ? 'Add 1' : 'Tambah 1'} ${flower.name}`}
                     >
                       <Plus size={13} />
                     </button>
@@ -216,10 +222,10 @@ export default function StepFlowers() {
                     type="button"
                     className="sf-btn sf-btn-add"
                     onClick={() => handleAddFlower(flower)}
-                    title={isMaxed ? 'Kapasitas maksimal tercapai' : `Tambah 1 ${flower.name}`}
+                    title={isMaxed ? (isEn ? 'Maximum capacity reached' : 'Kapasitas maksimal tercapai') : `${isEn ? 'Add 1' : 'Tambah 1'} ${flower.name}`}
                   >
                     <Plus size={13} />
-                    <span className="sf-btn-text">Tambah</span>
+                    <span className="sf-btn-text">{isEn ? 'Add' : 'Tambah'}</span>
                   </button>
                 )}
               </div>
@@ -228,7 +234,7 @@ export default function StepFlowers() {
         })}
 
         {filteredFlowers.length === 0 && (
-          <p className="sf-no-results">Tidak ada jenis bunga yang cocok 🌾</p>
+          <p className="sf-no-results">{isEn ? 'No matching flowers found 🌾' : 'Tidak ada jenis bunga yang cocok 🌾'}</p>
         )}
       </div>
 
@@ -241,20 +247,20 @@ export default function StepFlowers() {
             onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
             disabled={safePage === 1}
             id="btn-flower-page-prev"
-            aria-label="Halaman bunga sebelumnya"
+            aria-label="Previous flower page"
           >
             <ChevronLeft size={13} />
-            <span>Sebelumnya</span>
+            <span>{isEn ? 'Prev' : 'Sebelumnya'}</span>
           </button>
 
-          <div className="sf-page-dots" aria-label={`Halaman ${safePage} dari ${totalPages}`}>
+          <div className="sf-page-dots" aria-label={`Page ${safePage} of ${totalPages}`}>
             {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
               <button
                 key={p}
                 type="button"
                 className={`sf-page-dot-btn ${p === safePage ? 'active' : ''}`}
                 onClick={() => setCurrentPage(p)}
-                aria-label={`Ke halaman bunga ${p}`}
+                aria-label={`Page ${p}`}
               >
                 {p}
               </button>
@@ -267,9 +273,9 @@ export default function StepFlowers() {
             onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
             disabled={safePage === totalPages}
             id="btn-flower-page-next"
-            aria-label="Halaman bunga berikutnya"
+            aria-label="Next flower page"
           >
-            <span>Berikutnya</span>
+            <span>{isEn ? 'Next' : 'Berikutnya'}</span>
             <ChevronRight size={13} />
           </button>
         </div>
@@ -283,7 +289,7 @@ export default function StepFlowers() {
             className="sf-view-studio-pill"
             id="btn-scroll-to-studio"
           >
-            <span>🌸 Lihat Hasil Studio Rangkaian ({total} Bunga)</span>
+            <span>{isEn ? `🌸 View Bouquet Canvas (${total} Flowers)` : `🌸 Lihat Hasil Studio Rangkaian (${total} Bunga)`}</span>
             <ChevronDown size={14} />
           </a>
         </div>
@@ -292,7 +298,7 @@ export default function StepFlowers() {
       {/* Warning */}
       {total >= max && (
         <div className="sf-warning">
-          ⚠️ Kapasitas maksimum ({max} bunga) tercapai
+          {isEn ? `⚠️ Maximum capacity (${max} flowers) reached` : `⚠️ Kapasitas maksimum (${max} bunga) tercapai`}
         </div>
       )}
 
@@ -304,7 +310,7 @@ export default function StepFlowers() {
           onBack={() => setStep(1)}
           onNext={() => setStep(3)}
           isNextDisabled={total === 0}
-          nextLabel="Lanjut: Kartu Ucapan"
+          nextLabel={isEn ? 'Next: Greeting Card' : 'Lanjut: Kartu Ucapan'}
         />
       </div>
 

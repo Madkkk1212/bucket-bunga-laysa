@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import ModalPortal from '../ui/ModalPortal';
 import { useDesign, getOrCreateDeviceId } from '@/context/DesignContext';
+import { useLanguage } from '@/context/LanguageContext';
 
 interface PremiumUnlockModalProps {
   isOpen: boolean;
@@ -50,10 +51,51 @@ const DEFAULT_PERKS: Record<PricingTierKey, { title: string; badge?: string; fea
     features: [
       'Akses VIP permanen SELAMANYA (sekali bayar tanpa langganan)',
       '🌸 EKSKLUSIF: Buka Fitur Kebun Bunga Harian Streak 🔥 (Solo / Pasangan)',
-      'Ekspor Kualitas Tertinggi Ultra HD 4K & Stiker WA (Transparan)',
+      '🔒 Autosave Cloud Terenkripsi AES-256 (Draft aman antar perangkat)',
+      '🖼️ Custom Background Kanvas (Gunakan foto studio pribadi sesuai rasio kanvas)',
+      '👑 Ekspor Kualitas Tertinggi Ultra HD 4K (3.5x Lossless Master)',
       'Kartu Ucapan Kaligrafi Eksklusif & Ornamen Pita Mewah',
       'Bisa terhubung hingga 5 perangkat bersama keluarga / pasangan',
       'Akses gratis ke seluruh varian bunga & buket baru di masa depan',
+    ],
+  },
+};
+
+const DEFAULT_PERKS_EN: Record<PricingTierKey, { title: string; badge?: string; features: string[] }> = {
+  daily: {
+    title: '⏱️ Daily Package Benefits (24 Hours):',
+    badge: 'Affordable & Practical',
+    features: [
+      'Unlock all 100+ flowers & bouquet wrappers',
+      '24 hours active period: design & download unlimited',
+      'Connect up to 5 devices simultaneously',
+      'Download sharp HD resolution bouquets',
+      'Instant access without account registration hassle',
+    ],
+  },
+  weekly: {
+    title: '📅 Weekly Package Benefits (7 Days):',
+    badge: 'Best Value (52% OFF)',
+    features: [
+      'Unlock all 100+ flowers & bouquet wrappers',
+      'Full 7 days active period (Ideal for gifts & celebrations)',
+      '🔒 AES-256 Encrypted Cloud Autosave & Multi-device sync',
+      'Connect up to 5 devices simultaneously',
+      'Much more economical than repeating daily passes',
+    ],
+  },
+  lifetime: {
+    title: '👑 Exclusive Lifetime VIP Sultan Privileges:',
+    badge: 'Ultimate & Permanent',
+    features: [
+      'Permanent VIP access FOREVER (one-time payment, no subscriptions)',
+      '🌸 EXCLUSIVE: Unlock Daily Flower Garden Streak 🔥 (Solo / Partner)',
+      '🔒 AES-256 Encrypted Cloud Vault (Seamless multi-device sync)',
+      '🖼️ Custom Canvas Background (Use personal studio backdrop with aspect ratio tool)',
+      '👑 Ultra HD 4K Highest Quality Export (3.5x Lossless Master)',
+      'Exclusive Calligraphy Greeting Cards & Luxury Ribbon Ornaments',
+      'Connect up to 5 devices together with family / partner',
+      'Free access to all future new flower & bouquet releases',
     ],
   },
 };
@@ -67,6 +109,7 @@ export default function PremiumUnlockModal({
 }: PremiumUnlockModalProps) {
   const router = useRouter();
   const { unlockPremium, isPremiumUnlocked, premiumUserName } = useDesign();
+  const { isEn } = useLanguage();
   const [step, setStep] = useState<ModalStep>('VOUCHERS');
   const [code, setCode] = useState('');
   const [verifiedCode, setVerifiedCode] = useState('');
@@ -169,11 +212,17 @@ export default function PremiumUnlockModal({
   // WhatsApp order template with bullet benefits
   let waCustomText = '';
   if (selectedTier === 'daily') {
-    waCustomText = `Halo Admin Laysa Florist, saya ingin pesan Kode Akses VIP Paket Harian 24 Jam (${formattedPrice}).\n\nBenefit:\n• Bebas rangkai semua bunga & buket (24 Jam)\n• Hingga 5 perangkat bersamaan\n• Format HD jernih\n\nBoleh minta nomor rekening/QRIS untuk pembayarannya? Terima kasih!`;
+    waCustomText = isEn
+      ? `Hello Admin Laysa Florist, I would like to order a 24-Hour Daily VIP Access Code (${formattedPrice}).\n\nBenefits:\n• Access all flowers & wrappers (24 Hours)\n• Up to 5 devices simultaneously\n• Crystal clear HD format\n\nMay I have the payment details / QRIS? Thank you!`
+      : `Halo Admin Laysa Florist, saya ingin pesan Kode Akses VIP Paket Harian 24 Jam (${formattedPrice}).\n\nBenefit:\n• Bebas rangkai semua bunga & buket (24 Jam)\n• Hingga 5 perangkat bersamaan\n• Format HD jernih\n\nBoleh minta nomor rekening/QRIS untuk pembayarannya? Terima kasih!`;
   } else if (selectedTier === 'weekly') {
-    waCustomText = `Halo Admin Laysa Florist, saya ingin pesan Kode Akses VIP Paket Mingguan 7 Hari (${formattedPrice}).\n\nBenefit:\n• Bebas rangkai & edit semua bunga & buket (7 Hari)\n• Sangat cocok untuk kado wisuda & ultah\n• Hingga 5 perangkat bersamaan\n\nBoleh minta nomor rekening/QRIS untuk pembayarannya? Terima kasih!`;
+    waCustomText = isEn
+      ? `Hello Admin Laysa Florist, I would like to order a 7-Day Weekly VIP Access Code (${formattedPrice}).\n\nBenefits:\n• Freely arrange & edit all flowers & wrappers (7 Days)\n• Ideal for celebrations & gifts\n• Up to 5 devices simultaneously\n\nMay I have the payment details / QRIS? Thank you!`
+      : `Halo Admin Laysa Florist, saya ingin pesan Kode Akses VIP Paket Mingguan 7 Hari (${formattedPrice}).\n\nBenefit:\n• Bebas rangkai & edit semua bunga & buket (7 Hari)\n• Sangat cocok untuk kado wisuda & ultah\n• Hingga 5 perangkat bersamaan\n\nBoleh minta nomor rekening/QRIS untuk pembayarannya? Terima kasih!`;
   } else {
-    waCustomText = `Halo Admin Laysa Florist, saya ingin pesan Kode Akses VIP Paket Selamanya Sultan (${formattedPrice}).\n\nBenefit Eksklusif:\n• Akses VIP Selamanya (Permanen Sekali Bayar)\n• EKSKLUSIF: Buka Fitur Kebun Bunga Streak 🔥\n• Ekspor Ultra HD 4K & Stiker WA Transparan\n• Hingga 5 perangkat bersamaan\n\nBoleh minta nomor rekening/QRIS untuk pembayarannya? Terima kasih!`;
+    waCustomText = isEn
+      ? `Hello Admin Laysa Florist, I would like to order a Lifetime VIP Sultan Access Code (${formattedPrice}).\n\nExclusive Benefits:\n• Permanent VIP Access Forever (One-time payment)\n• EXCLUSIVE: Unlock Daily Flower Garden Streak 🔥\n• Ultra HD 4K & Transparent WA Stickers\n• Up to 5 devices simultaneously\n\nMay I have the payment details / QRIS? Thank you!`
+      : `Halo Admin Laysa Florist, saya ingin pesan Kode Akses VIP Paket Selamanya Sultan (${formattedPrice}).\n\nBenefit Eksklusif:\n• Akses VIP Selamanya (Permanen Sekali Bayar)\n• EKSKLUSIF: Buka Fitur Kebun Bunga Streak 🔥\n• Ekspor Ultra HD 4K & Stiker WA Transparan\n• Hingga 5 perangkat bersamaan\n\nBoleh minta nomor rekening/QRIS untuk pembayarannya? Terima kasih!`;
   }
 
   const waUrl = `https://wa.me/${cleanWaNumber}?text=${encodeURIComponent(waCustomText)}`;
@@ -189,7 +238,7 @@ export default function PremiumUnlockModal({
   const handleVerifyCode = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!code.trim()) {
-      setErrorMsg('Silakan masukkan kode akses terlebih dahulu.');
+      setErrorMsg(isEn ? 'Please enter your access code first.' : 'Silakan masukkan kode akses terlebih dahulu.');
       return;
     }
 
@@ -226,11 +275,11 @@ export default function PremiumUnlockModal({
         setStep('ENTER_NAME');
         setErrorMsg('');
       } else {
-        setErrorMsg(data.message || 'Kode akses tidak valid atau tidak ditemukan.');
+        setErrorMsg(data.message || (isEn ? 'Access code invalid or not found.' : 'Kode akses tidak valid atau tidak ditemukan.'));
       }
     } catch {
       setIsLoading(false);
-      setErrorMsg('Gagal terhubung ke server verifikasi. Periksa koneksi internet Anda.');
+      setErrorMsg(isEn ? 'Failed to connect to verification server. Please check your internet connection.' : 'Gagal terhubung ke server verifikasi. Periksa koneksi internet Anda.');
     }
   };
 
@@ -238,13 +287,13 @@ export default function PremiumUnlockModal({
   const handleClaimName = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!userName.trim()) {
-      setErrorMsg('Silakan masukkan nama Anda untuk mengaktifkan kode ini.');
+      setErrorMsg(isEn ? 'Please enter your name to activate this code.' : 'Silakan masukkan nama Anda untuk mengaktifkan kode ini.');
       return;
     }
 
     const isLifetime = verifiedTier === 'lifetime' || Boolean(codeInfo?.hasGardenAccess);
     if (isLifetime && !gardenNameInput.trim()) {
-      setErrorMsg('Sebagai pemilik VIP Sultan, kebun bunga Anda wajib dinamai terlebih dahulu 🌸');
+      setErrorMsg(isEn ? 'As a VIP Sultan owner, your flower garden must be named first 🌸' : 'Sebagai pemilik VIP Sultan, kebun bunga Anda wajib dinamai terlebih dahulu 🌸');
       return;
     }
 
@@ -271,7 +320,7 @@ export default function PremiumUnlockModal({
           localStorage.setItem('bucket_garden_named', 'true');
         } catch {}
       }
-      setSuccessMsg(res.message || `Akses VIP aktif untuk ${userName.trim()}!`);
+      setSuccessMsg(res.message || (isEn ? `VIP Access active for ${userName.trim()}!` : `Akses VIP aktif untuk ${userName.trim()}!`));
       // Lanjut ke popup Terima Kasih
       setStep('THANK_YOU');
     } else {
@@ -280,6 +329,8 @@ export default function PremiumUnlockModal({
   };
 
   if (!isOpen) return null;
+
+  const currentPerks = isEn ? DEFAULT_PERKS_EN : DEFAULT_PERKS;
 
   return (
     <ModalPortal isOpen={isOpen} onClose={onClose}>
@@ -295,7 +346,7 @@ export default function PremiumUnlockModal({
             type="button"
             className="boutique-modal-close"
             onClick={onClose}
-            aria-label="Tutup"
+            aria-label={isEn ? 'Close' : 'Tutup'}
           >
             <X size={18} />
           </button>
@@ -306,17 +357,27 @@ export default function PremiumUnlockModal({
           {step === 'VOUCHERS' && (
             <div>
               <div className="boutique-modal-header">
-                <span className="boutique-eyebrow">Studio Buket Laysa</span>
+                <span className="boutique-eyebrow">
+                  {isEn ? 'Laysa Bouquet Studio' : 'Studio Buket Laysa'}
+                </span>
                 <h3 className="boutique-modal-title">
-                  Pilih Tiket Voucher VIP
+                  {isEn ? 'Choose VIP Voucher Ticket' : 'Pilih Tiket Voucher VIP'}
                 </h3>
                 <p className="boutique-modal-desc">
                   {itemName ? (
-                    <>
-                      Koleksi <strong className="text-stone-900">"{itemName}"</strong> siap digunakan. Pilih voucher hemat Anda di bawah ini:
-                    </>
+                    isEn ? (
+                      <>
+                        Collection <strong className="text-stone-900">"{itemName}"</strong> is ready to use. Choose your voucher below:
+                      </>
+                    ) : (
+                      <>
+                        Koleksi <strong className="text-stone-900">"{itemName}"</strong> siap digunakan. Pilih voucher hemat Anda di bawah ini:
+                      </>
+                    )
                   ) : (
-                    'Pilih salah satu kupon diskon di bawah ini untuk membuka seluruh bunga, buket & fitur eksklusif:'
+                    isEn
+                      ? 'Select one of the discount vouchers below to unlock all flowers, bouquets & exclusive features:'
+                      : 'Pilih salah satu kupon diskon di bawah ini untuk membuka seluruh bunga, buket & fitur eksklusif:'
                   )}
                 </p>
               </div>
@@ -327,12 +388,12 @@ export default function PremiumUnlockModal({
                 <div
                   className="voucher-ticket-item"
                   onClick={() => handleSelectVoucher('daily')}
-                  title="Klik untuk memilih Paket Harian (24 Jam)"
+                  title={isEn ? 'Click to select Daily Package (24 Hours)' : 'Klik untuk memilih Paket Harian (24 Jam)'}
                 >
                   <div className="voucher-ticket-left">
                     <div className="voucher-ticket-badge-row">
                       <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-amber-100 text-amber-800">
-                        {pricingData.tiers.daily.discountBadge || 'Hemat 50%'}
+                        {isEn ? 'Save 50%' : (pricingData.tiers.daily.discountBadge || 'Hemat 50%')}
                       </span>
                     </div>
                     <div className="voucher-ticket-discount">
@@ -340,7 +401,7 @@ export default function PremiumUnlockModal({
                       <span className="voucher-ticket-discount-sub">OFF</span>
                     </div>
                     <div className="voucher-ticket-title">
-                      Paket Harian (24 Jam)
+                      {isEn ? 'Daily Package (24 Hours)' : 'Paket Harian (24 Jam)'}
                     </div>
                     <div className="voucher-ticket-sub">
                       <span className="voucher-ticket-price">Rp {pricingData.tiers.daily.finalPrice.toLocaleString('id-ID')}</span>
@@ -359,7 +420,7 @@ export default function PremiumUnlockModal({
                       Laysa Atelier
                     </div>
                     <div className="voucher-ticket-validity">
-                      Aktif 24 Jam
+                      {isEn ? 'Active 24 Hours' : 'Aktif 24 Jam'}
                     </div>
                     <div className="voucher-ticket-notch-right" />
                   </div>
@@ -369,12 +430,12 @@ export default function PremiumUnlockModal({
                 <div
                   className="voucher-ticket-item"
                   onClick={() => handleSelectVoucher('weekly')}
-                  title="Klik untuk memilih Paket Mingguan (7 Hari)"
+                  title={isEn ? 'Click to select Weekly Package (7 Days)' : 'Klik untuk memilih Paket Mingguan (7 Hari)'}
                 >
                   <div className="voucher-ticket-left">
                     <div className="voucher-ticket-badge-row">
                       <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-indigo-100 text-indigo-800">
-                        {pricingData.tiers.weekly.discountBadge || 'Paling Hemat 52%'}
+                        {isEn ? 'Best Value 52%' : (pricingData.tiers.weekly.discountBadge || 'Paling Hemat 52%')}
                       </span>
                     </div>
                     <div className="voucher-ticket-discount">
@@ -382,7 +443,7 @@ export default function PremiumUnlockModal({
                       <span className="voucher-ticket-discount-sub">OFF</span>
                     </div>
                     <div className="voucher-ticket-title">
-                      Paket Mingguan (7 Hari)
+                      {isEn ? 'Weekly Package (7 Days)' : 'Paket Mingguan (7 Hari)'}
                     </div>
                     <div className="voucher-ticket-sub">
                       <span className="voucher-ticket-price">Rp {pricingData.tiers.weekly.finalPrice.toLocaleString('id-ID')}</span>
@@ -401,7 +462,7 @@ export default function PremiumUnlockModal({
                       Laysa Atelier
                     </div>
                     <div className="voucher-ticket-validity">
-                      Aktif 7 Hari
+                      {isEn ? 'Active 7 Days' : 'Aktif 7 Hari'}
                     </div>
                     <div className="voucher-ticket-notch-right" />
                   </div>
@@ -411,12 +472,12 @@ export default function PremiumUnlockModal({
                 <div
                   className="voucher-ticket-item lifetime-gold"
                   onClick={() => handleSelectVoucher('lifetime')}
-                  title="Klik untuk memilih Paket Selamanya VIP Sultan"
+                  title={isEn ? 'Click to select Lifetime VIP Sultan Package' : 'Klik untuk memilih Paket Selamanya VIP Sultan'}
                 >
                   <div className="voucher-ticket-left">
                     <div className="voucher-ticket-badge-row">
                       <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-amber-100 text-amber-900 border border-amber-300">
-                        👑 Terpopuler &amp; Termasuk Kebun
+                        {isEn ? '👑 Most Popular & Garden Included' : '👑 Terpopuler & Termasuk Kebun'}
                       </span>
                     </div>
                     <div className="voucher-ticket-discount gold">
@@ -424,7 +485,7 @@ export default function PremiumUnlockModal({
                       <span className="voucher-ticket-discount-sub">OFF</span>
                     </div>
                     <div className="voucher-ticket-title" style={{ color: '#92400e' }}>
-                      Paket Selamanya (VIP Sultan)
+                      {isEn ? 'Lifetime Package (VIP Sultan)' : 'Paket Selamanya (VIP Sultan)'}
                     </div>
                     <div className="voucher-ticket-sub">
                       <span className="voucher-ticket-price" style={{ color: '#b45309' }}>
@@ -434,7 +495,7 @@ export default function PremiumUnlockModal({
                       <span className="voucher-ticket-strike">Rp {pricingData.tiers.lifetime.basePrice.toLocaleString('id-ID')}</span>
                     </div>
                     <div className="text-[11px] font-bold text-amber-700 mt-1 flex items-center gap-1">
-                      <span>🌸 EKSKLUSIF: Kebun Bunga Streak 🔥</span>
+                      <span>{isEn ? '🌸 EXCLUSIVE: Flower Garden Streak 🔥' : '🌸 EKSKLUSIF: Kebun Bunga Streak 🔥'}</span>
                     </div>
                   </div>
 
@@ -448,7 +509,7 @@ export default function PremiumUnlockModal({
                       VIP Sultan
                     </div>
                     <div className="voucher-ticket-validity" style={{ color: '#b45309', fontWeight: 700 }}>
-                      Selamanya
+                      {isEn ? 'Forever' : 'Selamanya'}
                     </div>
                     <div className="voucher-ticket-notch-right" />
                   </div>
@@ -463,7 +524,7 @@ export default function PremiumUnlockModal({
                   className="text-xs font-bold text-indigo-700 hover:text-indigo-900 flex items-center justify-center gap-1 mx-auto py-1"
                 >
                   <KeyRound size={13} />
-                  <span>Sudah punya kode voucher? Masukkan di sini →</span>
+                  <span>{isEn ? 'Already have a voucher code? Enter here →' : 'Sudah punya kode voucher? Masukkan di sini →'}</span>
                 </button>
               </div>
             </div>
@@ -481,17 +542,21 @@ export default function PremiumUnlockModal({
                   className="flex items-center gap-1 text-xs font-bold text-stone-600 hover:text-stone-900"
                 >
                   <ArrowLeft size={14} />
-                  <span>Ganti Voucher</span>
+                  <span>{isEn ? 'Change Voucher' : 'Ganti Voucher'}</span>
                 </button>
                 <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
-                  ✓ TIKET TERPILIH
+                  {isEn ? '✓ SELECTED TICKET' : '✓ TIKET TERPILIH'}
                 </span>
               </div>
 
               {/* Pricing Box */}
               <div className="boutique-price-box">
                 <div className="boutique-price-left">
-                  <span className="boutique-price-label">{activeTierConfig.name}</span>
+                  <span className="boutique-price-label">
+                    {isEn
+                      ? (selectedTier === 'daily' ? 'Daily Package (24 Hours)' : selectedTier === 'weekly' ? 'Weekly Package (7 Days)' : 'Lifetime Package (VIP Sultan)')
+                      : activeTierConfig.name}
+                  </span>
                   <div className="boutique-price-digits">
                     {activeTierConfig.hasDiscount && (
                       <span className="text-xs line-through text-stone-400 mr-2 font-medium">
@@ -506,14 +571,16 @@ export default function PremiumUnlockModal({
                 </div>
                 <div className="boutique-price-right">
                   <span className="boutique-price-badge bg-rose-50 text-rose-700 border-rose-200">
-                    {activeTierConfig.discountBadge || activeTierConfig.durationLabel}
+                    {isEn
+                      ? (selectedTier === 'lifetime' ? '👑 80% OFF' : selectedTier === 'weekly' ? '52% OFF' : '50% OFF')
+                      : (activeTierConfig.discountBadge || activeTierConfig.durationLabel)}
                   </span>
                   <span className="boutique-price-note">
                     {selectedTier === 'lifetime'
-                      ? '🌸 Termasuk Fitur Kebun Bunga'
+                      ? (isEn ? '🌸 Flower Garden Feature Included' : '🌸 Termasuk Fitur Kebun Bunga')
                       : selectedTier === 'weekly'
-                      ? 'Akses penuh selama 7 hari'
-                      : 'Akses penuh 24 jam'}
+                      ? (isEn ? 'Full access for 7 days' : 'Akses penuh selama 7 hari')
+                      : (isEn ? 'Full access for 24 hours' : 'Akses penuh 24 jam')}
                   </span>
                 </div>
               </div>
@@ -522,20 +589,17 @@ export default function PremiumUnlockModal({
               <div className="boutique-perks-card">
                 <div className="boutique-perks-header">
                   <span className="boutique-perks-title">
-                    {DEFAULT_PERKS[selectedTier].title}
+                    {currentPerks[selectedTier].title}
                   </span>
-                  {DEFAULT_PERKS[selectedTier].badge && (
+                  {currentPerks[selectedTier].badge && (
                     <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200">
-                      {DEFAULT_PERKS[selectedTier].badge}
+                      {currentPerks[selectedTier].badge}
                     </span>
                   )}
                 </div>
                 <ul className="boutique-perks-list">
-                  {(activeTierConfig.features && activeTierConfig.features.length > 0
-                    ? activeTierConfig.features
-                    : DEFAULT_PERKS[selectedTier].features
-                  ).map((feature: string, idx: number) => {
-                    const isGardenFeature = feature.toLowerCase().includes('kebun') || feature.toLowerCase().includes('streak');
+                  {currentPerks[selectedTier].features.map((feature: string, idx: number) => {
+                    const isGardenFeature = feature.toLowerCase().includes('kebun') || feature.toLowerCase().includes('garden') || feature.toLowerCase().includes('streak');
                     return (
                       <li key={idx} className={`boutique-perk-item ${isGardenFeature ? 'highlight' : ''}`}>
                         <CheckCircle2 size={13} className="boutique-perk-icon" />
@@ -557,13 +621,19 @@ export default function PremiumUnlockModal({
                 >
                   <MessageCircle size={18} className="shrink-0" />
                   <div className="boutique-wa-text-group">
-                    <span className="boutique-wa-main-text">Klaim Voucher via WhatsApp</span>
-                    <span className="boutique-wa-sub-text">Pesan ke Admin: {displayWaNumber}</span>
+                    <span className="boutique-wa-main-text">
+                      {isEn ? 'Claim Voucher via WhatsApp' : 'Klaim Voucher via WhatsApp'}
+                    </span>
+                    <span className="boutique-wa-sub-text">
+                      {isEn ? `Order to Admin: ${displayWaNumber}` : `Pesan ke Admin: ${displayWaNumber}`}
+                    </span>
                   </div>
                   <ArrowRight size={16} className="ml-auto opacity-75 shrink-0" />
                 </a>
                 <p className="boutique-subnote">
-                  Admin akan mengirimkan kode voucher resmi setelah konfirmasi via QRIS / Bank Transfer.
+                  {isEn
+                    ? 'Admin will send your official voucher code after confirmation via QRIS / Bank Transfer.'
+                    : 'Admin akan mengirimkan kode voucher resmi setelah konfirmasi via QRIS / Bank Transfer.'}
                 </p>
               </div>
 
@@ -574,7 +644,7 @@ export default function PremiumUnlockModal({
                   onClick={() => setStep('ENTER_CODE')}
                   className="text-xs font-bold text-stone-700 hover:text-stone-900 underline"
                 >
-                  Saya sudah bayar / punya kode? Aktivasi sekarang →
+                  {isEn ? 'Already paid / have a code? Activate now →' : 'Saya sudah bayar / punya kode? Aktivasi sekarang →'}
                 </button>
               </div>
             </div>
@@ -592,27 +662,33 @@ export default function PremiumUnlockModal({
                   className="flex items-center gap-1 text-xs font-bold text-stone-600 hover:text-stone-900"
                 >
                   <ArrowLeft size={14} />
-                  <span>Kembali ke Voucher</span>
+                  <span>{isEn ? 'Back to Vouchers' : 'Kembali ke Voucher'}</span>
                 </button>
-                <span className="text-[11px] font-bold text-stone-500">Langkah 1 dari 2</span>
+                <span className="text-[11px] font-bold text-stone-500">
+                  {isEn ? 'Step 1 of 2' : 'Langkah 1 dari 2'}
+                </span>
               </div>
 
               <div className="boutique-modal-header" style={{ marginBottom: '14px' }}>
-                <h3 className="boutique-modal-title">Masukkan Kode Voucher VIP</h3>
+                <h3 className="boutique-modal-title">
+                  {isEn ? 'Enter VIP Voucher Code' : 'Masukkan Kode Voucher VIP'}
+                </h3>
                 <p className="boutique-modal-desc">
-                  Ketik kode akses resmi yang diberikan Admin Laysa Florist:
+                  {isEn
+                    ? 'Type the official access code provided by Laysa Florist Admin:'
+                    : 'Ketik kode akses resmi yang diberikan Admin Laysa Florist:'}
                 </p>
               </div>
 
               <form onSubmit={handleVerifyCode} className="boutique-code-form">
                 <div className="boutique-form-field">
-                  <label className="boutique-input-label">Kode Voucher</label>
+                  <label className="boutique-input-label">{isEn ? 'Voucher Code' : 'Kode Voucher'}</label>
                   <div className="boutique-input-shell">
                     <KeyRound size={15} className="boutique-input-icon" />
                     <input
                       type="text"
                       className="boutique-input uppercase-text font-mono"
-                      placeholder="Contoh: VIP-ABC123 atau DAY-XYZ"
+                      placeholder={isEn ? 'Example: VIP-ABC123 or DAY-XYZ' : 'Contoh: VIP-ABC123 atau DAY-XYZ'}
                       value={code}
                       onChange={(e) => {
                         setCode(e.target.value);
@@ -630,7 +706,9 @@ export default function PremiumUnlockModal({
                   disabled={isLoading || isPremiumUnlocked || !code.trim()}
                   id="btn-verify-voucher-code"
                 >
-                  {isLoading ? <span>Memeriksa Kode...</span> : <span>Verifikasi Kode &amp; Lanjutkan →</span>}
+                  {isLoading
+                    ? <span>{isEn ? 'Checking Code...' : 'Memeriksa Kode...'}</span>
+                    : <span>{isEn ? 'Verify Code & Continue →' : 'Verifikasi Kode & Lanjutkan →'}</span>}
                 </button>
 
                 {errorMsg && (
@@ -654,18 +732,24 @@ export default function PremiumUnlockModal({
                   className="flex items-center gap-1 text-xs font-bold text-stone-600 hover:text-stone-900"
                 >
                   <ArrowLeft size={14} />
-                  <span>Ganti Kode</span>
+                  <span>{isEn ? 'Change Code' : 'Ganti Kode'}</span>
                 </button>
-                <span className="text-[11px] font-bold text-stone-500">Langkah 2 dari 2</span>
+                <span className="text-[11px] font-bold text-stone-500">
+                  {isEn ? 'Step 2 of 2' : 'Langkah 2 dari 2'}
+                </span>
               </div>
 
               {/* Badge Kode yang Terverifikasi */}
               <div className="boutique-verified-chip mb-3">
                 <div className="flex items-center gap-1.5 text-xs text-stone-700 font-medium">
                   <CheckCircle2 size={14} className="text-emerald-600 shrink-0" />
-                  <span>Kode: <strong className="text-stone-900 tracking-wider font-mono">{verifiedCode}</strong></span>
+                  <span>{isEn ? 'Code:' : 'Kode:'} <strong className="text-stone-900 tracking-wider font-mono">{verifiedCode}</strong></span>
                   <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 font-bold ml-1">
-                    {verifiedTier === 'daily' ? '⏱️ Harian' : verifiedTier === 'weekly' ? '📅 Mingguan' : '👑 Selamanya'}
+                    {verifiedTier === 'daily'
+                      ? (isEn ? '⏱️ Daily' : '⏱️ Harian')
+                      : verifiedTier === 'weekly'
+                      ? (isEn ? '📅 Weekly' : '📅 Mingguan')
+                      : (isEn ? '👑 Lifetime' : '👑 Selamanya')}
                   </span>
                 </div>
               </div>
@@ -675,32 +759,36 @@ export default function PremiumUnlockModal({
                 <div style={{ background: '#fef3c7', border: '1px solid #fde68a', borderRadius: '10px', padding: '10px 14px', fontSize: '12px', color: '#92400e', marginBottom: '14px' }}>
                   <div style={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <ShieldCheck size={14} />
-                    <span>Anda adalah Pemilik Utama kode ini</span>
+                    <span>{isEn ? 'You are the primary Owner of this code' : 'Anda adalah Pemilik Utama kode ini'}</span>
                   </div>
                   <div style={{ marginTop: '2px', opacity: 0.9 }}>
-                    Nama Anda akan didaftarkan sebagai pemilik resmi. Kode ini bisa digunakan hingga {codeInfo.maxDevices} perangkat.
+                    {isEn
+                      ? `Your name will be registered as official owner. This code can be used on up to ${codeInfo.maxDevices} devices.`
+                      : `Nama Anda akan didaftarkan sebagai pemilik resmi. Kode ini bisa digunakan hingga ${codeInfo.maxDevices} perangkat.`}
                   </div>
                 </div>
               ) : (
                 <div style={{ background: '#f5f5f4', border: '1px solid #e7e5e4', borderRadius: '10px', padding: '10px 14px', fontSize: '12px', color: '#44403c', marginBottom: '14px' }}>
                   <div style={{ fontWeight: 600 }}>
-                    Bergabung ke kode milik <strong>{codeInfo?.ownerName || 'Pemilik'}</strong>
+                    {isEn ? `Joining code owned by ${codeInfo?.ownerName || 'Owner'}` : `Bergabung ke kode milik ${codeInfo?.ownerName || 'Pemilik'}`}
                   </div>
                   <div style={{ marginTop: '2px', color: '#78716c' }}>
-                    Perangkat {codeInfo?.slotNumber} dari {codeInfo?.maxDevices}. Masukkan nama pengguna perangkat ini.
+                    {isEn
+                      ? `Device ${codeInfo?.slotNumber} of ${codeInfo?.maxDevices}. Enter username for this device.`
+                      : `Perangkat ${codeInfo?.slotNumber} dari ${codeInfo?.maxDevices}. Masukkan nama pengguna perangkat ini.`}
                   </div>
                 </div>
               )}
 
               <form onSubmit={handleClaimName} className="boutique-code-form">
                 <div className="boutique-form-field">
-                  <label className="boutique-input-label">Nama Anda / Pemilik VIP</label>
+                  <label className="boutique-input-label">{isEn ? 'Your Name / VIP Owner' : 'Nama Anda / Pemilik VIP'}</label>
                   <div className="boutique-input-shell">
                     <User size={15} className="boutique-input-icon" />
                     <input
                       type="text"
                       className="boutique-input"
-                      placeholder="Ketik nama kamu di sini..."
+                      placeholder={isEn ? 'Type your name here...' : 'Ketik nama kamu di sini...'}
                       value={userName}
                       onChange={(e) => {
                         setUserName(e.target.value);
@@ -716,11 +804,11 @@ export default function PremiumUnlockModal({
                   <div className="boutique-form-field">
                     <label className="boutique-input-label flex items-center justify-between">
                       <span className="flex items-center gap-1">
-                        <span>Nama Kebun Bunga Anda</span>
+                        <span>{isEn ? 'Your Flower Garden Name' : 'Nama Kebun Bunga Anda'}</span>
                         <span className="text-rose-500 font-bold">*</span>
                       </span>
                       <span className="text-[10px] text-amber-700 font-extrabold px-1.5 py-0.5 rounded bg-amber-100">
-                        WAJIB VIP SULTAN 👑
+                        {isEn ? 'REQUIRED VIP SULTAN 👑' : 'WAJIB VIP SULTAN 👑'}
                       </span>
                     </label>
                     <div className="boutique-input-shell">
@@ -728,7 +816,7 @@ export default function PremiumUnlockModal({
                       <input
                         type="text"
                         className="boutique-input"
-                        placeholder="Misal: Kebun Cinta Laysa, Taman Mawar Kita..."
+                        placeholder={isEn ? 'e.g. Laysa Love Sanctuary, Our Rose Garden...' : 'Misal: Kebun Cinta Laysa, Taman Mawar Kita...'}
                         value={gardenNameInput}
                         onChange={(e) => {
                           setGardenNameInput(e.target.value);
@@ -739,8 +827,11 @@ export default function PremiumUnlockModal({
                       />
                     </div>
                     <div className="flex gap-1 mt-1.5 flex-wrap">
-                      <span className="text-[10px] text-stone-500 self-center">Pilihan:</span>
-                      {['Taman Mawar Kita 🌹', 'Kebun Kasih Laysa ✨', 'Puspa Bahagia 🌼'].map((preset) => (
+                      <span className="text-[10px] text-stone-500 self-center">{isEn ? 'Options:' : 'Pilihan:'}</span>
+                      {(isEn
+                        ? ['Our Rose Garden 🌹', 'Laysa Love Sanctuary ✨', 'Happy Blossom 🌼']
+                        : ['Taman Mawar Kita 🌹', 'Kebun Kasih Laysa ✨', 'Puspa Bahagia 🌼']
+                      ).map((preset) => (
                         <button
                           key={preset}
                           type="button"
@@ -765,7 +856,9 @@ export default function PremiumUnlockModal({
                   }
                   id="btn-claim-vip-access"
                 >
-                  {isLoading ? <span>Mengaktifkan Akses...</span> : <span>Aktifkan Akses Sekarang ✨</span>}
+                  {isLoading
+                    ? <span>{isEn ? 'Activating Access...' : 'Mengaktifkan Akses...'}</span>
+                    : <span>{isEn ? 'Activate Access Now ✨' : 'Aktifkan Akses Sekarang ✨'}</span>}
                 </button>
 
                 {errorMsg && (
@@ -788,10 +881,12 @@ export default function PremiumUnlockModal({
               </div>
 
               <h3 className="thank-you-title">
-                Terima Kasih! 🎉
+                {isEn ? 'Thank You! 🎉' : 'Terima Kasih! 🎉'}
               </h3>
               <p className="thank-you-desc">
-                Selamat! Akses VIP Anda telah resmi aktif. Selamat berkreasi merangkai buket bunga terindah!
+                {isEn
+                  ? 'Congratulations! Your VIP Access is now officially active. Enjoy creating the most stunning bouquets!'
+                  : 'Selamat! Akses VIP Anda telah resmi aktif. Selamat berkreasi merangkai buket bunga terindah!'}
               </p>
 
               {/* Kartu Digital VIP Mewah */}
@@ -802,25 +897,37 @@ export default function PremiumUnlockModal({
                     <span>LAYSA ATELIER VIP PASS</span>
                   </span>
                   <span className="vip-pass-badge">
-                    ● AKTIF
+                    {isEn ? '● ACTIVE' : '● AKTIF'}
                   </span>
                 </div>
 
                 <div className="vip-pass-name">
-                  {userName || 'Member VIP'}
+                  {userName || (isEn ? 'VIP Member' : 'Member VIP')}
                 </div>
                 <div className="vip-pass-tier font-mono">
-                  Kode: {verifiedCode} • {verifiedTier === 'daily' ? '⏱️ Paket Harian (24 Jam)' : verifiedTier === 'weekly' ? '📅 Paket Mingguan (7 Hari)' : '👑 Paket Selamanya (VIP Sultan)'}
+                  {isEn ? 'Code:' : 'Kode:'} {verifiedCode} • {
+                    verifiedTier === 'daily'
+                      ? (isEn ? '⏱️ Daily Pass (24 Hours)' : '⏱️ Paket Harian (24 Jam)')
+                      : verifiedTier === 'weekly'
+                      ? (isEn ? '📅 Weekly Pass (7 Days)' : '📅 Paket Mingguan (7 Hari)')
+                      : (isEn ? '👑 Lifetime Pass (VIP Sultan)' : '👑 Paket Selamanya (VIP Sultan)')
+                  }
                 </div>
 
                 <div className="vip-pass-meta-row">
                   <div className="vip-pass-meta-item">
-                    <span>Masa Aktif: </span>
-                    <strong>{verifiedTier === 'lifetime' ? 'Selamanya (Permanen)' : verifiedTier === 'weekly' ? '7 Hari Penuh' : '24 Jam Penuh'}</strong>
+                    <span>{isEn ? 'Validity: ' : 'Masa Aktif: '}</span>
+                    <strong>
+                      {verifiedTier === 'lifetime'
+                        ? (isEn ? 'Forever (Permanent)' : 'Selamanya (Permanen)')
+                        : verifiedTier === 'weekly'
+                        ? (isEn ? 'Full 7 Days' : '7 Hari Penuh')
+                        : (isEn ? 'Full 24 Hours' : '24 Jam Penuh')}
+                    </strong>
                   </div>
                   <div className="vip-pass-meta-item">
-                    <span>Slot: </span>
-                    <strong>1 / {codeInfo?.maxDevices || 5} Perangkat</strong>
+                    <span>{isEn ? 'Slot: ' : 'Slot: '}</span>
+                    <strong>{isEn ? `1 / ${codeInfo?.maxDevices || 5} Devices` : `1 / ${codeInfo?.maxDevices || 5} Perangkat`}</strong>
                   </div>
                 </div>
               </div>
@@ -839,10 +946,12 @@ export default function PremiumUnlockModal({
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 800, fontSize: '12.5px', color: '#9a3412' }}>
-                    <span>🌱 Fitur Kebun Bunga Streak Harian 🔥 Terbuka!</span>
+                    <span>{isEn ? '🌱 Daily Flower Garden Streak Feature 🔥 Unlocked!' : '🌱 Fitur Kebun Bunga Streak Harian 🔥 Terbuka!'}</span>
                   </div>
                   <p style={{ margin: '3px 0 0', fontSize: '11px', color: '#c2410c', lineHeight: 1.4 }}>
-                    Anda kini dapat menanam bunga harian, memelihara api streak harian, dan mengundang pasangan via kode kebun!
+                    {isEn
+                      ? 'You can now plant daily flowers, nurture your daily fire streak, and invite your partner via garden code!'
+                      : 'Anda kini dapat menanam bunga harian, memelihara api streak harian, dan mengundang pasangan via kode kebun!'}
                   </p>
                 </div>
               )}
@@ -856,7 +965,7 @@ export default function PremiumUnlockModal({
                   style={{ background: '#0f766e', borderColor: '#0f766e', padding: '12px' }}
                 >
                   <Sparkles size={16} />
-                  <span>Mulai Merangkai Buket Sekarang</span>
+                  <span>{isEn ? 'Start Arranging Bouquet Now' : 'Mulai Merangkai Buket Sekarang'}</span>
                 </button>
 
                 {(verifiedTier === 'lifetime' || codeInfo?.hasGardenAccess) && (
@@ -886,7 +995,11 @@ export default function PremiumUnlockModal({
                       transition: 'all 0.15s',
                     }}
                   >
-                    <span>🌱 Buka Kebun Bunga {gardenNameInput ? `"${gardenNameInput}"` : ''} 🔥</span>
+                    <span>
+                      {isEn
+                        ? `🌱 Open Flower Garden ${gardenNameInput ? `"${gardenNameInput}"` : ''} 🔥`
+                        : `🌱 Buka Kebun Bunga ${gardenNameInput ? `"${gardenNameInput}"` : ''} 🔥`}
+                    </span>
                     <ArrowRight size={14} />
                   </button>
                 )}
@@ -898,7 +1011,11 @@ export default function PremiumUnlockModal({
           {step !== 'THANK_YOU' && (
             <div className="boutique-trust-footer">
               <ShieldCheck size={13} className="text-emerald-600" />
-              <span>Garansi Aktivasi Resmi Studio Buket Laysa</span>
+              <span>
+                {isEn
+                  ? 'Official Activation Guarantee by Laysa Bouquet Studio'
+                  : 'Garansi Aktivasi Resmi Studio Buket Laysa'}
+              </span>
             </div>
           )}
         </div>

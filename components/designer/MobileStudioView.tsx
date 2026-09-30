@@ -72,7 +72,7 @@ const RATIO_ASPECT_MAP: Record<CanvasRatio, string> = {
 };
 
 export default function MobileStudioView({ onBack }: MobileStudioViewProps) {
-  const { t } = useLanguage();
+  const { t, isEn } = useLanguage();
   const {
     design,
     randomizeFlowers,
@@ -214,7 +214,7 @@ export default function MobileStudioView({ onBack }: MobileStudioViewProps) {
           type="button"
           onClick={onBack}
           className="ms-studio-back-btn"
-          title="Kembali ke Dashboard"
+          title={isEn ? 'Back to Dashboard' : 'Kembali ke Dashboard'}
         >
           <ArrowLeft size={15} />
           <span>{t('menu')}</span>
@@ -238,7 +238,7 @@ export default function MobileStudioView({ onBack }: MobileStudioViewProps) {
                 type="button"
                 className="ms-studio-vip-badge"
                 onClick={() => setIsVipCardOpen(true)}
-                title="Status VIP Aktif"
+                title={isEn ? 'VIP Status Active' : 'Status VIP Aktif'}
               >
                 <Crown size={12} />
                 <span>{premiumUserName ? premiumUserName.split(' ')[0] : 'VIP'}</span>
@@ -248,7 +248,7 @@ export default function MobileStudioView({ onBack }: MobileStudioViewProps) {
                 type="button"
                 className="ms-studio-vip-unlock-btn"
                 onClick={() => setIsUnlockModalOpen(true)}
-                title="Buka Kunci VIP"
+                title={isEn ? 'Unlock VIP' : 'Buka Kunci VIP'}
               >
                 <Crown size={14} style={{ color: '#F59E0B' }} />
               </button>
@@ -260,7 +260,7 @@ export default function MobileStudioView({ onBack }: MobileStudioViewProps) {
             type="button"
             className="ms-studio-btn-icon"
             onClick={() => setIsGardenModalOpen(true)}
-            title="Kebun Bunga Harian (Api Streak 🔥)"
+            title={isEn ? 'Daily Flower Garden (Fire Streak 🔥)' : 'Kebun Bunga Harian (Api Streak 🔥)'}
             style={{ background: '#FFF7ED', borderColor: '#FED7AA', color: '#EA580C' }}
           >
             <span style={{ fontSize: '13px', lineHeight: 1 }}>🌱</span>
@@ -272,7 +272,11 @@ export default function MobileStudioView({ onBack }: MobileStudioViewProps) {
             onClick={undo}
             disabled={!canUndo}
             className="ms-studio-btn-icon"
-            title={canUndo ? 'Batalkan Aksi Terakhir (Undo)' : 'Tidak ada riwayat undo'}
+            title={
+              canUndo
+                ? (isEn ? 'Undo Last Action' : 'Batalkan Aksi Terakhir (Undo)')
+                : (isEn ? 'No undo history' : 'Tidak ada riwayat undo')
+            }
             style={{
               opacity: canUndo ? 1 : 0.35,
               background: canUndo ? '#EEF2FF' : undefined,
@@ -288,7 +292,7 @@ export default function MobileStudioView({ onBack }: MobileStudioViewProps) {
             type="button"
             onClick={randomizeFlowers}
             className="ms-studio-btn-icon"
-            title="Acak Bunga"
+            title={isEn ? 'Shuffle Flowers' : 'Acak Bunga'}
           >
             <Sparkles size={16} style={{ color: '#D97706' }} />
           </button>
@@ -299,7 +303,7 @@ export default function MobileStudioView({ onBack }: MobileStudioViewProps) {
             onClick={() => setIsShareModalOpen(true)}
             className="ms-studio-btn-icon"
             style={{ background: '#4F46E5', color: '#FFFFFF', borderColor: '#4F46E5' }}
-            title="Unduh / Bagikan"
+            title={isEn ? 'Download / Share' : 'Unduh / Bagikan'}
           >
             <Share2 size={15} />
           </button>
@@ -469,7 +473,7 @@ export default function MobileStudioView({ onBack }: MobileStudioViewProps) {
               <span className="ms-dpad-title">
                 <Move size={13} />
                 <span>
-                  Bunga #{selectedIndex + 1} ({getFlowerName(selectedFlower.flowerId)})
+                  {isEn ? 'Flower' : 'Bunga'} #{selectedIndex + 1} ({getFlowerName(selectedFlower.flowerId)})
                 </span>
               </span>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -477,7 +481,7 @@ export default function MobileStudioView({ onBack }: MobileStudioViewProps) {
                   type="button"
                   onClick={() => setNudgeStep(nudgeStep === 5 ? 15 : 5)}
                   className="ms-dpad-step-btn"
-                  title="Ubah sensitivitas geser (5px / 15px)"
+                  title={isEn ? 'Change nudge sensitivity (5px / 15px)' : 'Ubah sensitivitas geser (5px / 15px)'}
                 >
                   {t('ms_nudge_step', { step: nudgeStep })}
                 </button>
@@ -502,7 +506,7 @@ export default function MobileStudioView({ onBack }: MobileStudioViewProps) {
                   type="button"
                   onClick={() => nudgeFlower(selectedFlower.uid, 0, -nudgeStep)}
                   className="ms-dpad-btn"
-                  title="Geser ke Atas"
+                  title={isEn ? 'Nudge Up' : 'Geser ke Atas'}
                 >
                   <ArrowUp size={16} />
                 </button>
@@ -512,7 +516,7 @@ export default function MobileStudioView({ onBack }: MobileStudioViewProps) {
                   type="button"
                   onClick={() => nudgeFlower(selectedFlower.uid, -nudgeStep, 0)}
                   className="ms-dpad-btn"
-                  title="Geser ke Kiri"
+                  title={isEn ? 'Nudge Left' : 'Geser ke Kiri'}
                 >
                   <ArrowLeft size={16} />
                 </button>
@@ -523,7 +527,7 @@ export default function MobileStudioView({ onBack }: MobileStudioViewProps) {
                   type="button"
                   onClick={() => nudgeFlower(selectedFlower.uid, nudgeStep, 0)}
                   className="ms-dpad-btn"
-                  title="Geser ke Kanan"
+                  title={isEn ? 'Nudge Right' : 'Geser ke Kanan'}
                 >
                   <ChevronRight size={17} />
                 </button>
@@ -533,7 +537,7 @@ export default function MobileStudioView({ onBack }: MobileStudioViewProps) {
                   type="button"
                   onClick={() => nudgeFlower(selectedFlower.uid, 0, nudgeStep)}
                   className="ms-dpad-btn"
-                  title="Geser ke Bawah"
+                  title={isEn ? 'Nudge Down' : 'Geser ke Bawah'}
                 >
                   <ArrowDown size={16} />
                 </button>
@@ -548,7 +552,7 @@ export default function MobileStudioView({ onBack }: MobileStudioViewProps) {
                     type="button"
                     onClick={() => handleScaleSelected(-0.15)}
                     className="ms-flower-scale-btn"
-                    title="Perkecil Bunga"
+                    title={isEn ? 'Shrink Flower' : 'Perkecil Bunga'}
                   >
                     <Minimize2 size={17} />
                     <span>{t('ms_scale_small')}</span>
@@ -560,7 +564,7 @@ export default function MobileStudioView({ onBack }: MobileStudioViewProps) {
                     type="button"
                     onClick={() => handleScaleSelected(0.15)}
                     className="ms-flower-scale-btn"
-                    title="Perbesar Bunga"
+                    title={isEn ? 'Enlarge Flower' : 'Perbesar Bunga'}
                   >
                     <Maximize2 size={17} />
                     <span>{t('ms_scale_large')}</span>
@@ -573,7 +577,7 @@ export default function MobileStudioView({ onBack }: MobileStudioViewProps) {
                     type="button"
                     onClick={() => updateFlower(selectedFlower.uid, { rotation: ((selectedFlower.rotation || 0) - 15 + 360) % 360 })}
                     className="ms-flower-rotate-btn"
-                    title="Putar Kiri 15°"
+                    title={isEn ? 'Rotate Left 15°' : 'Putar Kiri 15°'}
                   >
                     <RotateCcw size={17} />
                   </button>
@@ -584,7 +588,7 @@ export default function MobileStudioView({ onBack }: MobileStudioViewProps) {
                     type="button"
                     onClick={handleRotateSelected}
                     className="ms-flower-rotate-btn"
-                    title="Putar Kanan 15°"
+                    title={isEn ? 'Rotate Right 15°' : 'Putar Kanan 15°'}
                   >
                     <RotateCw size={17} />
                   </button>
@@ -596,10 +600,14 @@ export default function MobileStudioView({ onBack }: MobileStudioViewProps) {
                     type="button"
                     onClick={() => toggleFlowerLayer(selectedFlower.uid)}
                     className={`ms-flower-action-btn ${selectedFlowerLayer === 'front' ? 'ms-flower-btn-front' : 'ms-flower-btn-inside'}`}
-                    title="Ganti Lapisan"
+                    title={isEn ? 'Toggle Layer' : 'Ganti Lapisan'}
                   >
                     <Layers size={15} />
-                    <span>{selectedFlowerLayer === 'front' ? 'Depan' : 'Dalam'}</span>
+                    <span>
+                      {selectedFlowerLayer === 'front'
+                        ? (isEn ? 'Front' : 'Depan')
+                        : (isEn ? 'Inside' : 'Dalam')}
+                    </span>
                   </button>
                   <button
                     type="button"
@@ -608,10 +616,10 @@ export default function MobileStudioView({ onBack }: MobileStudioViewProps) {
                       setSelectedFlowerUid(null);
                     }}
                     className="ms-flower-action-btn ms-flower-btn-delete"
-                    title="Hapus Bunga"
+                    title={isEn ? 'Delete Flower' : 'Hapus Bunga'}
                   >
                     <Trash2 size={15} />
-                    <span>Hapus</span>
+                    <span>{isEn ? 'Delete' : 'Hapus'}</span>
                   </button>
                 </div>
               </div>
@@ -624,18 +632,20 @@ export default function MobileStudioView({ onBack }: MobileStudioViewProps) {
           <div className="ms-bucket-dock-header">
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
               <Package size={13} style={{ color: '#E11D48' }} />
-              <span>Kontrol Buket</span>
+              <span>{isEn ? 'Bouquet Controls' : 'Kontrol Buket'}</span>
             </div>
             {isBucketSelected ? (
-              <span className="ms-bucket-active-chip">✨ Aktif di Kanvas</span>
+              <span className="ms-bucket-active-chip">
+                {isEn ? '✨ Active on Canvas' : '✨ Aktif di Kanvas'}
+              </span>
             ) : (
               <button
                 type="button"
                 onClick={() => setIsBucketSelected(true)}
                 className="ms-bucket-select-btn"
-                title="Pilih buket di kanvas untuk putar & atur ukuran langsung"
+                title={isEn ? 'Select bouquet on canvas to rotate & scale directly' : 'Pilih buket di kanvas untuk putar & atur ukuran langsung'}
               >
-                Atur di Kanvas 👆
+                {isEn ? 'Edit on Canvas 👆' : 'Atur di Kanvas 👆'}
               </button>
             )}
           </div>
@@ -643,14 +653,14 @@ export default function MobileStudioView({ onBack }: MobileStudioViewProps) {
           <div className="ms-bucket-control-grid">
             {/* SCALE COLUMN */}
             <div className="ms-bucket-ctrl-col">
-              <span className="ms-bucket-ctrl-label">Ukuran</span>
+              <span className="ms-bucket-ctrl-label">{isEn ? 'Scale' : 'Ukuran'}</span>
               <div className="ms-bucket-ctrl-row">
                 <button
                   type="button"
                   onClick={() => handleBucketScale(-0.1)}
                   disabled={currentScale <= 0.4}
                   className="ms-bucket-ctrl-btn"
-                  title="Perkecil Buket"
+                  title={isEn ? 'Scale Down' : 'Perkecil Buket'}
                 >
                   <Minimize2 size={18} />
                 </button>
@@ -660,7 +670,7 @@ export default function MobileStudioView({ onBack }: MobileStudioViewProps) {
                   onClick={() => handleBucketScale(0.1)}
                   disabled={currentScale >= 2.0}
                   className="ms-bucket-ctrl-btn"
-                  title="Perbesar Buket"
+                  title={isEn ? 'Scale Up' : 'Perbesar Buket'}
                 >
                   <Maximize2 size={18} />
                 </button>
@@ -672,13 +682,13 @@ export default function MobileStudioView({ onBack }: MobileStudioViewProps) {
 
             {/* ROTATION COLUMN */}
             <div className="ms-bucket-ctrl-col">
-              <span className="ms-bucket-ctrl-label">Rotasi</span>
+              <span className="ms-bucket-ctrl-label">{isEn ? 'Rotation' : 'Rotasi'}</span>
               <div className="ms-bucket-ctrl-row">
                 <button
                   type="button"
                   onClick={() => handleBucketRotate(-15)}
                   className="ms-bucket-ctrl-btn"
-                  title="Putar Buket Kiri 15°"
+                  title={isEn ? 'Rotate Bouquet Left 15°' : 'Putar Buket Kiri 15°'}
                 >
                   <RotateCcw size={18} />
                 </button>
@@ -687,7 +697,7 @@ export default function MobileStudioView({ onBack }: MobileStudioViewProps) {
                   type="button"
                   onClick={() => handleBucketRotate(15)}
                   className="ms-bucket-ctrl-btn"
-                  title="Putar Buket Kanan 15°"
+                  title={isEn ? 'Rotate Bouquet Right 15°' : 'Putar Buket Kanan 15°'}
                 >
                   <RotateCw size={18} />
                 </button>
@@ -696,7 +706,11 @@ export default function MobileStudioView({ onBack }: MobileStudioViewProps) {
           </div>
 
           <div className="ms-bucket-touch-tip">
-            💡 <strong>Bisa diatur langsung di kanvas:</strong> Sentuh buket untuk seret, tarik pin <strong>↻</strong> untuk putar, atau pin <strong>⤡</strong> untuk perbesar/kecil!
+            {isEn ? (
+              <>💡 <strong>Direct canvas control:</strong> Touch bouquet to drag, pull <strong>↻</strong> to rotate, or <strong>⤡</strong> to resize!</>
+            ) : (
+              <>💡 <strong>Bisa diatur langsung di kanvas:</strong> Sentuh buket untuk seret, tarik pin <strong>↻</strong> untuk putar, atau pin <strong>⤡</strong> untuk perbesar/kecil!</>
+            )}
           </div>
         </div>
 
@@ -765,19 +779,19 @@ export default function MobileStudioView({ onBack }: MobileStudioViewProps) {
       </div>
 
       {/* ─── BOTTOM NAV ─── */}
-      <nav aria-label="Navigasi Studio Mobile" className="mb-bottom-nav">
+      <nav aria-label={isEn ? 'Mobile Studio Navigation' : 'Navigasi Studio Mobile'} className="mb-bottom-nav">
         <div className="mb-nav-container">
-          <button type="button" onClick={onBack} className="mb-nav-btn" aria-label="Menu Utama">
+          <button type="button" onClick={onBack} className="mb-nav-btn" aria-label={isEn ? 'Main Menu' : 'Menu Utama'}>
             <Home size={22} strokeWidth={2.2} />
           </button>
 
-          <button type="button" className="mb-nav-btn active" aria-label="Studio Aktif">
+          <button type="button" className="mb-nav-btn active" aria-label={isEn ? 'Studio Active' : 'Studio Aktif'}>
             <div className="mb-nav-indicator" />
             <span className="mb-nav-badge">{flowerCount}</span>
             <Sparkles size={22} strokeWidth={2.5} />
           </button>
 
-          <button type="button" onClick={() => setIsFlowerPickerOpen(true)} className="mb-nav-btn" aria-label="Bunga">
+          <button type="button" onClick={() => setIsFlowerPickerOpen(true)} className="mb-nav-btn" aria-label={isEn ? 'Flowers' : 'Bunga'}>
             <Flower2 size={22} />
           </button>
 
@@ -795,7 +809,7 @@ export default function MobileStudioView({ onBack }: MobileStudioViewProps) {
             <Undo2 size={22} />
           </button>
 
-          <button type="button" onClick={() => setIsShareModalOpen(true)} className="mb-nav-btn" aria-label="Unduh">
+          <button type="button" onClick={() => setIsShareModalOpen(true)} className="mb-nav-btn" aria-label={isEn ? 'Download' : 'Unduh'}>
             <Download size={22} />
           </button>
         </div>

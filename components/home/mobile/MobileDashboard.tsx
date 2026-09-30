@@ -144,7 +144,7 @@ export default function MobileDashboard({ onOpenStudio }: MobileDashboardProps =
 
   const handleRandomize = () => {
     randomizeFlowers();
-    showToast('✨ Buket berhasil diacak dengan paduan bunga baru!');
+    showToast(isEn ? '✨ Bouquet randomized with fresh flowers!' : '✨ Buket berhasil diacak dengan paduan bunga baru!');
   };
 
   const handleGoToStudio = () => {
@@ -257,20 +257,20 @@ export default function MobileDashboard({ onOpenStudio }: MobileDashboardProps =
               <h2
                 onClick={() => setIsCardEditorOpen(true)}
                 className="mb-hero-greeting"
-                title="Ketuk untuk mengubah tulisan ucapan"
+                title={isEn ? 'Tap to edit greeting message' : 'Ketuk untuk mengubah tulisan ucapan'}
               >
                 {currentCardTitle}
               </h2>
 
               {/* Subtitle */}
               <p className="mb-hero-sub">
-                {currentBucket.label} • {flowerCount} Bunga
+                {currentBucket.label} • {flowerCount} {isEn ? 'Flowers' : 'Bunga'}
               </p>
 
               {/* Bottom Controls */}
               <div className="mb-hero-controls">
                 <span className="mb-hero-count-text">
-                  {flowerCount} Bunga
+                  {flowerCount} {isEn ? 'Flowers' : 'Bunga'}
                 </span>
 
                 <button
@@ -279,7 +279,7 @@ export default function MobileDashboard({ onOpenStudio }: MobileDashboardProps =
                   onClick={() => setIsCountModalOpen(true)}
                   className="mb-hero-dropdown-btn"
                 >
-                  <span>{flowerCount} Tangkai</span>
+                  <span>{flowerCount} {isEn ? 'Stems' : 'Tangkai'}</span>
                   <ChevronDown size={13} strokeWidth={2.5} />
                 </button>
               </div>
@@ -289,11 +289,11 @@ export default function MobileDashboard({ onOpenStudio }: MobileDashboardProps =
             <div
               onClick={handleGoToStudio}
               className="mb-hero-bouquet-wrap"
-              title="Ketuk untuk membuka studio perangkai buket"
+              title={isEn ? 'Tap to open bouquet studio' : 'Ketuk untuk membuka studio perangkai buket'}
             >
               <Image
                 src="/images/mobile-hero-bouquet.png"
-                alt="Buket Bunga Laysa"
+                alt={isEn ? 'Laysa Flower Bouquet' : 'Buket Bunga Laysa'}
                 width={130}
                 height={130}
                 priority
@@ -306,7 +306,7 @@ export default function MobileDashboard({ onOpenStudio }: MobileDashboardProps =
         {/* ─── 3. MENU INFORMASI (8 QUICK ACTION ICONS) ─── */}
         <section className="mb-section">
           <h3 className="mb-section-title">
-            Menu Informasi
+            {isEn ? 'Quick Menu' : 'Menu Informasi'}
           </h3>
 
           <div className="mb-menu-grid">
@@ -320,7 +320,7 @@ export default function MobileDashboard({ onOpenStudio }: MobileDashboardProps =
               <div className="mb-menu-icon-box mb-icon-bunga">
                 <Flower2 size={21} />
               </div>
-              <span className="mb-menu-label">Bunga</span>
+              <span className="mb-menu-label">{isEn ? 'Flowers' : 'Bunga'}</span>
             </button>
 
             {/* 2. Buket */}
@@ -333,7 +333,7 @@ export default function MobileDashboard({ onOpenStudio }: MobileDashboardProps =
               <div className="mb-menu-icon-box mb-icon-buket">
                 <Package size={21} />
               </div>
-              <span className="mb-menu-label">Buket</span>
+              <span className="mb-menu-label">{isEn ? 'Wrap' : 'Buket'}</span>
             </button>
 
             {/* 3. Kartu */}
@@ -346,7 +346,7 @@ export default function MobileDashboard({ onOpenStudio }: MobileDashboardProps =
               <div className="mb-menu-icon-box mb-icon-kartu">
                 <Mail size={21} />
               </div>
-              <span className="mb-menu-label">Kartu</span>
+              <span className="mb-menu-label">{isEn ? 'Card' : 'Kartu'}</span>
             </button>
 
             {/* 4. Kapasitas */}
@@ -359,7 +359,7 @@ export default function MobileDashboard({ onOpenStudio }: MobileDashboardProps =
               <div className="mb-menu-icon-box mb-icon-kapasitas">
                 <SlidersHorizontal size={21} />
               </div>
-              <span className="mb-menu-label">Kapasitas</span>
+              <span className="mb-menu-label">{isEn ? 'Capacity' : 'Kapasitas'}</span>
             </button>
 
             {/* 5. Suasana */}
@@ -372,7 +372,7 @@ export default function MobileDashboard({ onOpenStudio }: MobileDashboardProps =
               <div className="mb-menu-icon-box mb-icon-suasana">
                 <Palette size={21} />
               </div>
-              <span className="mb-menu-label">Suasana</span>
+              <span className="mb-menu-label">{isEn ? 'Ambiance' : 'Suasana'}</span>
             </button>
 
             {/* 6. Acak */}
@@ -385,7 +385,7 @@ export default function MobileDashboard({ onOpenStudio }: MobileDashboardProps =
               <div className="mb-menu-icon-box mb-icon-acak">
                 <Sparkles size={21} />
               </div>
-              <span className="mb-menu-label">Acak</span>
+              <span className="mb-menu-label">{isEn ? 'Shuffle' : 'Acak'}</span>
             </button>
 
             {/* 7. Kirim WA */}
@@ -398,7 +398,7 @@ export default function MobileDashboard({ onOpenStudio }: MobileDashboardProps =
               <div className="mb-menu-icon-box mb-icon-wa">
                 <MessageCircle size={21} />
               </div>
-              <span className="mb-menu-label">Kirim WA</span>
+              <span className="mb-menu-label">{isEn ? 'Send WA' : 'Kirim WA'}</span>
             </button>
 
             {/* 8. Ekspor */}
@@ -411,7 +411,7 @@ export default function MobileDashboard({ onOpenStudio }: MobileDashboardProps =
               <div className="mb-menu-icon-box mb-icon-ekspor">
                 <Download size={21} />
               </div>
-              <span className="mb-menu-label">Ekspor</span>
+              <span className="mb-menu-label">{isEn ? 'Export' : 'Ekspor'}</span>
             </button>
           </div>
         </section>
@@ -451,14 +451,14 @@ export default function MobileDashboard({ onOpenStudio }: MobileDashboardProps =
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                   <h4 style={{ margin: 0, fontSize: '13px', fontWeight: 800, color: '#9A3412' }}>
-                    Kebun Bunga Harian
+                    {isEn ? 'Daily Flower Garden' : 'Kebun Bunga Harian'}
                   </h4>
                   <span style={{ fontSize: '10px', fontWeight: 800, background: '#FED7AA', color: '#C2410C', padding: '1px 6px', borderRadius: '9999px' }}>
                     🔥 Streak
                   </span>
                 </div>
                 <p style={{ margin: '3px 0 0', fontSize: '11px', color: '#C2410C' }}>
-                  Siram bunga tiap hari & rawat bersama teman / pasangan
+                  {isEn ? 'Water flowers daily & tend together with friends/partner' : 'Siram bunga tiap hari & rawat bersama teman / pasangan'}
                 </p>
               </div>
             </div>
@@ -470,14 +470,14 @@ export default function MobileDashboard({ onOpenStudio }: MobileDashboardProps =
         <section className="mb-section">
           <div className="mb-section-header">
             <h3 className="mb-section-title">
-              Notifikasi
+              {isEn ? 'Notifications' : 'Notifikasi'}
             </h3>
             <button
               type="button"
               onClick={() => setIsNotificationsOpen(true)}
               className="mb-section-link"
             >
-              Lihat semua
+              {isEn ? 'See all' : 'Lihat semua'}
             </button>
           </div>
 
@@ -488,10 +488,10 @@ export default function MobileDashboard({ onOpenStudio }: MobileDashboardProps =
                 <div className="mb-notif-bar" />
                 <div>
                   <h4 className="mb-notif-heading">
-                    Pendaftaran Buket Hadiah & Wisuda
+                    {isEn ? '2026 Gift & Graduation Bouquet Registration' : 'Pendaftaran Buket Hadiah & Wisuda'}
                   </h4>
                   <p className="mb-notif-body">
-                    Gratis kartu ucapan kaligrafi & pita satin premium edisi 2026
+                    {isEn ? 'Free calligraphy card & 2026 premium satin ribbon' : 'Gratis kartu ucapan kaligrafi & pita satin premium edisi 2026'}
                   </p>
                 </div>
               </div>
@@ -500,7 +500,7 @@ export default function MobileDashboard({ onOpenStudio }: MobileDashboardProps =
                 type="button"
                 onClick={() => setIsNotifBannerVisible(false)}
                 className="mb-notif-close"
-                aria-label="Tutup notifikasi"
+                aria-label={isEn ? 'Close notification' : 'Tutup notifikasi'}
               >
                 <X size={15} />
               </button>
@@ -514,7 +514,7 @@ export default function MobileDashboard({ onOpenStudio }: MobileDashboardProps =
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <span className="mb-hero-dot" />
               <h3 className="mb-section-title">
-                Pratinjau Langsung Rangkaian
+                {isEn ? 'Live Bouquet Preview' : 'Pratinjau Langsung Rangkaian'}
               </h3>
             </div>
             <button
@@ -523,7 +523,7 @@ export default function MobileDashboard({ onOpenStudio }: MobileDashboardProps =
               className="mb-section-link"
               style={{ display: 'flex', alignItems: 'center', gap: '4px' }}
             >
-              <span>Buka Studio</span>
+              <span>{isEn ? 'Open Studio' : 'Buka Studio'}</span>
               <ArrowRight size={14} />
             </button>
           </div>
@@ -542,7 +542,7 @@ export default function MobileDashboard({ onOpenStudio }: MobileDashboardProps =
                 className="mb-canvas-btn mb-canvas-btn-model"
               >
                 <Package size={13} />
-                <span>Ganti Model</span>
+                <span>{isEn ? 'Change Wrap' : 'Ganti Model'}</span>
               </button>
 
               <button
@@ -551,7 +551,7 @@ export default function MobileDashboard({ onOpenStudio }: MobileDashboardProps =
                 className="mb-canvas-btn mb-canvas-btn-acak"
               >
                 <Sparkles size={13} />
-                <span>Acak Bunga</span>
+                <span>{isEn ? 'Shuffle' : 'Acak Bunga'}</span>
               </button>
 
               <button
@@ -559,7 +559,7 @@ export default function MobileDashboard({ onOpenStudio }: MobileDashboardProps =
                 onClick={handleGoToStudio}
                 className="mb-canvas-btn mb-canvas-btn-studio"
               >
-                <span>Edit Studio</span>
+                <span>{isEn ? 'Studio Edit' : 'Edit Studio'}</span>
                 <ArrowRight size={12} />
               </button>
             </div>
@@ -569,7 +569,7 @@ export default function MobileDashboard({ onOpenStudio }: MobileDashboardProps =
 
       {/* ─── 6. FIXED BOTTOM NAVIGATION BAR ─── */}
       <nav
-        aria-label="Navigasi Utama Mobile"
+        aria-label={isEn ? 'Mobile Main Navigation' : 'Navigasi Utama Mobile'}
         className="mb-bottom-nav"
       >
         <div className="mb-nav-container">
@@ -577,7 +577,7 @@ export default function MobileDashboard({ onOpenStudio }: MobileDashboardProps =
           <button
             type="button"
             className="mb-nav-btn active"
-            aria-label="Beranda"
+            aria-label={isEn ? 'Home' : 'Beranda'}
           >
             {/* Top Indicator Line */}
             <div className="mb-nav-indicator" />
@@ -589,7 +589,7 @@ export default function MobileDashboard({ onOpenStudio }: MobileDashboardProps =
             type="button"
             onClick={handleGoToStudio}
             className="mb-nav-btn"
-            aria-label="Rangkai Buket di Studio"
+            aria-label={isEn ? 'Arrange in Studio' : 'Rangkai Buket di Studio'}
           >
             {/* Badge showing target flower count (e.g. 25) */}
             <span className="mb-nav-badge">
@@ -605,7 +605,7 @@ export default function MobileDashboard({ onOpenStudio }: MobileDashboardProps =
             type="button"
             onClick={() => setIsFlowerPickerOpen(true)}
             className="mb-nav-btn"
-            aria-label="Katalog Bunga"
+            aria-label={isEn ? 'Flower Catalog' : 'Katalog Bunga'}
           >
             <div style={{ marginTop: '4px' }}>
               <Flower2 size={22} />
@@ -617,7 +617,7 @@ export default function MobileDashboard({ onOpenStudio }: MobileDashboardProps =
             type="button"
             onClick={() => setIsCardEditorOpen(true)}
             className="mb-nav-btn"
-            aria-label="Kartu Ucapan"
+            aria-label={isEn ? 'Greeting Card' : 'Kartu Ucapan'}
           >
             <div style={{ marginTop: '4px' }}>
               <Mail size={22} />
@@ -629,7 +629,7 @@ export default function MobileDashboard({ onOpenStudio }: MobileDashboardProps =
             type="button"
             onClick={() => setIsShareModalOpen(true)}
             className="mb-nav-btn"
-            aria-label="Bagikan Buket"
+            aria-label={isEn ? 'Share Bouquet' : 'Bagikan Buket'}
           >
             <div style={{ marginTop: '4px' }}>
               <Share2 size={22} />
@@ -645,7 +645,7 @@ export default function MobileDashboard({ onOpenStudio }: MobileDashboardProps =
         onConfirm={(count) => {
           setTargetFlowerCount(count);
           setIsCountModalOpen(false);
-          showToast(`Kapasitas buket diubah menjadi ${count} bunga`);
+          showToast(isEn ? `Bouquet capacity set to ${count} flowers` : `Kapasitas buket diubah menjadi ${count} bunga`);
         }}
         onClose={() => setIsCountModalOpen(false)}
         canDismiss={true}

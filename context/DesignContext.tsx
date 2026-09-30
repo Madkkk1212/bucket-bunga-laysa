@@ -1,7 +1,7 @@
 'use client';
 
-import React, { createContext, useContext, useState, useCallback, useRef } from 'react';
-import { DesignState, DesignContextType, TextConfig, FlowerDef, PlacedFlower, CanvasRatio, BackgroundTheme, FlowerCountVariant } from '../types/design';
+import React, { createContext, useContext, useState, useCallback, useRef, useEffect } from 'react';
+import { DesignState, DesignContextType, TextConfig, FlowerDef, PlacedFlower, CanvasRatio, BackgroundTheme, FlowerCountVariant, ExportResolution } from '../types/design';
 import { getBucketSize } from '../data/buckets';
 import { FLOWERS } from '../data/flowers';
 
@@ -39,6 +39,7 @@ function createDefaultDesign(): DesignState {
     },
     canvasRatio: '1:1',
     bgTheme: 'studio-warm',
+    customBgImage: null,
     bouquetScale: 1.0,
     bouquetRotation: 0,
     flowerPlacementMode: 'front',
@@ -115,6 +116,79 @@ export function DesignProvider({ children }: { children: React.ReactNode }) {
   const [premiumExpiresAt, setPremiumExpiresAt] = useState<string | null>(null);
   const [hasGardenAccess, setHasGardenAccess] = useState<boolean>(false);
   const [isFlowerLimitModalOpen, setIsFlowerLimitModalOpen] = useState<boolean>(false);
+  const [exportResolution, setExportResolution] = useState<ExportResolution>('4k');
+  const [cloudSyncStatus, setCloudSyncStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [lastCloudSavedAt, setLastCloudSavedAt] = useState<string | null>(null);
+
+  // ── Auto-restore draft from LocalStorage on mount ──
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const localDraft = localStorage.getItem('laysa_bouquet_draft');
+      if (localDraft) {
+        const parsed = JSON.parse(localDraft);
+        if (parsed && Array.isArray(parsed.selectedFlowers)) {
+          setDesign(parsed);
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  // ── Auto-save draft: LocalStorage (all users) & Supabase Encrypted Cloud Vault (VIP only) ──
+  const localSaveTimer = useRef<NodeJS.Timeout | null>(null);
+  const cloudSaveTimer = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    if (localSaveTimer.current) clearTimeout(localSaveTimer.current);
+    localSaveTimer.current = setTimeout(() => {
+      try {
+        localStorage.setItem('laysa_bouquet_draft', JSON.stringify(design));
+      } catch {
+        // ignore
+      }
+    }, 1000);
+
+    if (isPremiumUnlocked) {
+      const code = localStorage.getItem('laysa_access_code') || '';
+      if (code) {
+        setCloudSyncStatus('saving');
+        if (cloudSaveTimer.current) clearTimeout(cloudSaveTimer.current);
+        cloudSaveTimer.current = setTimeout(async () => {
+          try {
+            const deviceId = getOrCreateDeviceId();
+            const res = await fetch('/api/vip/drafts', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                code,
+                deviceId,
+                userName: premiumUserName,
+                draft: design,
+              }),
+            });
+            const data = await res.json();
+            if (data.success) {
+              setCloudSyncStatus('saved');
+              setLastCloudSavedAt(data.savedAt || new Date().toISOString());
+            } else {
+              setCloudSyncStatus('error');
+            }
+          } catch {
+            setCloudSyncStatus('error');
+          }
+        }, 2500);
+      }
+    }
+
+    return () => {
+      if (localSaveTimer.current) clearTimeout(localSaveTimer.current);
+      if (cloudSaveTimer.current) clearTimeout(cloudSaveTimer.current);
+    };
+  }, [design, isPremiumUnlocked, premiumUserName]);
 
   // Validasi sesi VIP aktif ke server — jika admin reset/hapus/nonaktifkan/expired kode, VIP seketika dicabut
   const validateVipSession = useCallback(async () => {
@@ -572,8 +646,53 @@ export function DesignProvider({ children }: { children: React.ReactNode }) {
 
   const setBgTheme = useCallback((theme: BackgroundTheme) => {
     recordSnapshot();
-    setDesign((prev) => ({ ...prev, bgTheme: theme }));
+    setDesign((prev) => ({
+      ...prev,
+      bgTheme: theme,
+      // If user chose a non-custom theme, clear customBgImage
+      customBgImage: theme === 'custom' ? prev.customBgImage : null,
+    }));
   }, [recordSnapshot]);
+
+  const setCustomBgImage = useCallback((url: string | null) => {
+    recordSnapshot();
+    setDesign((prev) => ({
+      ...prev,
+      customBgImage: url,
+      bgTheme: url ? 'custom' : (prev.bgTheme === 'custom' ? 'studio-warm' : prev.bgTheme),
+    }));
+  }, [recordSnapshot]);
+
+  const manualCloudSave = useCallback(async (): Promise<boolean> => {
+    if (!isPremiumUnlocked) return false;
+    const code = localStorage.getItem('laysa_access_code') || '';
+    if (!code) return false;
+    setCloudSyncStatus('saving');
+    try {
+      const deviceId = getOrCreateDeviceId();
+      const res = await fetch('/api/vip/drafts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          code,
+          deviceId,
+          userName: premiumUserName,
+          draft: design,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setCloudSyncStatus('saved');
+        setLastCloudSavedAt(data.savedAt || new Date().toISOString());
+        return true;
+      }
+      setCloudSyncStatus('error');
+      return false;
+    } catch {
+      setCloudSyncStatus('error');
+      return false;
+    }
+  }, [isPremiumUnlocked, premiumUserName, design]);
 
   const setBouquetScale = useCallback((scale: number) => {
     recordSnapshot();
@@ -706,6 +825,12 @@ export function DesignProvider({ children }: { children: React.ReactNode }) {
     setHoveredFlowerUid,
     setCanvasRatio,
     setBgTheme,
+    setCustomBgImage,
+    exportResolution,
+    setExportResolution,
+    cloudSyncStatus,
+    lastCloudSavedAt,
+    manualCloudSave,
     setBouquetScale,
     setBouquetRotation,
     setBucketOffset,

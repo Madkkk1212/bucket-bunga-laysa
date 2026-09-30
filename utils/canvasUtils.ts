@@ -35,10 +35,21 @@ export function drawCanvasBackground(
   theme: BackgroundTheme = 'studio-warm',
   width: number,
   height: number,
+  customBgImg?: HTMLImageElement | null,
 ): void {
   ctx.save();
   const cx = width / 2;
   const cy = height / 2;
+
+  if (theme === 'custom' && customBgImg && customBgImg.complete && customBgImg.naturalWidth > 0) {
+    try {
+      ctx.drawImage(customBgImg, 0, 0, width, height);
+      ctx.restore();
+      return;
+    } catch {
+      // fallback to default
+    }
+  }
 
   if (theme === 'midnight-noir') {
     // Deep charcoal velvet with subtle warm golden spotlight

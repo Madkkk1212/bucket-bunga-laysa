@@ -15,7 +15,6 @@ import {
   ChevronRight,
   BarChart3,
   TrendingUp,
-  Tag,
 } from 'lucide-react';
 
 interface CanvaAnalyzerDrawerProps {
@@ -34,11 +33,9 @@ export default function CanvaAnalyzerDrawer({
   onOpenVipCard,
 }: CanvaAnalyzerDrawerProps) {
   const { design, isPremiumUnlocked, premiumUserName } = useDesign();
-  const { t } = useLanguage();
+  const { t, isEn } = useLanguage();
 
   if (!isOpen) return null;
-
-  const estimatedPrice = (45000 + design.selectedFlowers.length * 6000).toLocaleString('id-ID');
 
   return (
     <aside className="canva-analyzer-drawer" aria-label={t('analyzer_title_drawer')}>
@@ -74,7 +71,7 @@ export default function CanvaAnalyzerDrawer({
             </div>
             <div className="canva-profile-texts">
               <p className="canva-profile-role">
-                {isPremiumUnlocked ? 'VIP Member' : t('analyzer_guest_role')}
+                {isPremiumUnlocked ? (isEn ? 'VIP Member' : 'Member VIP') : t('analyzer_guest_role')}
               </p>
               <p className="canva-profile-name">
                 {isPremiumUnlocked ? premiumUserName || t('analyzer_active_member') : t('analyzer_guest_mode')}
@@ -115,16 +112,11 @@ export default function CanvaAnalyzerDrawer({
               <TrendingUp size={13} style={{ color: '#10b981' }} />
               <span>{t('analyzer_eval_label')}</span>
             </span>
-            <span className="canva-metric-val">{metrics.ratingLabel}</span>
+            <span className="canva-metric-val">
+              {isEn ? (metrics.ratingLabelEn || metrics.ratingLabel) : metrics.ratingLabel}
+            </span>
           </div>
 
-          <div className="canva-metric-item">
-            <span className="canva-metric-label">
-              <Tag size={13} style={{ color: '#6366f1' }} />
-              <span>{t('analyzer_price_label')}</span>
-            </span>
-            <span className="canva-metric-price">Rp {estimatedPrice}</span>
-          </div>
 
           <div className="canva-metric-item">
             <span className="canva-metric-label">

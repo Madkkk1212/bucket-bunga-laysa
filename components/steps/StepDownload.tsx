@@ -13,6 +13,8 @@ import {
   Music,
   Heart,
   Send,
+  QrCode,
+  Check,
 } from 'lucide-react';
 import { useDesign } from '@/context/DesignContext';
 import { downloadDesign } from '@/utils/downloadUtils';
@@ -32,7 +34,14 @@ const MUSIC_OPTIONS = [
 
 export default function StepDownload({ canvasRef }: StepDownloadProps) {
   const { t, isEn } = useLanguage();
-  const { design, resetDesign, setStep, resetToEdit2D } = useDesign();
+  const {
+    design,
+    resetDesign,
+    setStep,
+    resetToEdit2D,
+    exportResolution,
+    setExportResolution,
+  } = useDesign();
   const [format, setFormat] = useState<'png' | 'jpg'>('png');
   const [status, setStatus] = useState<'idle' | 'downloading' | 'done'>('idle');
 
@@ -49,7 +58,7 @@ export default function StepDownload({ canvasRef }: StepDownloadProps) {
 
   const handleDownload = async () => {
     setStatus('downloading');
-    await downloadDesign(canvasRef, format);
+    await downloadDesign(canvasRef, format, exportResolution);
     setTimeout(() => setStatus('done'), 800);
   };
 
@@ -108,9 +117,11 @@ export default function StepDownload({ canvasRef }: StepDownloadProps) {
   return (
     <div className="step-content">
       <div className="step-header">
-        <h2 className="step-title">Kirim & Simpan Buket</h2>
+        <h2 className="step-title">{isEn ? 'Share & Save Bouquet' : 'Kirim & Simpan Buket'}</h2>
         <p className="step-desc">
-          Bagikan kreasi buketmu langsung ke WhatsApp atau unduh sebagai gambar beresolusi tinggi.
+          {isEn
+            ? 'Share your floral masterpiece directly via WhatsApp or download as ultra-high-resolution image.'
+            : 'Bagikan kreasi buketmu langsung ke WhatsApp atau unduh sebagai gambar beresolusi tinggi.'}
         </p>
       </div>
 
@@ -119,11 +130,13 @@ export default function StepDownload({ canvasRef }: StepDownloadProps) {
         <div className="digital-gift-header">
           <div className="digital-gift-badge">
             <Gift size={14} />
-            <span>Kado Digital Interaktif</span>
+            <span>{isEn ? 'Interactive Digital Gift' : 'Kado Digital Interaktif'}</span>
           </div>
-          <h3 className="digital-gift-title">Kirim Kartu & Buket Online</h3>
+          <h3 className="digital-gift-title">{isEn ? 'Send Online Greeting Card & Bouquet' : 'Kirim Kartu & Buket Online'}</h3>
           <p className="digital-gift-subtitle">
-            Penerima akan menerima link spesial berisi amplop surat, animasi buket mekar, alunan musik lembut, dan pesan pribadimu.
+            {isEn
+              ? 'Recipient will receive a special link with animated unsealing, blooming bouquet, soft acoustic music, and your private note.'
+              : 'Penerima akan menerima link spesial berisi amplop surat, animasi buket mekar, alunan musik lembut, dan pesan pribadimu.'}
           </p>
         </div>
 
@@ -131,10 +144,10 @@ export default function StepDownload({ canvasRef }: StepDownloadProps) {
           <form onSubmit={handleCreateDigitalGift} className="digital-gift-form">
             <div className="gift-form-grid">
               <div className="gift-form-field">
-                <label className="gift-field-label">Nama Kamu</label>
+                <label className="gift-field-label">{isEn ? 'Your Name' : 'Nama Kamu'}</label>
                 <input
                   type="text"
-                  placeholder="Cth: Nadia"
+                  placeholder={isEn ? 'e.g. Nadia' : 'Cth: Nadia'}
                   value={senderName}
                   onChange={(e) => setSenderName(e.target.value)}
                   className="gift-input"
@@ -143,10 +156,10 @@ export default function StepDownload({ canvasRef }: StepDownloadProps) {
               </div>
 
               <div className="gift-form-field">
-                <label className="gift-field-label">Nama Penerima</label>
+                <label className="gift-field-label">{isEn ? "Recipient's Name" : 'Nama Penerima'}</label>
                 <input
                   type="text"
-                  placeholder="Cth: Farhan"
+                  placeholder={isEn ? 'e.g. Farhan' : 'Cth: Farhan'}
                   value={recipientName}
                   onChange={(e) => setRecipientName(e.target.value)}
                   className="gift-input"
@@ -157,11 +170,11 @@ export default function StepDownload({ canvasRef }: StepDownloadProps) {
 
             <div className="gift-form-field">
               <label className="gift-field-label">
-                <span>Pesan / Ucapan untuk Penerima</span>
+                <span>{isEn ? 'Greeting Card Message' : 'Pesan / Ucapan untuk Penerima'}</span>
               </label>
               <textarea
                 rows={3}
-                placeholder="Tuliskan ucapan ulang tahun, selamat wisuda, atau pesan manis..."
+                placeholder={isEn ? 'Write birthday wishes, graduation congratulations, or romantic note...' : 'Tuliskan ucapan ulang tahun, selamat wisuda, atau pesan manis...'}
                 value={personalMessage}
                 onChange={(e) => setPersonalMessage(e.target.value)}
                 className="gift-textarea"
@@ -172,7 +185,7 @@ export default function StepDownload({ canvasRef }: StepDownloadProps) {
             <div className="gift-form-field">
               <label className="gift-field-label">
                 <Music size={13} className="text-stone-500" />
-                <span>Suasana Musik Pengiring</span>
+                <span>{isEn ? 'Background Music Atmosphere' : 'Suasana Musik Pengiring'}</span>
               </label>
               <div className="gift-music-grid">
                 {MUSIC_OPTIONS.map((m) => (
@@ -204,96 +217,187 @@ export default function StepDownload({ canvasRef }: StepDownloadProps) {
               {isCreatingGift ? (
                 <>
                   <span className="spinner" />
-                  <span>Menyiapkan Halaman Hadiah...</span>
+                  <span>{isEn ? 'Generating Gift Page...' : 'Menyiapkan Halaman Hadiah...'}</span>
                 </>
               ) : (
                 <>
                   <Send size={15} />
-                  <span>Buat Link Hadiah Digital</span>
+                  <span>{isEn ? 'Generate Digital Gift Link' : 'Buat Link Hadiah Digital'}</span>
                 </>
               )}
             </button>
           </form>
         ) : (
-          <div className="digital-gift-success-box">
-            <div className="gift-success-top">
-              <div className="gift-success-icon-wrap">
-                <Heart size={20} className="text-stone-700" />
-              </div>
-              <div>
-                <h4 className="gift-success-title">Link Hadiah Siap Dikirim!</h4>
-                <p className="gift-success-desc">
-                  Tautan khusus untuk <strong>{recipientName || 'penerima'}</strong> telah aktif dan tersimpan.
-                </p>
-              </div>
+          /* ✨ LUXURY DIGITAL GIFT TICKET PASS */
+          <div className="gift-ticket-pass">
+            {/* Ribbon Header */}
+            <div className="gift-ticket-ribbon">
+              <span className="gift-ticket-seal">💌</span>
+              <span className="gift-ticket-ribbon-text">TIKET KADO DIGITAL INTERAKTIF</span>
             </div>
 
-            <div className="gift-link-copy-row">
-              <input
-                type="text"
-                readOnly
-                value={giftShareUrl}
-                className="gift-share-url-input"
-                onClick={(e) => (e.target as HTMLInputElement).select()}
-              />
-              <button
-                type="button"
-                className={`btn-gift-copy ${isCopied ? 'copied' : ''}`}
-                onClick={handleCopyLink}
-                id="btn-copy-gift-link"
-              >
-                {isCopied ? (
-                  <>
-                    <CheckCircle size={15} />
-                    <span>Tersalin!</span>
-                  </>
-                ) : (
-                  <>
-                    <Copy size={15} />
-                    <span>Salin</span>
-                  </>
+            {/* Ticket Body */}
+            <div className="gift-ticket-body">
+              {/* Left: Info */}
+              <div className="gift-ticket-info">
+                <div className="gift-ticket-to-from">
+                  <div className="gift-ticket-to">
+                    <span className="gift-ticket-label">KEPADA</span>
+                    <span className="gift-ticket-name">{recipientName || 'Penerima Spesial'}</span>
+                  </div>
+                  <div className="gift-ticket-arrow">❤️</div>
+                  <div className="gift-ticket-from">
+                    <span className="gift-ticket-label">DARI</span>
+                    <span className="gift-ticket-name">{senderName || 'Seseorang yang Peduli'}</span>
+                  </div>
+                </div>
+
+                {/* Music badge */}
+                <div className="gift-ticket-music-badge">
+                  <Music size={11} />
+                  <span>{MUSIC_OPTIONS.find(m => m.id === musicTrack)?.label || '🎹 Romantic Piano'}</span>
+                </div>
+
+                {/* Letter snippet */}
+                {personalMessage && (
+                  <div className="gift-ticket-letter-snippet">
+                    <span className="gift-ticket-quote-mark">&ldquo;</span>
+                    <p>{personalMessage.length > 90 ? `${personalMessage.slice(0, 90)}...` : personalMessage}</p>
+                    <span className="gift-ticket-quote-mark end">&rdquo;</span>
+                  </div>
                 )}
-              </button>
+              </div>
+
+              {/* Divider */}
+              <div className="gift-ticket-divider">
+                <div className="gift-ticket-hole top" />
+                <div className="gift-ticket-dashes" />
+                <div className="gift-ticket-hole bottom" />
+              </div>
+
+              {/* Right: QR Code */}
+              <div className="gift-ticket-qr-side">
+                <div className="gift-ticket-qr-label">
+                  <QrCode size={13} />
+                  <span>Scan untuk Buka</span>
+                </div>
+                <div className="gift-ticket-qr-wrap">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=130x130&data=${encodeURIComponent(giftShareUrl || '')}&bgcolor=fff7f5&color=831843`}
+                    alt="QR Code Hadiah"
+                    className="gift-ticket-qr-img"
+                    width={130}
+                    height={130}
+                  />
+                </div>
+                <div className="gift-ticket-link-small">
+                  {giftShareUrl?.replace(/^https?:\/\//, '').slice(0, 28)}...
+                </div>
+              </div>
             </div>
 
-            <div className="gift-share-actions-grid">
+            {/* Action Row */}
+            <div className="gift-ticket-actions">
               <a
                 href={`https://wa.me/?text=${waShareText}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="btn-gift-whatsapp"
+                className="gift-ticket-btn-wa"
                 id="btn-share-gift-wa"
               >
-                <MessageCircle size={17} />
-                <span>Kirim ke WhatsApp</span>
+                <MessageCircle size={15} />
+                <span>{isEn ? 'Send via WhatsApp' : 'Kirim ke WhatsApp'}</span>
               </a>
 
               <a
                 href={`/gift/${giftId}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="btn-gift-preview"
+                className="gift-ticket-btn-preview"
                 id="btn-preview-gift-page"
               >
-                <ExternalLink size={16} />
-                <span>Buka Pratinjau</span>
+                <ExternalLink size={14} />
+                <span>{isEn ? 'Preview Gift' : 'Buka Kado'}</span>
               </a>
+
+              <button
+                type="button"
+                className={`gift-ticket-btn-copy ${isCopied ? 'copied' : ''}`}
+                onClick={handleCopyLink}
+                id="btn-copy-gift-link"
+              >
+                {isCopied ? (
+                  <>
+                    <Check size={14} />
+                    <span>{isEn ? 'Copied!' : 'Tersalin!'}</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy size={14} />
+                    <span>{isEn ? 'Copy Link' : 'Salin Link'}</span>
+                  </>
+                )}
+              </button>
             </div>
 
+            {/* Reset link */}
             <button
               type="button"
               className="btn-gift-edit-link"
               onClick={() => setGiftShareUrl(null)}
             >
-              Ubah Pesan / Buat Link Baru
+              {isEn ? 'Change message / Create new link' : 'Ubah Pesan / Buat Link Baru'}
             </button>
           </div>
         )}
       </div>
 
-      {/* ─── FORMAT UNDUHAN GAMBAR (PNG / JPG) ─── */}
+      {/* ─── RESOLUSI EKSPOR ULTRA (4K MASTER, 2K, 1080P) ─── */}
       <div className="form-group mt-6">
-        <label className="form-label">Atau Unduh File Gambar Langsung</label>
+        <label className="form-label">{isEn ? 'Image Export Resolution' : 'Pilihan Resolusi Ekspor Gambar'}</label>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginBottom: '14px' }}>
+          <button
+            type="button"
+            className={`format-card ${exportResolution === '4k' ? 'selected' : ''}`}
+            onClick={() => setExportResolution('4k')}
+            style={{ padding: '10px 12px', textAlign: 'left', cursor: 'pointer' }}
+          >
+            <div className="format-info">
+              <span className="format-name" style={{ color: '#4338ca', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <span>👑 Ultra 4K</span>
+              </span>
+              <span className="format-desc">{isEn ? '3.5x Lossless Master' : '3.5x Detail Master Ultra'}</span>
+            </div>
+          </button>
+
+          <button
+            type="button"
+            className={`format-card ${exportResolution === '2k' ? 'selected' : ''}`}
+            onClick={() => setExportResolution('2k')}
+            style={{ padding: '10px 12px', textAlign: 'left', cursor: 'pointer' }}
+          >
+            <div className="format-info">
+              <span className="format-name">⚡ 2K Super HD</span>
+              <span className="format-desc">{isEn ? '2x Sharp Print' : '2x Tajam & Cetak'}</span>
+            </div>
+          </button>
+
+          <button
+            type="button"
+            className={`format-card ${exportResolution === 'hd' ? 'selected' : ''}`}
+            onClick={() => setExportResolution('hd')}
+            style={{ padding: '10px 12px', textAlign: 'left', cursor: 'pointer' }}
+          >
+            <div className="format-info">
+              <span className="format-name">📱 Native 1x</span>
+              <span className="format-desc">{isEn ? 'Fast & Lightweight' : 'Ringan & Cepat'}</span>
+            </div>
+          </button>
+        </div>
+
+        {/* ─── FORMAT UNDUHAN GAMBAR (PNG / JPG) ─── */}
+        <label className="form-label">{isEn ? 'Or Download Image File Directly' : 'Pilih Format File Gambar'}</label>
         <div className="format-options">
           <label className={`format-card ${format === 'png' ? 'selected' : ''}`}>
             <input
@@ -305,8 +409,8 @@ export default function StepDownload({ canvasRef }: StepDownloadProps) {
               onChange={() => setFormat('png')}
             />
             <div className="format-info">
-              <span className="format-name">PNG (Transparan)</span>
-              <span className="format-desc">Latar transparan, kualitas HD jernih</span>
+              <span className="format-name">PNG ({isEn ? 'Transparent' : 'Transparan'})</span>
+              <span className="format-desc">{isEn ? 'Transparent backdrop, lossless HD' : 'Latar transparan, kualitas HD jernih'}</span>
             </div>
           </label>
           <label className={`format-card ${format === 'jpg' ? 'selected' : ''}`}>
@@ -319,8 +423,8 @@ export default function StepDownload({ canvasRef }: StepDownloadProps) {
               onChange={() => setFormat('jpg')}
             />
             <div className="format-info">
-              <span className="format-name">JPG (Latar Bersih)</span>
-              <span className="format-desc">Latar putih bersih, ukuran file ringan</span>
+              <span className="format-name">JPG ({isEn ? 'Studio Background' : 'Latar Bersih'})</span>
+              <span className="format-desc">{isEn ? 'Clean studio/white backdrop, lightweight' : 'Latar putih/studio bersih, ukuran file ringan'}</span>
             </div>
           </label>
         </div>
@@ -329,16 +433,28 @@ export default function StepDownload({ canvasRef }: StepDownloadProps) {
       {/* File info */}
       <div className="file-info-card">
         <div className="file-info-row">
-          <span className="file-info-key">Nama File</span>
+          <span className="file-info-key">{isEn ? 'File Name' : 'Nama File'}</span>
           <span className="file-info-val">{filename}</span>
         </div>
         <div className="file-info-row">
-          <span className="file-info-key">Resolusi Kanvas</span>
-          <span className="file-info-val">600 × 600px (1:1 Native HD)</span>
+          <span className="file-info-key">{isEn ? 'Export Resolution' : 'Resolusi Ekspor'}</span>
+          <span className="file-info-val">
+            {exportResolution === '4k'
+              ? '2100 × 2100px (Ultra 4K Master)'
+              : exportResolution === '2k'
+              ? '1200 × 1200px (Super 2K HD)'
+              : '600 × 600px (1:1 Native HD)'}
+          </span>
         </div>
         <div className="file-info-row">
-          <span className="file-info-key">Kualitas</span>
-          <span className="file-info-val">Ultra High (Lossless Master)</span>
+          <span className="file-info-key">{isEn ? 'Quality' : 'Kualitas'}</span>
+          <span className="file-info-val">
+            {exportResolution === '4k'
+              ? 'Ultra High 4K (Lossless Master)'
+              : exportResolution === '2k'
+              ? 'High Definition (Sharp 2K)'
+              : 'Standard HD'}
+          </span>
         </div>
       </div>
 

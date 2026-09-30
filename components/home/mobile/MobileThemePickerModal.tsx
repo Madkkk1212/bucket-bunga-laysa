@@ -3,6 +3,7 @@
 import { X, Palette, Check } from 'lucide-react';
 import ModalPortal from '@/components/ui/ModalPortal';
 import { useDesign } from '@/context/DesignContext';
+import { useLanguage } from '@/context/LanguageContext';
 import { BackgroundTheme } from '@/types/design';
 import './mobile-dashboard.css';
 
@@ -11,41 +12,53 @@ interface Props {
   onClose: () => void;
 }
 
-const THEMES: { id: BackgroundTheme; name: string; desc: string; bgStyle: string }[] = [
+const THEMES: { id: BackgroundTheme; name: string; nameEn?: string; desc: string; descEn?: string; bgStyle: string }[] = [
   {
     id: 'studio-warm',
     name: 'Studio Warm',
+    nameEn: 'Studio Warm',
     desc: 'Soft ivory & cashmere aesthetic',
+    descEn: 'Soft ivory & cashmere aesthetic',
     bgStyle: 'linear-gradient(135deg, #FEFAF7 0%, #EDE2D4 100%)',
   },
   {
     id: 'rose-milk',
     name: 'Rose Milk',
+    nameEn: 'Rose Milk',
     desc: 'Blush pastel pink romantic',
+    descEn: 'Blush pastel pink romantic',
     bgStyle: 'linear-gradient(135deg, #FFF5F7 0%, #FCE7F0 100%)',
   },
   {
     id: 'midnight-noir',
     name: 'Midnight Noir',
+    nameEn: 'Midnight Noir',
     desc: 'Deep luxurious dark studio',
+    descEn: 'Deep luxurious dark studio',
     bgStyle: 'linear-gradient(135deg, #1E1B2E 0%, #0F0E17 100%)',
   },
   {
     id: 'sage-botanical',
     name: 'Sage Botanical',
+    nameEn: 'Sage Botanical',
     desc: 'Earthy mint green freshness',
+    descEn: 'Earthy mint green freshness',
     bgStyle: 'linear-gradient(135deg, #F2F8F4 0%, #D8EAD9 100%)',
   },
   {
     id: 'kraft-warm',
     name: 'Kraft Warm',
+    nameEn: 'Kraft Warm',
     desc: 'Artisan parchment paper',
+    descEn: 'Artisan parchment paper',
     bgStyle: 'linear-gradient(135deg, #FBF6EE 0%, #EBDDC8 100%)',
   },
 ];
 
 export default function MobileThemePickerModal({ isOpen, onClose }: Props) {
   const { design, setBgTheme } = useDesign();
+  const { language } = useLanguage();
+  const isEn = language === 'en';
   const current = design.bgTheme || 'studio-warm';
 
   if (!isOpen) return null;
@@ -61,15 +74,15 @@ export default function MobileThemePickerModal({ isOpen, onClose }: Props) {
                 <Palette size={20} />
               </div>
               <div>
-                <h3 className="ms-title">Tema & Suasana</h3>
-                <p className="ms-subtitle">Pilih latar belakang suasana studio buket</p>
+                <h3 className="ms-title">{isEn ? 'Theme & Atmosphere' : 'Tema & Suasana'}</h3>
+                <p className="ms-subtitle">{isEn ? 'Choose studio background ambience' : 'Pilih latar belakang suasana studio buket'}</p>
               </div>
             </div>
             <button
               type="button"
               onClick={onClose}
               className="ms-close-btn"
-              aria-label="Tutup"
+              aria-label={isEn ? 'Close' : 'Tutup'}
             >
               <X size={16} />
             </button>
@@ -90,8 +103,8 @@ export default function MobileThemePickerModal({ isOpen, onClose }: Props) {
                       style={{ background: theme.bgStyle }}
                     />
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{ fontSize: '13px', fontWeight: 800, color: '#1E293B' }}>{theme.name}</p>
-                      <p style={{ fontSize: '11px', color: '#64748B', marginTop: '2px' }}>{theme.desc}</p>
+                      <p style={{ fontSize: '13px', fontWeight: 800, color: '#1E293B' }}>{isEn ? (theme.nameEn || theme.name) : theme.name}</p>
+                      <p style={{ fontSize: '11px', color: '#64748B', marginTop: '2px' }}>{isEn ? (theme.descEn || theme.desc) : theme.desc}</p>
                     </div>
                     {isSelected && (
                       <div
@@ -122,7 +135,7 @@ export default function MobileThemePickerModal({ isOpen, onClose }: Props) {
               className="ms-btn-primary"
               style={{ background: '#C026D3', boxShadow: '0 4px 14px rgba(192, 38, 211, 0.28)' }}
             >
-              <span>Simpan Tema Suasana</span>
+              <span>{isEn ? 'Save Atmosphere Theme' : 'Simpan Tema Suasana'}</span>
             </button>
           </div>
         </div>

@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { useDesign } from '@/context/DesignContext';
+import { useLanguage } from '@/context/LanguageContext';
 import { consoleAudio } from '@/utils/consoleAudio';
 import {
   generatePresetLayout,
@@ -27,6 +28,7 @@ export default function ConsolePresetBar({
   onToggleSummary,
   isSummaryOpen = false,
 }: ConsolePresetBarProps) {
+  const { isEn } = useLanguage();
   const {
     design,
     undo,
@@ -65,47 +67,47 @@ export default function ConsolePresetBar({
       <div className="console-preset-left">
         <span className="console-preset-label">
           <Compass size={13} className="text-cyan-400" />
-          <span>Preset Formasi:</span>
+          <span>{isEn ? 'Formation Preset:' : 'Preset Formasi:'}</span>
         </span>
         <div className="flex items-center gap-1">
           <button
             type="button"
             className="console-preset-btn"
             onClick={() => handleApplyPreset('dome')}
-            title="Terapkan Formasi Kubah Bulat Klasik"
+            title={isEn ? 'Apply Classic Round Dome Formation' : 'Terapkan Formasi Kubah Bulat Klasik'}
           >
             <CircleDot size={12} className="text-pink-400" />
-            <span>Kubah</span>
+            <span>{isEn ? 'Dome' : 'Kubah'}</span>
           </button>
 
           <button
             type="button"
             className="console-preset-btn"
             onClick={() => handleApplyPreset('fan')}
-            title="Terapkan Formasi Kipas Megah Bertingkat"
+            title={isEn ? 'Apply Majestic Fan Formation' : 'Terapkan Formasi Kipas Megah Bertingkat'}
           >
             <span>🪭</span>
-            <span>Kipas</span>
+            <span>{isEn ? 'Fan' : 'Kipas'}</span>
           </button>
 
           <button
             type="button"
             className="console-preset-btn"
             onClick={() => handleApplyPreset('heart')}
-            title="Terapkan Formasi Siluet Bentuk Hati Romantis"
+            title={isEn ? 'Apply Romantic Heart Formation' : 'Terapkan Formasi Siluet Bentuk Hati Romantis'}
           >
             <Heart size={12} className="text-rose-400" />
-            <span>Hati</span>
+            <span>{isEn ? 'Heart' : 'Hati'}</span>
           </button>
 
           <button
             type="button"
             className="console-preset-btn"
             onClick={() => handleApplyPreset('minimalist')}
-            title="Terapkan Formasi Minimalis Berpusat Intim"
+            title={isEn ? 'Apply Intimate Minimalist Formation' : 'Terapkan Formasi Minimalis Berpusat Intim'}
           >
             <span>🎯</span>
-            <span>Minimalis</span>
+            <span>{isEn ? 'Minimalist' : 'Minimalis'}</span>
           </button>
         </div>
       </div>
@@ -118,7 +120,7 @@ export default function ConsolePresetBar({
           className="console-quick-action-btn"
           disabled={!canUndo}
           onClick={handleUndo}
-          title="Kembalikan Perubahan Terakhir (Undo)"
+          title={isEn ? 'Revert Last Action (Undo)' : 'Kembalikan Perubahan Terakhir (Undo)'}
         >
           <Undo2 size={13} />
           <span>Undo</span>
@@ -129,10 +131,10 @@ export default function ConsolePresetBar({
           type="button"
           className="console-quick-action-btn"
           onClick={handleRandomize}
-          title="Acak Variasi & Komposisi Bunga"
+          title={isEn ? 'Randomize Flower Positions & Layout' : 'Acak Variasi & Komposisi Bunga'}
         >
           <Shuffle size={13} />
-          <span>Acak</span>
+          <span>{isEn ? 'Shuffle' : 'Acak'}</span>
         </button>
 
         {/* Inside / Front Placement Toggle */}
@@ -143,10 +145,14 @@ export default function ConsolePresetBar({
             consoleAudio.play('switch');
             setFlowerPlacementMode(design.flowerPlacementMode === 'front' ? 'inside' : 'front');
           }}
-          title="Ubah posisi semua bunga (di dalam kantung vs di depan pita buket)"
+          title={isEn ? 'Toggle flower placement (inside pocket vs in front)' : 'Ubah posisi semua bunga (di dalam kantung vs di depan pita buket)'}
         >
           <Layers size={13} />
-          <span>{design.flowerPlacementMode === 'front' ? 'Di Depan' : 'Di Dalam'}</span>
+          <span>
+            {design.flowerPlacementMode === 'front'
+              ? (isEn ? 'In Front' : 'Di Depan')
+              : (isEn ? 'Inside' : 'Di Dalam')}
+          </span>
         </button>
 
         {/* Atur Bunga Drawer Toggle */}
@@ -158,10 +164,10 @@ export default function ConsolePresetBar({
               consoleAudio.play('click');
               onToggleSummary();
             }}
-            title="Buka / Tutup Daftar Bunga Terpasang"
+            title={isEn ? 'Toggle Arranged Flower List' : 'Buka / Tutup Daftar Bunga Terpasang'}
           >
             <SlidersHorizontal size={13} />
-            <span>Daftar ({design.selectedFlowers.length})</span>
+            <span>{isEn ? `List (${design.selectedFlowers.length})` : `Daftar (${design.selectedFlowers.length})`}</span>
           </button>
         )}
       </div>

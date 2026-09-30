@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import Image from 'next/image';
-import { ChevronRight, Check, X, Layers, Sparkles, Crown, Lock } from 'lucide-react';
+import { ChevronRight, Check, X, Layers, Sparkles, Crown, Lock, Upload, Crop, Trash2, AlertCircle } from 'lucide-react';
 import { useDesign } from '@/context/DesignContext';
 import { BUCKET_SIZES, getBucketSize } from '@/data/buckets';
 import { CANVAS_RATIO_DIMENSIONS, BACKGROUND_THEMES } from '@/utils/canvasUtils';
@@ -32,12 +32,13 @@ const THEME_FILTER_TABS: { id: ThemeFilterType; label: string }[] = [
 ];
 
 export default function StepSize() {
-  const { t } = useLanguage();
+  const { t, isEn } = useLanguage();
   const {
     design,
     setBucketSize,
     setCanvasRatio,
     setBgTheme,
+    setCustomBgImage,
     setStep,
     isPremiumUnlocked,
   } = useDesign();
@@ -49,6 +50,14 @@ export default function StepSize() {
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [selectedBucketInModal, setSelectedBucketInModal] = useState<string>('bucket-naruto');
   const [premiumModalItem, setPremiumModalItem] = useState<string | null>(null);
+
+  // VIP Custom Background Modal State
+  const [isCustomBgModalOpen, setIsCustomBgModalOpen] = useState<boolean>(false);
+  const [customBgPreview, setCustomBgPreview] = useState<string | null>(design.customBgImage || null);
+  const [rawImgElement, setRawImgElement] = useState<HTMLImageElement | null>(null);
+  const [rawImgDims, setRawImgDims] = useState<{ width: number; height: number } | null>(null);
+  const [isRatioMatching, setIsRatioMatching] = useState<boolean>(true);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const currentBucketId = design.bucketSize || 'bucket-1';
   const [hasMounted, setHasMounted] = useState(false);
@@ -336,7 +345,68 @@ export default function StepSize() {
               </button>
             );
           })}
+
+          {/* ── VIP EXCLUSIVE: CUSTOM CANVAS BACKGROUND ── */}
+          <button
+            type="button"
+            className={`theme-card-clean ${design.bgTheme === 'custom' ? 'selected' : ''}`}
+            onClick={() => {
+              if (!isPremiumUnlocked) {
+                setPremiumModalItem(isEn ? 'Custom VIP Canvas Background' : 'Latar Belakang Kanvas Kustom VIP');
+                return;
+              }
+              setCustomBgPreview(design.customBgImage || null);
+              setIsCustomBgModalOpen(true);
+            }}
+            title={isEn ? 'Set Custom VIP Canvas Background' : 'Gunakan Latar Belakang Kanvas Kustom (Khusus VIP)'}
+          >
+            <span
+              className="theme-card-clean-dot"
+              style={{
+                background: design.customBgImage
+                  ? `url(${design.customBgImage}) center/cover`
+                  : 'linear-gradient(135deg, #f59e0b, #ec4899)',
+              }}
+            />
+            <span className="theme-card-clean-name" style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+              <span>{isEn ? 'Custom Background' : 'Background Kustom'}</span>
+              {!isPremiumUnlocked && <Crown size={12} className="text-amber-500" />}
+            </span>
+            {design.bgTheme === 'custom' && (
+              <span className="theme-card-clean-check">
+                <Check size={13} strokeWidth={3} />
+              </span>
+            )}
+          </button>
         </div>
+
+        {design.bgTheme === 'custom' && design.customBgImage && (
+          <div style={{ marginTop: '10px', display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <button
+              type="button"
+              className="btn btn-secondary text-xs py-1.5 px-3 flex items-center gap-1.5"
+              onClick={() => {
+                setCustomBgPreview(design.customBgImage || null);
+                setIsCustomBgModalOpen(true);
+              }}
+            >
+              <Crop size={13} />
+              <span>{isEn ? 'Adjust / Change Custom Background' : 'Ganti / Sesuaikan Background'}</span>
+            </button>
+            <button
+              type="button"
+              className="btn btn-ghost text-xs py-1.5 px-2.5 text-rose-600 flex items-center gap-1"
+              onClick={() => {
+                setCustomBgImage(null);
+                setBgTheme('studio-warm');
+              }}
+              title={isEn ? 'Reset to default studio background' : 'Kembalikan ke latar studio default'}
+            >
+              <Trash2 size={13} />
+              <span>{isEn ? 'Remove' : 'Hapus'}</span>
+            </button>
+          </div>
+        )}
       </div>
 
       {/* ─── MODAL KATALOG LENGKAP SEMUA JENIS BUCKET ─── */}
@@ -356,17 +426,19 @@ export default function StepSize() {
             <div className="bucket-modal-header">
               <div className="bucket-modal-title-group">
                 <h3 id="bucket-modal-title" className="bucket-modal-title">
-                  Koleksi Lengkap Bucket
+                  {isEn ? 'Complete Bucket Collection' : 'Koleksi Lengkap Bucket'}
                 </h3>
                 <p className="bucket-modal-subtitle">
-                  Pilih ukuran dan tema pembungkus bucket favoritmu dari koleksi Laysa
+                  {isEn
+                    ? 'Choose your favorite bucket wrapping size and theme from Laysa collection'
+                    : 'Pilih ukuran dan tema pembungkus bucket favoritmu dari koleksi Laysa'}
                 </p>
               </div>
               <button
                 type="button"
                 className="bucket-modal-close-btn"
                 onClick={() => setIsModalOpen(false)}
-                aria-label="Tutup popup"
+                aria-label={isEn ? 'Close modal' : 'Tutup popup'}
               >
                 <X size={18} />
               </button>
@@ -376,7 +448,7 @@ export default function StepSize() {
             <div style={{ padding: '8px 20px 0', borderBottom: '1px solid #f0ece6' }}>
               <div className="bucket-filter-section">
                 <div className="bucket-filter-row-wrap">
-                  <span className="bucket-filter-label">Tema:</span>
+                  <span className="bucket-filter-label">{isEn ? 'Theme:' : 'Tema:'}</span>
                   <div className="bucket-filter-pills-row">
                     {THEME_FILTER_TABS.map((tab) => (
                       <button
@@ -385,7 +457,7 @@ export default function StepSize() {
                         className={`bucket-filter-pill ${themeFilter === tab.id ? 'active' : ''}`}
                         onClick={() => setThemeFilter(tab.id)}
                       >
-                        {tab.label}
+                        {tab.id === 'all' ? (isEn ? 'All Themes' : 'Semua Tema') : tab.label}
                       </button>
                     ))}
                   </div>
@@ -481,8 +553,248 @@ export default function StepSize() {
                 onClick={handleConfirmModal}
               >
                 <Check size={16} />
-                <span>Selesai & Pasang ke Buket</span>
+                <span>{isEn ? 'Confirm & Apply to Bouquet' : 'Selesai & Pasang ke Buket'}</span>
               </button>
+            </div>
+          </div>
+        </div>
+      </ModalPortal>
+
+      {/* ─── MODAL KUSTOM BACKGROUND VIP DENGAN VALIDASI UKURAN PRESISI ─── */}
+      <ModalPortal isOpen={isCustomBgModalOpen} onClose={() => setIsCustomBgModalOpen(false)}>
+        <div className="bucket-modal-backdrop" onClick={() => setIsCustomBgModalOpen(false)}>
+          <div
+            className="bucket-modal-container"
+            style={{ maxWidth: '520px', width: '92%' }}
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+          >
+            {/* Header */}
+            <div className="bucket-modal-header">
+              <div className="bucket-modal-title-group">
+                <h3 className="bucket-modal-title flex items-center gap-2">
+                  <Crown size={18} className="text-amber-500" />
+                  <span>{isEn ? 'VIP Custom Canvas Background' : 'Latar Belakang Kanvas Kustom VIP'}</span>
+                </h3>
+                <p className="bucket-modal-subtitle">
+                  {isEn
+                    ? 'Upload your personal studio backdrop. Image must fit the active canvas aspect ratio.'
+                    : 'Gunakan gambar studio pribadi. Ukuran gambar wajib sesuai rasio kanvas agar buket tampil sempurna.'}
+                </p>
+              </div>
+              <button
+                type="button"
+                className="bucket-modal-close-btn"
+                onClick={() => setIsCustomBgModalOpen(false)}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div style={{ padding: '20px' }}>
+              {/* Target Ratio Requirement Pill */}
+              {(() => {
+                const targetRatioDims = CANVAS_RATIO_DIMENSIONS[design.canvasRatio || '1:1'];
+                const targetRatio = targetRatioDims.width / targetRatioDims.height;
+                const ratioLabel = targetRatioDims.subLabel;
+
+                const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+
+                  const reader = new FileReader();
+                  reader.onload = (event) => {
+                    const result = event.target?.result as string;
+                    const img = new window.Image();
+                    img.onload = () => {
+                      setRawImgElement(img);
+                      setRawImgDims({ width: img.naturalWidth, height: img.naturalHeight });
+                      const curRatio = img.naturalWidth / img.naturalHeight;
+                      const matches = Math.abs(curRatio - targetRatio) < 0.05;
+                      setIsRatioMatching(matches);
+                      setCustomBgPreview(result);
+                    };
+                    img.src = result;
+                  };
+                  reader.readAsDataURL(file);
+                };
+
+                const handleAutoCropToRatio = () => {
+                  if (!rawImgElement) return;
+                  const canvas = document.createElement('canvas');
+                  canvas.width = targetRatioDims.width * 2;
+                  canvas.height = targetRatioDims.height * 2;
+                  const ctx = canvas.getContext('2d');
+                  if (!ctx) return;
+
+                  let sWidth = rawImgElement.naturalWidth;
+                  let sHeight = rawImgElement.naturalHeight;
+                  let sx = 0;
+                  let sy = 0;
+                  const curRatio = rawImgElement.naturalWidth / rawImgElement.naturalHeight;
+
+                  if (curRatio > targetRatio) {
+                    sWidth = rawImgElement.naturalHeight * targetRatio;
+                    sx = (rawImgElement.naturalWidth - sWidth) / 2;
+                  } else {
+                    sHeight = rawImgElement.naturalWidth / targetRatio;
+                    sy = (rawImgElement.naturalHeight - sHeight) / 2;
+                  }
+
+                  ctx.drawImage(rawImgElement, sx, sy, sWidth, sHeight, 0, 0, canvas.width, canvas.height);
+                  const croppedDataUrl = canvas.toDataURL('image/jpeg', 0.95);
+                  setCustomBgPreview(croppedDataUrl);
+                  setIsRatioMatching(true);
+                };
+
+                return (
+                  <div>
+                    {/* Ratio Info Bar */}
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      background: '#f8fafc',
+                      padding: '10px 14px',
+                      borderRadius: '10px',
+                      border: '1px solid #e2e8f0',
+                      marginBottom: '16px',
+                    }}>
+                      <span style={{ fontSize: '13px', color: '#475569', fontWeight: 500 }}>
+                        {isEn ? 'Active Canvas Ratio:' : 'Rasio Kanvas Aktif:'}
+                      </span>
+                      <span style={{
+                        fontSize: '12px',
+                        fontWeight: 700,
+                        color: '#4338ca',
+                        background: '#e0e7ff',
+                        padding: '3px 8px',
+                        borderRadius: '9999px',
+                      }}>
+                        {targetRatioDims.label} ({ratioLabel} • {targetRatioDims.width}×{targetRatioDims.height}px)
+                      </span>
+                    </div>
+
+                    {/* Image Preview Box */}
+                    {customBgPreview ? (
+                      <div style={{ marginBottom: '16px' }}>
+                        <div style={{
+                          width: '100%',
+                          height: '240px',
+                          borderRadius: '12px',
+                          overflow: 'hidden',
+                          border: `2px solid ${isRatioMatching ? '#22c55e' : '#f59e0b'}`,
+                          position: 'relative',
+                          background: '#000',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}>
+                          <img
+                            src={customBgPreview}
+                            alt="Preview Background"
+                            style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
+                          />
+                        </div>
+
+                        {/* Ratio Status & Auto-Crop Tool */}
+                        <div style={{ marginTop: '10px' }}>
+                          {isRatioMatching ? (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#16a34a', fontSize: '12.5px', fontWeight: 600 }}>
+                              <Check size={16} />
+                              <span>{isEn ? 'Size matches canvas ratio perfectly! ✓' : 'Ukuran pas sempurna dengan rasio kanvas! ✓'}</span>
+                            </div>
+                          ) : (
+                            <div style={{
+                              background: '#fffbeb',
+                              border: '1px solid #fef3c7',
+                              padding: '10px',
+                              borderRadius: '8px',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              gap: '6px'
+                            }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#b45309', fontSize: '12px' }}>
+                                <AlertCircle size={15} />
+                                <span>
+                                  {isEn
+                                    ? `Image ratio does not match ${ratioLabel}. Use auto-crop to prevent distortion.`
+                                    : `Rasio gambar (${rawImgDims?.width}×${rawImgDims?.height}px) belum pas dengan rasio ${ratioLabel}.`}
+                                </span>
+                              </div>
+                              <button
+                                type="button"
+                                className="btn btn-secondary text-xs py-1.5 flex items-center justify-center gap-1.5"
+                                onClick={handleAutoCropToRatio}
+                              >
+                                <Crop size={14} />
+                                <span>{isEn ? `✂️ Auto-Crop to ${ratioLabel}` : `✂️ Potong Otomatis Presisi ke Rasio ${ratioLabel}`}</span>
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      <div
+                        onClick={() => fileInputRef.current?.click()}
+                        style={{
+                          border: '2px dashed #cbd5e1',
+                          borderRadius: '12px',
+                          padding: '36px 20px',
+                          textAlign: 'center',
+                          cursor: 'pointer',
+                          marginBottom: '16px',
+                          background: '#f8fafc',
+                        }}
+                      >
+                        <Upload size={32} style={{ margin: '0 auto 8px', color: '#94a3b8' }} />
+                        <p style={{ fontSize: '14px', fontWeight: 600, color: '#334155', margin: 0 }}>
+                          {isEn ? 'Click to upload background image' : 'Klik untuk memilih gambar latar'}
+                        </p>
+                        <p style={{ fontSize: '12px', color: '#64748b', marginTop: '4px' }}>
+                          {isEn ? `Recommended ratio: ${ratioLabel} (JPG/PNG)` : `Rekomendasi rasio: ${ratioLabel} (JPG/PNG)`}
+                        </p>
+                      </div>
+                    )}
+
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      style={{ display: 'none' }}
+                      onChange={handleFileChange}
+                    />
+
+                    {/* Action buttons */}
+                    <div style={{ display: 'flex', gap: '10px', marginTop: '16px' }}>
+                      <button
+                        type="button"
+                        className="btn btn-secondary flex-1"
+                        onClick={() => fileInputRef.current?.click()}
+                      >
+                        <Upload size={14} />
+                        <span>{customBgPreview ? (isEn ? 'Change Image' : 'Pilih Gambar Lain') : (isEn ? 'Browse File' : 'Cari File')}</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        className="btn btn-primary flex-1"
+                        disabled={!customBgPreview}
+                        onClick={() => {
+                          if (customBgPreview) {
+                            setCustomBgImage(customBgPreview);
+                            setIsCustomBgModalOpen(false);
+                          }
+                        }}
+                      >
+                        <Check size={15} />
+                        <span>{isEn ? 'Apply to Canvas' : 'Pasang ke Kanvas'}</span>
+                      </button>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           </div>
         </div>

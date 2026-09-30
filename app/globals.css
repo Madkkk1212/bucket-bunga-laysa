@@ -11198,107 +11198,304 @@ body.modal-backdrop-blur-active .ds-root {
   cursor: not-allowed;
 }
 
-/* Success Box for Digital Gift Link */
-.digital-gift-success-box {
+/* Old styles kept for back-compat if any corner still refs them */
+.digital-gift-success-box { display: flex; flex-direction: column; gap: 14px; }
+.gift-success-top { display: flex; align-items: center; gap: 12px; }
+.gift-success-icon-wrap { width: 44px; height: 44px; border-radius: 50%; background: #fce7f3; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.gift-success-title { font-size: 15px; font-weight: 800; color: #831843; margin: 0 0 2px; }
+.gift-success-desc { font-size: 12px; color: #6b7280; margin: 0; }
+.gift-link-copy-row { display: flex; gap: 8px; background: #ffffff; padding: 6px; border-radius: 12px; border: 1.5px solid #fbcfe8; }
+.gift-share-url-input { flex: 1; border: none; background: transparent; font-size: 12.5px; color: #374151; padding: 6px 8px; outline: none; font-family: monospace; }
+.btn-gift-copy { padding: 8px 14px; border-radius: 8px; background: #f3f4f6; border: none; color: #374151; font-size: 12px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 5px; transition: all 0.15s ease; white-space: nowrap; }
+.btn-gift-copy:hover { background: #e5e7eb; }
+.btn-gift-copy.copied { background: #10b981; color: #ffffff; }
+.gift-share-actions-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.btn-gift-whatsapp { padding: 11px 14px; border-radius: 10px; background: linear-gradient(135deg, #25d366 0%, #128c7e 100%); color: #ffffff; text-decoration: none; font-size: 12.5px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 4px 10px rgba(37, 211, 102, 0.25); transition: all 0.2s ease; }
+.btn-gift-whatsapp:hover { transform: translateY(-1px); color: #ffffff; }
+.btn-gift-preview { padding: 11px 14px; border-radius: 10px; background: #ffffff; color: #db2777; border: 1.5px solid #fbcfe8; text-decoration: none; font-size: 12.5px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.2s ease; }
+.btn-gift-preview:hover { background: #fdf2f8; border-color: #ec4899; }
+
+/* ════════════════════════════════════════════════════
+   ✨ LUXURY DIGITAL GIFT TICKET PASS
+   ════════════════════════════════════════════════════ */
+.gift-ticket-pass {
+  background: linear-gradient(145deg, #fff7f5 0%, #fce7f3 100%);
+  border: 1.5px solid #fbcfe8;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(236, 72, 153, 0.12), 0 2px 8px rgba(0,0,0,0.04);
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 0;
+  position: relative;
+  animation: giftTicketIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
 
-.gift-success-top {
+@keyframes giftTicketIn {
+  from { opacity: 0; transform: scale(0.88) translateY(12px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+/* Ribbon / Header */
+.gift-ticket-ribbon {
+  background: linear-gradient(135deg, #be185d 0%, #9d174d 60%, #831843 100%);
+  color: #fff;
+  padding: 10px 18px;
   display: flex;
   align-items: center;
-  gap: 12px;
-}
-
-.gift-success-icon-wrap {
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  background: #fce7f3;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.gift-success-title {
-  font-size: 15px;
+  gap: 10px;
+  font-size: 11px;
   font-weight: 800;
-  color: #831843;
-  margin: 0 0 2px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  position: relative;
+  overflow: hidden;
 }
 
-.gift-success-desc {
-  font-size: 12px;
-  color: #6b7280;
-  margin: 0;
-}
-
-.gift-link-copy-row {
-  display: flex;
-  gap: 8px;
-  background: #ffffff;
-  padding: 6px;
-  border-radius: 12px;
-  border: 1.5px solid #fbcfe8;
-}
-
-.gift-share-url-input {
-  flex: 1;
-  border: none;
-  background: transparent;
-  font-size: 12.5px;
-  color: #374151;
-  padding: 6px 8px;
-  outline: none;
-  font-family: monospace;
-}
-
-.btn-gift-copy {
-  padding: 8px 14px;
-  border-radius: 8px;
-  background: #f3f4f6;
-  border: none;
-  color: #374151;
-  font-size: 12px;
-  font-weight: 700;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  transition: all 0.15s ease;
+.gift-ticket-ribbon::after {
+  content: '🌸 🌸 🌸 🌸 🌸 🌸 🌸 🌸 🌸 🌸';
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 13px;
+  opacity: 0.18;
+  letter-spacing: 2px;
+  pointer-events: none;
   white-space: nowrap;
 }
 
-.btn-gift-copy:hover {
-  background: #e5e7eb;
+.gift-ticket-seal {
+  font-size: 20px;
+  line-height: 1;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
 }
 
-.btn-gift-copy.copied {
-  background: #10b981;
-  color: #ffffff;
+.gift-ticket-ribbon-text {
+  flex: 1;
 }
 
-.gift-share-actions-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+/* Ticket Body — two columns: info | QR */
+.gift-ticket-body {
+  display: flex;
+  align-items: stretch;
+  min-height: 150px;
+}
+
+/* Left info panel */
+.gift-ticket-info {
+  flex: 1;
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
   gap: 10px;
 }
 
-@media (max-width: 560px) {
-  .gift-share-actions-grid {
-    grid-template-columns: 1fr;
-  }
+/* TO / FROM block */
+.gift-ticket-to-from {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
-.btn-gift-whatsapp {
-  padding: 11px 14px;
+.gift-ticket-to,
+.gift-ticket-from {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.gift-ticket-label {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  color: #be185d;
+  text-transform: uppercase;
+  opacity: 0.8;
+}
+
+.gift-ticket-name {
+  font-size: 15px;
+  font-weight: 800;
+  color: #831843;
+  line-height: 1.2;
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gift-ticket-arrow {
+  font-size: 20px;
+  flex-shrink: 0;
+  animation: heartbeat 1.5s ease-in-out infinite;
+}
+
+@keyframes heartbeat {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+}
+
+/* Music Badge */
+.gift-ticket-music-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(190, 24, 93, 0.08);
+  color: #9d174d;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 20px;
+  border: 1px solid rgba(190, 24, 93, 0.15);
+  width: fit-content;
+}
+
+/* Letter Snippet */
+.gift-ticket-letter-snippet {
+  background: rgba(255, 255, 255, 0.65);
+  border: 1px solid #fbcfe8;
+  border-radius: 10px;
+  padding: 9px 13px;
+  position: relative;
+  flex: 1;
+}
+
+.gift-ticket-letter-snippet p {
+  font-size: 11.5px;
+  font-style: italic;
+  color: #6b3a4f;
+  line-height: 1.55;
+  margin: 0;
+}
+
+.gift-ticket-quote-mark {
+  font-size: 22px;
+  line-height: 0.6;
+  color: #f9a8d4;
+  font-family: Georgia, serif;
+  font-weight: 900;
+  position: relative;
+  top: 6px;
+}
+
+.gift-ticket-quote-mark.end {
+  display: block;
+  text-align: right;
+  top: 0;
+  bottom: -2px;
+  position: relative;
+}
+
+/* Perforated Divider */
+.gift-ticket-divider {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0;
+  width: 18px;
+  flex-shrink: 0;
+  position: relative;
+  background: transparent;
+}
+
+.gift-ticket-hole {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #eef4fb;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2;
+  border: 1px solid #f0f0f0;
+}
+
+.gift-ticket-hole.top  { top: -9px; }
+.gift-ticket-hole.bottom { bottom: -9px; }
+
+.gift-ticket-dashes {
+  position: absolute;
+  top: 0; bottom: 0; left: 50%;
+  transform: translateX(-50%);
+  width: 1.5px;
+  background: repeating-linear-gradient(
+    to bottom,
+    #fbcfe8 0px,
+    #fbcfe8 6px,
+    transparent 6px,
+    transparent 12px
+  );
+}
+
+/* QR Side */
+.gift-ticket-qr-side {
+  width: 158px;
+  flex-shrink: 0;
+  background: linear-gradient(160deg, #fff0f5 0%, #fff7fb 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 14px 14px 10px;
+  gap: 7px;
+  border-left: 1px dashed #fbcfe8;
+}
+
+.gift-ticket-qr-label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  font-weight: 800;
+  color: #be185d;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.gift-ticket-qr-wrap {
+  border-radius: 10px;
+  overflow: hidden;
+  border: 2px solid #fbcfe8;
+  background: #fff;
+  padding: 4px;
+  box-shadow: 0 4px 12px rgba(190, 24, 93, 0.1);
+}
+
+.gift-ticket-qr-img {
+  display: block;
+  border-radius: 6px;
+}
+
+.gift-ticket-link-small {
+  font-size: 9px;
+  color: #be185d;
+  font-family: monospace;
+  opacity: 0.65;
+  text-align: center;
+  word-break: break-all;
+}
+
+/* ─── Action Row ─── */
+.gift-ticket-actions {
+  display: flex;
+  gap: 8px;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.6);
+  border-top: 1px solid #fbcfe8;
+  flex-wrap: wrap;
+}
+
+.gift-ticket-btn-wa {
+  flex: 1;
+  min-width: 130px;
+  padding: 10px 14px;
   border-radius: 10px;
   background: linear-gradient(135deg, #25d366 0%, #128c7e 100%);
   color: #ffffff;
   text-decoration: none;
-  font-size: 12.5px;
+  font-size: 12px;
   font-weight: 700;
   display: flex;
   align-items: center;
@@ -11308,43 +11505,62 @@ body.modal-backdrop-blur-active .ds-root {
   transition: all 0.2s ease;
 }
 
-.btn-gift-whatsapp:hover {
+.gift-ticket-btn-wa:hover {
   transform: translateY(-1px);
-  color: #ffffff;
+  box-shadow: 0 6px 16px rgba(37, 211, 102, 0.32);
+  color: #fff;
 }
 
-.btn-gift-preview {
-  padding: 11px 14px;
+.gift-ticket-btn-preview {
+  padding: 10px 14px;
   border-radius: 10px;
-  background: #ffffff;
+  background: #fff;
   color: #db2777;
   border: 1.5px solid #fbcfe8;
   text-decoration: none;
-  font-size: 12.5px;
+  font-size: 12px;
   font-weight: 700;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
   transition: all 0.2s ease;
+  white-space: nowrap;
 }
 
-.btn-gift-preview:hover {
+.gift-ticket-btn-preview:hover {
   background: #fdf2f8;
   border-color: #ec4899;
 }
 
-.btn-gift-edit-link {
-  background: none;
-  border: none;
-  color: #9ca3af;
-  font-size: 11.5px;
-  font-weight: 600;
-  text-decoration: underline;
+.gift-ticket-btn-copy {
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: #f5f5f5;
+  border: 1.5px solid #e5e7eb;
+  color: #374151;
+  font-size: 12px;
+  font-weight: 700;
   cursor: pointer;
-  padding: 4px;
-  align-self: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+  white-space: nowrap;
 }
+
+.gift-ticket-btn-copy:hover {
+  background: #e5e7eb;
+}
+
+.gift-ticket-btn-copy.copied {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: #fff;
+  border-color: #10b981;
+}
+
+/* ── btn-gift-edit-link (shared) ── */
 
 /* ════════════════════════════════════════════
    INTERACTIVE GIFT RECIPIENT PAGE (/gift/[id])

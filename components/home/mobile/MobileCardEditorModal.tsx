@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import ModalPortal from '@/components/ui/ModalPortal';
 import { useDesign } from '@/context/DesignContext';
+import { useLanguage } from '@/context/LanguageContext';
 import './mobile-dashboard.css';
 
 interface Props {
@@ -23,7 +24,7 @@ interface Props {
   onClose: () => void;
 }
 
-const PRESET_MESSAGES = [
+const PRESET_MESSAGES_ID = [
   {
     title: 'Selamat Malam Sayang! 🌙💖',
     text: 'Selamat malam sayangku. Istirahat yang nyenyak ya, semoga mimpi indah ditemani harumnya bunga ini. Love you always!',
@@ -71,6 +72,54 @@ const PRESET_MESSAGES = [
   },
 ];
 
+const PRESET_MESSAGES_EN = [
+  {
+    title: 'Good Night, My Love! 🌙💖',
+    text: 'Good night my love. Rest well and have the sweetest dreams accompanied by these fragrant blooms. Love you always!',
+    label: 'Night 🌙',
+  },
+  {
+    title: 'Good Morning, My Love! ☀️🌸',
+    text: 'Good morning gorgeous! May your day be blessed with joy, smiles, and positivity. Have a wonderful day!',
+    label: 'Morning ☀️',
+  },
+  {
+    title: 'Good Afternoon, Sweetheart! 🌼✨',
+    text: 'Good afternoon sweetheart! Don’t forget to pause and have a good lunch. Sending virtual flowers & hugs!',
+    label: 'Afternoon 🌼',
+  },
+  {
+    title: 'Good Evening, Beloved! 🌅💐',
+    text: 'Good evening my love! Unwind today with the fresh scent of this special bouquet. Have a lovely evening.',
+    label: 'Evening 🌅',
+  },
+  {
+    title: 'Happy Birthday, My Love! 💖',
+    text: 'Happy birthday my love! May your special day be filled with endless happiness, laughter, and romance.',
+    label: 'Birthday 🎂',
+  },
+  {
+    title: 'Happy Graduation, Bestie! 🎓',
+    text: 'Congratulations on your graduation! All your hard work and late nights have paid off. So proud of you!',
+    label: 'Graduation 🎓',
+  },
+  {
+    title: 'Happy Anniversary, Darling! 💍',
+    text: 'Thank you for walking alongside me each and every day. I am so grateful to have you forever.',
+    label: 'Anniversary 💍',
+  },
+  {
+    title: 'I am Truly Sorry, My Love 🕊️',
+    text: 'From the bottom of my heart, please forgive my mistakes. These flowers are a token of my sincere love.',
+    label: 'Apology 🕊️',
+  },
+  {
+    title: 'Warmest Thank You 🌸',
+    text: 'Thank you so much for your unconditional kindness, support, and generosity.',
+    label: 'Thank You 🌸',
+  },
+];
+
 const FONT_OPTIONS = [
   { id: 'Montserrat', name: 'Montserrat', desc: 'Modern & Bersih' },
   { id: 'Playfair Display', name: 'Playfair', desc: 'Klasik & Elegan' },
@@ -87,9 +136,11 @@ const TEXT_COLORS = [
 
 export default function MobileCardEditorModal({ isOpen, onClose }: Props) {
   const { design, setText } = useDesign();
+  const { isEn } = useLanguage();
+  const presets = isEn ? PRESET_MESSAGES_EN : PRESET_MESSAGES_ID;
 
   const [activeTab, setActiveTab] = useState<'text' | 'font' | 'style'>('text');
-  const [content, setContent] = useState(design.text.content || PRESET_MESSAGES[0].text);
+  const [content, setContent] = useState(design.text.content || presets[0].text);
   const [font, setFont] = useState(design.text.font || 'Montserrat');
   const [fontSize, setFontSize] = useState<number>(design.text.size || 13);
   const [cardScale, setCardScale] = useState<number>(design.text.cardScale ?? 1.0);
@@ -98,7 +149,7 @@ export default function MobileCardEditorModal({ isOpen, onClose }: Props) {
 
   if (!isOpen) return null;
 
-  const handleApplyPreset = (p: typeof PRESET_MESSAGES[0]) => {
+  const handleApplyPreset = (p: typeof PRESET_MESSAGES_ID[0]) => {
     setContent(p.text);
     setText({ content: p.text });
   };
@@ -142,15 +193,19 @@ export default function MobileCardEditorModal({ isOpen, onClose }: Props) {
                 <Mail size={20} />
               </div>
               <div>
-                <h3 className="ms-title">Kartu Ucapan Buket</h3>
-                <p className="ms-subtitle">Tulis pesan, atur font, ukuran & gaya kartu</p>
+                <h3 className="ms-title">
+                  {isEn ? 'Bouquet Greeting Card' : 'Kartu Ucapan Buket'}
+                </h3>
+                <p className="ms-subtitle">
+                  {isEn ? 'Compose message, style font, size & card theme' : 'Tulis pesan, atur font, ukuran & gaya kartu'}
+                </p>
               </div>
             </div>
             <button
               type="button"
               onClick={onClose}
               className="ms-close-btn"
-              aria-label="Tutup"
+              aria-label={isEn ? 'Close' : 'Tutup'}
             >
               <X size={16} />
             </button>
@@ -182,7 +237,7 @@ export default function MobileCardEditorModal({ isOpen, onClose }: Props) {
                     textTransform: 'uppercase',
                   }}
                 >
-                  {cardStyle === 'elegant' ? '✦ Luxury Gold Foil' : 'Minimalis Klip'}
+                  {cardStyle === 'elegant' ? '✦ Luxury Gold Foil' : (isEn ? 'Minimalist Clip' : 'Minimalis Klip')}
                 </span>
                 <span style={{ fontSize: '10px', color: '#94A3B8' }}>
                   {font} • {fontSize}px • {Math.round(cardScale * 100)}%
@@ -202,7 +257,7 @@ export default function MobileCardEditorModal({ isOpen, onClose }: Props) {
                   fontStyle: font === 'Great Vibes' ? 'italic' : 'normal',
                 }}
               >
-                {content || 'Pesan kartu ucapan buket akan muncul di sini...'}
+                {content || (isEn ? 'Your bouquet card message will appear here...' : 'Pesan kartu ucapan buket akan muncul di sini...')}
               </p>
             </div>
 
@@ -214,7 +269,7 @@ export default function MobileCardEditorModal({ isOpen, onClose }: Props) {
                 onClick={() => setActiveTab('text')}
               >
                 <Mail size={13} />
-                <span>Pesan</span>
+                <span>{isEn ? 'Message' : 'Pesan'}</span>
               </button>
               <button
                 type="button"
@@ -222,7 +277,7 @@ export default function MobileCardEditorModal({ isOpen, onClose }: Props) {
                 onClick={() => setActiveTab('font')}
               >
                 <Type size={13} />
-                <span>Font & Ukuran</span>
+                <span>{isEn ? 'Font & Size' : 'Font & Ukuran'}</span>
               </button>
               <button
                 type="button"
@@ -230,7 +285,7 @@ export default function MobileCardEditorModal({ isOpen, onClose }: Props) {
                 onClick={() => setActiveTab('style')}
               >
                 <Palette size={13} />
-                <span>Gaya & Posisi</span>
+                <span>{isEn ? 'Style & Position' : 'Gaya & Posisi'}</span>
               </button>
             </div>
 
@@ -239,9 +294,11 @@ export default function MobileCardEditorModal({ isOpen, onClose }: Props) {
               <div>
                 {/* Quick Preset Pills */}
                 <div style={{ marginBottom: '14px' }}>
-                  <p className="ms-preset-title">Pilih Kalimat Rekomendasi</p>
+                  <p className="ms-preset-title">
+                    {isEn ? 'Choose Recommended Template' : 'Pilih Kalimat Rekomendasi'}
+                  </p>
                   <div className="ms-chip-row">
-                    {PRESET_MESSAGES.map((p, idx) => (
+                    {presets.map((p, idx) => (
                       <button
                         key={idx}
                         type="button"
@@ -256,7 +313,9 @@ export default function MobileCardEditorModal({ isOpen, onClose }: Props) {
 
                 {/* Textarea */}
                 <div style={{ marginBottom: '14px' }}>
-                  <p className="ms-preset-title">Isi Kalimat Ucapan</p>
+                  <p className="ms-preset-title">
+                    {isEn ? 'Card Message Content' : 'Isi Kalimat Ucapan'}
+                  </p>
                   <textarea
                     value={content}
                     onChange={(e) => {
@@ -265,12 +324,12 @@ export default function MobileCardEditorModal({ isOpen, onClose }: Props) {
                     }}
                     rows={4}
                     className="ms-card-textarea"
-                    placeholder="Tulis ucapan manismu di sini..."
+                    placeholder={isEn ? 'Type your heartfelt message here...' : 'Tulis ucapan manismu di sini...'}
                     maxLength={200}
                   />
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px', fontSize: '11px', color: '#94A3B8' }}>
-                    <span>*Otomatis dicetak pada kartu ucapan</span>
-                    <span>{content.length}/200 karakter</span>
+                    <span>{isEn ? '*Automatically printed on greeting card' : '*Otomatis dicetak pada kartu ucapan'}</span>
+                    <span>{content.length}/200 {isEn ? 'chars' : 'karakter'}</span>
                   </div>
                 </div>
               </div>
@@ -284,7 +343,7 @@ export default function MobileCardEditorModal({ isOpen, onClose }: Props) {
                   <div className="ms-control-header">
                     <span className="ms-control-title">
                       <Type size={14} style={{ color: '#4F46E5' }} />
-                      Ukuran Tulisan Kartu
+                      {isEn ? 'Card Font Size' : 'Ukuran Tulisan Kartu'}
                     </span>
                     <span className="ms-control-badge">{fontSize}px</span>
                   </div>
@@ -294,7 +353,7 @@ export default function MobileCardEditorModal({ isOpen, onClose }: Props) {
                       className="ms-stepper-btn"
                       onClick={() => handleFontSizeChange(-1)}
                       disabled={fontSize <= 10}
-                      title="Perkecil Font"
+                      title={isEn ? 'Decrease Font' : 'Perkecil Font'}
                     >
                       <Minus size={14} />
                     </button>
@@ -316,7 +375,7 @@ export default function MobileCardEditorModal({ isOpen, onClose }: Props) {
                       className="ms-stepper-btn"
                       onClick={() => handleFontSizeChange(1)}
                       disabled={fontSize >= 22}
-                      title="Perbesar Font"
+                      title={isEn ? 'Increase Font' : 'Perbesar Font'}
                     >
                       <Plus size={14} />
                     </button>
@@ -328,7 +387,7 @@ export default function MobileCardEditorModal({ isOpen, onClose }: Props) {
                   <div className="ms-control-header">
                     <span className="ms-control-title">
                       <Maximize2 size={14} style={{ color: '#059669' }} />
-                      Skala Ukuran Kartu
+                      {isEn ? 'Card Scale / Width' : 'Skala Ukuran Kartu'}
                     </span>
                     <span className="ms-control-badge" style={{ color: '#059669', background: '#ECFDF5' }}>
                       {Math.round(cardScale * 100)}%
@@ -340,7 +399,7 @@ export default function MobileCardEditorModal({ isOpen, onClose }: Props) {
                       className="ms-stepper-btn"
                       onClick={() => handleCardScaleChange(-0.05)}
                       disabled={cardScale <= 0.6}
-                      title="Perkecil Kartu"
+                      title={isEn ? 'Decrease Scale' : 'Perkecil Kartu'}
                     >
                       <Minus size={14} />
                     </button>
@@ -363,7 +422,7 @@ export default function MobileCardEditorModal({ isOpen, onClose }: Props) {
                       className="ms-stepper-btn"
                       onClick={() => handleCardScaleChange(0.05)}
                       disabled={cardScale >= 1.8}
-                      title="Perbesar Kartu"
+                      title={isEn ? 'Increase Scale' : 'Perbesar Kartu'}
                     >
                       <Plus size={14} />
                     </button>
@@ -372,7 +431,9 @@ export default function MobileCardEditorModal({ isOpen, onClose }: Props) {
 
                 {/* 3. Font Family Grid */}
                 <div style={{ marginBottom: '10px' }}>
-                  <p className="ms-preset-title">Pilih Jenis Huruf (Font)</p>
+                  <p className="ms-preset-title">
+                    {isEn ? 'Select Font Style' : 'Pilih Jenis Huruf (Font)'}
+                  </p>
                   <div className="ms-font-grid">
                     {FONT_OPTIONS.map((f) => {
                       const isSelected = font === f.id;
@@ -409,7 +470,9 @@ export default function MobileCardEditorModal({ isOpen, onClose }: Props) {
               <div>
                 {/* Card Visual Design */}
                 <div style={{ marginBottom: '14px' }}>
-                  <p className="ms-preset-title">Desain Kertas Kartu</p>
+                  <p className="ms-preset-title">
+                    {isEn ? 'Card Paper Theme' : 'Desain Kertas Kartu'}
+                  </p>
                   <div className="ms-card-style-grid">
                     <button
                       type="button"
@@ -419,9 +482,15 @@ export default function MobileCardEditorModal({ isOpen, onClose }: Props) {
                         setText({ cardStyle: 'simple' });
                       }}
                     >
-                      <span className="ms-card-style-pill ms-pill-simple">Minimalis</span>
-                      <div className="ms-card-style-name">Kartu Putih Klip</div>
-                      <div className="ms-card-style-desc">Kertas putih bersih dengan klip modern</div>
+                      <span className="ms-card-style-pill ms-pill-simple">
+                        {isEn ? 'Minimalist' : 'Minimalis'}
+                      </span>
+                      <div className="ms-card-style-name">
+                        {isEn ? 'Clean White Clip' : 'Kartu Putih Klip'}
+                      </div>
+                      <div className="ms-card-style-desc">
+                        {isEn ? 'Clean crisp white paper with sleek clip' : 'Kertas putih bersih dengan klip modern'}
+                      </div>
                     </button>
 
                     <button
@@ -433,15 +502,21 @@ export default function MobileCardEditorModal({ isOpen, onClose }: Props) {
                       }}
                     >
                       <span className="ms-card-style-pill ms-pill-gold">Luxury Gold</span>
-                      <div className="ms-card-style-name">Emas & Krem</div>
-                      <div className="ms-card-style-desc">Kertas linen krem & list emas ganda</div>
+                      <div className="ms-card-style-name">
+                        {isEn ? 'Gold & Cream' : 'Emas & Krem'}
+                      </div>
+                      <div className="ms-card-style-desc">
+                        {isEn ? 'Linen cream paper with double gold trim' : 'Kertas linen krem & list emas ganda'}
+                      </div>
                     </button>
                   </div>
                 </div>
 
                 {/* Text Color Swatches */}
                 <div style={{ marginBottom: '14px' }}>
-                  <p className="ms-preset-title">Warna Tulisan</p>
+                  <p className="ms-preset-title">
+                    {isEn ? 'Text Color' : 'Warna Tulisan'}
+                  </p>
                   <div className="ms-color-row">
                     {TEXT_COLORS.map((c) => (
                       <button
@@ -463,53 +538,55 @@ export default function MobileCardEditorModal({ isOpen, onClose }: Props) {
 
                 {/* Position Shortcuts */}
                 <div style={{ marginBottom: '10px' }}>
-                  <p className="ms-preset-title">Pintasan Posisi Kartu</p>
+                  <p className="ms-preset-title">
+                    {isEn ? 'Card Placement Shortcuts' : 'Pintasan Posisi Kartu'}
+                  </p>
                   <div className="ms-pos-grid">
                     <button
                       type="button"
                       className="ms-pos-btn"
                       onClick={() => handleQuickPosition(300, 495)}
                     >
-                      ⬇️ Bawah (Pita)
+                      {isEn ? '⬇️ Bottom (Ribbon)' : '⬇️ Bawah (Pita)'}
                     </button>
                     <button
                       type="button"
                       className="ms-pos-btn"
                       onClick={() => handleQuickPosition(300, 110)}
                     >
-                      ⬆️ Atas
+                      {isEn ? '⬆️ Top' : '⬆️ Atas'}
                     </button>
                     <button
                       type="button"
                       className="ms-pos-btn"
                       onClick={() => handleQuickPosition(145, 160)}
                     >
-                      ↖️ Kiri Atas
+                      {isEn ? '↖️ Top Left' : '↖️ Kiri Atas'}
                     </button>
                     <button
                       type="button"
                       className="ms-pos-btn"
                       onClick={() => handleQuickPosition(455, 160)}
                     >
-                      ↗️ Kanan Atas
+                      {isEn ? '↗️ Top Right' : '↗️ Kanan Atas'}
                     </button>
                     <button
                       type="button"
                       className="ms-pos-btn"
                       onClick={() => handleQuickPosition(300, 300)}
                     >
-                      🎯 Tengah
+                      {isEn ? '🎯 Center' : '🎯 Tengah'}
                     </button>
                     <button
                       type="button"
                       className="ms-pos-btn"
                       onClick={() => handleQuickPosition(300, 495)}
                     >
-                      <RotateCcw size={12} /> Reset
+                      <RotateCcw size={12} /> {isEn ? 'Reset' : 'Reset'}
                     </button>
                   </div>
                   <p style={{ marginTop: '8px', fontSize: '11px', color: '#94A3B8' }}>
-                    💡 Kartu juga bisa Anda geser langsung (drag & drop) di area kanvas editor!
+                    {isEn ? '💡 You can also drag & drop the card directly on the canvas!' : '💡 Kartu juga bisa Anda geser langsung (drag & drop) di area kanvas editor!'}
                   </p>
                 </div>
               </div>
@@ -525,7 +602,7 @@ export default function MobileCardEditorModal({ isOpen, onClose }: Props) {
               style={{ background: '#D97706', boxShadow: '0 4px 14px rgba(217, 119, 6, 0.28)' }}
             >
               <Check size={16} />
-              <span>Simpan & Pasang Kartu</span>
+              <span>{isEn ? 'Save & Attach Card' : 'Simpan & Pasang Kartu'}</span>
             </button>
           </div>
         </div>

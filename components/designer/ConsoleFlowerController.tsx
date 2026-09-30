@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { useDesign } from '@/context/DesignContext';
+import { useLanguage } from '@/context/LanguageContext';
 import { FLOWERS } from '@/data/flowers';
 import { consoleAudio } from '@/utils/consoleAudio';
 import {
@@ -26,6 +27,7 @@ interface ConsoleFlowerControllerProps {
 }
 
 export default function ConsoleFlowerController({ onSoundTrigger }: ConsoleFlowerControllerProps) {
+  const { isEn } = useLanguage();
   const {
     design,
     selectedFlowerUid,
@@ -109,10 +111,10 @@ export default function ConsoleFlowerController({ onSoundTrigger }: ConsoleFlowe
         </div>
         {selectedFlower ? (
           <span className="text-[11px] font-semibold text-cyan-300 bg-cyan-950/60 px-2 py-0.5 rounded-full border border-cyan-500/30 truncate max-w-[130px]">
-            {selectedDef?.emoji || '🌸'} {selectedDef?.name || 'Bunga'}
+            {selectedDef?.emoji || '🌸'} {selectedDef?.name || (isEn ? 'Flower' : 'Bunga')}
           </span>
         ) : (
-          <span className="text-[10px] text-slate-400">Belum Ada Seleksi</span>
+          <span className="text-[10px] text-slate-400">{isEn ? 'No Selection' : 'Belum Ada Seleksi'}</span>
         )}
       </div>
 
@@ -121,16 +123,20 @@ export default function ConsoleFlowerController({ onSoundTrigger }: ConsoleFlowe
           <div className="console-idle-icon-wrap">
             <Sparkles size={20} className="text-cyan-400/80 animate-pulse" />
           </div>
-          <p className="text-xs font-medium text-slate-300">Pilih Bunga di Kanvas</p>
+          <p className="text-xs font-medium text-slate-300">
+            {isEn ? 'Select Flower on Canvas' : 'Pilih Bunga di Kanvas'}
+          </p>
           <p className="text-[11px] text-slate-400 leading-relaxed text-center px-4">
-            Klik bunga pada kanvas atau daftar di bawah untuk membuka kontrol D-Pad, rotasi halus, dan skala milimeter.
+            {isEn
+              ? 'Click any flower on the canvas or the list below to adjust D-Pad position, rotation, and scale.'
+              : 'Klik bunga pada kanvas atau daftar di bawah untuk membuka kontrol D-Pad, rotasi halus, dan skala milimeter.'}
           </p>
 
           {/* Quick Flower Selector Carousel */}
           {design.selectedFlowers.length > 0 && (
             <div className="console-quick-flowers-strip">
               <span className="text-[10px] text-slate-400 uppercase tracking-wider block mb-1">
-                Pilih Cepat:
+                {isEn ? 'Quick Select:' : 'Pilih Cepat:'}
               </span>
               <div className="flex items-center gap-1.5 overflow-x-auto py-1 max-w-full scrollbar-none">
                 {design.selectedFlowers.map((f, i) => {
@@ -165,8 +171,8 @@ export default function ConsoleFlowerController({ onSoundTrigger }: ConsoleFlowe
                 type="button"
                 className="dpad-btn dpad-up"
                 onClick={() => handleNudge(0, -6)}
-                title="Geser Bunga ke Atas"
-                aria-label="Geser ke Atas"
+                title={isEn ? 'Nudge Up' : 'Geser Bunga ke Atas'}
+                aria-label={isEn ? 'Nudge Up' : 'Geser ke Atas'}
               >
                 <ChevronUp size={16} />
               </button>
@@ -174,8 +180,8 @@ export default function ConsoleFlowerController({ onSoundTrigger }: ConsoleFlowe
                 type="button"
                 className="dpad-btn dpad-left"
                 onClick={() => handleNudge(-6, 0)}
-                title="Geser Bunga ke Kiri"
-                aria-label="Geser ke Kiri"
+                title={isEn ? 'Nudge Left' : 'Geser Bunga ke Kiri'}
+                aria-label={isEn ? 'Nudge Left' : 'Geser ke Kiri'}
               >
                 <ChevronLeft size={16} />
               </button>
@@ -186,8 +192,8 @@ export default function ConsoleFlowerController({ onSoundTrigger }: ConsoleFlowe
                 type="button"
                 className="dpad-btn dpad-right"
                 onClick={() => handleNudge(6, 0)}
-                title="Geser Bunga ke Kanan"
-                aria-label="Geser ke Kanan"
+                title={isEn ? 'Nudge Right' : 'Geser Bunga ke Kanan'}
+                aria-label={isEn ? 'Nudge Right' : 'Geser ke Kanan'}
               >
                 <ChevronRight size={16} />
               </button>
@@ -195,8 +201,8 @@ export default function ConsoleFlowerController({ onSoundTrigger }: ConsoleFlowe
                 type="button"
                 className="dpad-btn dpad-down"
                 onClick={() => handleNudge(0, 6)}
-                title="Geser Bunga ke Bawah"
-                aria-label="Geser ke Bawah"
+                title={isEn ? 'Nudge Down' : 'Geser Bunga ke Bawah'}
+                aria-label={isEn ? 'Nudge Down' : 'Geser ke Bawah'}
               >
                 <ChevronDown size={16} />
               </button>
@@ -212,10 +218,10 @@ export default function ConsoleFlowerController({ onSoundTrigger }: ConsoleFlowe
                     playFx('switch');
                     changeFlowerLayer(selectedFlower.uid, 'up');
                   }}
-                  title="Naikkan Lapisan (Maju ke Depan)"
+                  title={isEn ? 'Bring Layer Forward' : 'Naikkan Lapisan (Maju ke Depan)'}
                 >
                   <ArrowUpToLine size={13} />
-                  <span>Maju</span>
+                  <span>{isEn ? 'Forward' : 'Maju'}</span>
                 </button>
                 <button
                   type="button"
@@ -224,10 +230,10 @@ export default function ConsoleFlowerController({ onSoundTrigger }: ConsoleFlowe
                     playFx('switch');
                     changeFlowerLayer(selectedFlower.uid, 'down');
                   }}
-                  title="Turunkan Lapisan (Mundur ke Belakang)"
+                  title={isEn ? 'Send Layer Backward' : 'Turunkan Lapisan (Mundur ke Belakang)'}
                 >
                   <ArrowDownToLine size={13} />
-                  <span>Mundur</span>
+                  <span>{isEn ? 'Back' : 'Mundur'}</span>
                 </button>
               </div>
 
@@ -239,10 +245,10 @@ export default function ConsoleFlowerController({ onSoundTrigger }: ConsoleFlowe
                     playFx('click');
                     duplicateFlower(selectedFlower.uid);
                   }}
-                  title="Gandakan Bunga Ini"
+                  title={isEn ? 'Duplicate Flower' : 'Gandakan Bunga Ini'}
                 >
                   <Copy size={13} />
-                  <span>Duplikat</span>
+                  <span>{isEn ? 'Clone' : 'Duplikat'}</span>
                 </button>
                 <button
                   type="button"
@@ -251,10 +257,10 @@ export default function ConsoleFlowerController({ onSoundTrigger }: ConsoleFlowe
                     playFx('snip');
                     removeFlowerByUid(selectedFlower.uid);
                   }}
-                  title="Hapus Bunga Ini dari Buket"
+                  title={isEn ? 'Delete Flower' : 'Hapus Bunga Ini dari Buket'}
                 >
                   <Trash2 size={13} />
-                  <span>Hapus</span>
+                  <span>{isEn ? 'Delete' : 'Hapus'}</span>
                 </button>
               </div>
 
@@ -266,10 +272,14 @@ export default function ConsoleFlowerController({ onSoundTrigger }: ConsoleFlowe
                   playFx('switch');
                   toggleFlowerLayer(selectedFlower.uid);
                 }}
-                title="Pindahkan bunga antara di dalam atau di depan kantung buket"
+                title={isEn ? 'Toggle position: Inside wrap or in front of ribbon' : 'Pindahkan bunga antara di dalam atau di depan kantung buket'}
               >
                 <Layers size={13} />
-                <span>{selectedFlower.layer === 'front' ? 'Di Depan Pita' : 'Di Dalam Kantung'}</span>
+                <span>
+                  {selectedFlower.layer === 'front' 
+                    ? (isEn ? 'In Front' : 'Di Depan Pita') 
+                    : (isEn ? 'Inside Pocket' : 'Di Dalam Kantung')}
+                </span>
               </button>
             </div>
           </div>
@@ -281,7 +291,7 @@ export default function ConsoleFlowerController({ onSoundTrigger }: ConsoleFlowe
               <div className="flex items-center justify-between text-[11px] text-slate-300">
                 <span className="flex items-center gap-1">
                   <RotateCw size={12} className="text-cyan-400" />
-                  <span>Rotasi:</span>
+                  <span>{isEn ? 'Rotation:' : 'Rotasi:'}</span>
                 </span>
                 <span className="font-mono text-cyan-300 font-bold">{currentDeg}°</span>
               </div>
@@ -290,7 +300,7 @@ export default function ConsoleFlowerController({ onSoundTrigger }: ConsoleFlowe
                   type="button"
                   className="console-slider-step-btn"
                   onClick={() => handleRotate(-15)}
-                  title="Putar Berlawanan Jarum Jam -15°"
+                  title={isEn ? 'Rotate Counter-Clockwise -15°' : 'Putar Berlawanan Jarum Jam -15°'}
                 >
                   <RotateCcw size={12} />
                 </button>
@@ -306,7 +316,7 @@ export default function ConsoleFlowerController({ onSoundTrigger }: ConsoleFlowe
                   type="button"
                   className="console-slider-step-btn"
                   onClick={() => handleRotate(15)}
-                  title="Putar Searah Jarum Jam +15°"
+                  title={isEn ? 'Rotate Clockwise +15°' : 'Putar Searah Jarum Jam +15°'}
                 >
                   <RotateCw size={12} />
                 </button>
@@ -318,7 +328,7 @@ export default function ConsoleFlowerController({ onSoundTrigger }: ConsoleFlowe
               <div className="flex items-center justify-between text-[11px] text-slate-300">
                 <span className="flex items-center gap-1">
                   <Maximize2 size={12} className="text-cyan-400" />
-                  <span>Ukuran / Skala:</span>
+                  <span>{isEn ? 'Size / Scale:' : 'Ukuran / Skala:'}</span>
                 </span>
                 <span className="font-mono text-cyan-300 font-bold">{Math.round((currentScale / 60) * 100)}%</span>
               </div>
@@ -327,7 +337,7 @@ export default function ConsoleFlowerController({ onSoundTrigger }: ConsoleFlowe
                   type="button"
                   className="console-slider-step-btn"
                   onClick={() => handleScaleChange(0.9)}
-                  title="Perkecil Ukuran"
+                  title={isEn ? 'Scale Down' : 'Perkecil Ukuran'}
                 >
                   -
                 </button>
@@ -343,7 +353,7 @@ export default function ConsoleFlowerController({ onSoundTrigger }: ConsoleFlowe
                   type="button"
                   className="console-slider-step-btn"
                   onClick={() => handleScaleChange(1.1)}
-                  title="Perbesar Ukuran"
+                  title={isEn ? 'Scale Up' : 'Perbesar Ukuran'}
                 >
                   +
                 </button>

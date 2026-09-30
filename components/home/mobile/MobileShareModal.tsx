@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import ModalPortal from '@/components/ui/ModalPortal';
 import { useDesign } from '@/context/DesignContext';
+import { useLanguage } from '@/context/LanguageContext';
 import { getBucketSize } from '@/data/buckets';
 import { downloadDesign } from '@/utils/downloadUtils';
 import './mobile-dashboard.css';
@@ -30,14 +31,16 @@ interface Props {
 }
 
 const MUSIC_OPTIONS = [
-  { id: 'romantic-piano', label: '🎹 Romantic Piano', desc: 'Melodi lembut & puitis' },
-  { id: 'acoustic-love', label: '🎸 Acoustic Love', desc: 'Hangat & manis romantis' },
-  { id: 'happy-birthday', label: '🎂 Ulang Tahun Ceria', desc: 'Perayaan & kebahagiaan' },
-  { id: 'lofi-chill', label: '☕ Lofi Aesthetic', desc: 'Santai & menenangkan' },
+  { id: 'romantic-piano', label: '🎹 Romantic Piano', desc: 'Melodi lembut & puitis', descEn: 'Soft & poetic melody' },
+  { id: 'acoustic-love', label: '🎸 Acoustic Love', desc: 'Hangat & manis romantis', descEn: 'Warm & sweet acoustic' },
+  { id: 'happy-birthday', label: '🎂 Happy Birthday', desc: 'Perayaan & kebahagiaan', descEn: 'Joyful celebration & cheers' },
+  { id: 'lofi-chill', label: '☕ Lofi Aesthetic', desc: 'Santai & menenangkan', descEn: 'Relaxing & calming vibes' },
 ];
 
 export default function MobileShareModal({ isOpen, onClose, canvasRef }: Props) {
   const { design } = useDesign();
+  const { language } = useLanguage();
+  const isEn = language === 'en';
 
   const [activeTab, setActiveTab] = useState<'gift' | 'download' | 'whatsapp'>('gift');
 
@@ -79,8 +82,8 @@ export default function MobileShareModal({ isOpen, onClose, canvasRef }: Props) 
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          senderName: senderName.trim() || 'Seseorang yang Mengagumimu',
-          recipientName: recipientName.trim() || 'Untukmu',
+          senderName: senderName.trim() || (isEn ? 'Someone who admires you' : 'Seseorang yang Mengagumimu'),
+          recipientName: recipientName.trim() || (isEn ? 'For You' : 'Untukmu'),
           message: personalMessage.trim() || cardMessage,
           musicTrack,
           designData: design,
@@ -93,10 +96,10 @@ export default function MobileShareModal({ isOpen, onClose, canvasRef }: Props) 
         setGiftShareUrl(fullUrl);
         setGiftId(data.id);
       } else {
-        setGiftError(data.message || 'Gagal membuat kado digital.');
+        setGiftError(data.message || (isEn ? 'Failed to create digital gift.' : 'Gagal membuat kado digital.'));
       }
     } catch {
-      setGiftError('Terjadi kesalahan koneksi saat membuat link kado.');
+      setGiftError(isEn ? 'Connection error occurred while creating gift link.' : 'Terjadi kesalahan koneksi saat membuat link kado.');
     } finally {
       setIsCreatingGift(false);
     }
@@ -110,7 +113,9 @@ export default function MobileShareModal({ isOpen, onClose, canvasRef }: Props) 
   };
 
   const giftWaText = encodeURIComponent(
-    `Hai ${recipientName ? recipientName : 'kamu'}! 🌸 Aku baru saja merangkai buket bunga digital spesial khusus buat kamu di Studio Laysa.\n\nBuka amplop surat & lihat buketnya di link ini ya:\n${giftShareUrl}`
+    isEn
+      ? `Hi ${recipientName ? recipientName : 'there'}! 🌸 I just designed a special virtual flower bouquet for you at Studio Laysa.\n\nOpen your virtual envelope & view your bouquet here:\n${giftShareUrl}`
+      : `Hai ${recipientName ? recipientName : 'kamu'}! 🌸 Aku baru saja merangkai buket bunga digital spesial khusus buat kamu di Studio Laysa.\n\nBuka amplop surat & lihat buketnya di link ini ya:\n${giftShareUrl}`
   );
 
   // 2. Download Image Handler
@@ -126,12 +131,17 @@ export default function MobileShareModal({ isOpen, onClose, canvasRef }: Props) 
   };
 
   // 3. Simple WA Text Share
-  const summaryShareText =
-    `🌸 *Bucket Bunga Laysa — Rangkaian Virtual*\n\n` +
-    `✨ *Model:* ${currentBucket.label}\n` +
-    `🌹 *Kapasitas:* ${targetCount} Bunga (${flowerCount} terpasang)\n` +
-    `💌 *Pesan Kartu:* "${cardMessage}"\n\n` +
-    `Rancang buket custom impianmu secara gratis di: ${typeof window !== 'undefined' ? window.location.origin : 'https://bucketbunga-laysa.vercel.app'}`;
+  const summaryShareText = isEn
+    ? `🌸 *Laysa Bouquet — Virtual Arrangement*\n\n` +
+      `✨ *Style:* ${currentBucket.label}\n` +
+      `🌹 *Capacity:* ${targetCount} Flowers (${flowerCount} arranged)\n` +
+      `💌 *Card Message:* "${cardMessage}"\n\n` +
+      `Design your dream custom bouquet for free at: ${typeof window !== 'undefined' ? window.location.origin : 'https://bucketbunga-laysa.vercel.app'}`
+    : `🌸 *Bucket Bunga Laysa — Rangkaian Virtual*\n\n` +
+      `✨ *Model:* ${currentBucket.label}\n` +
+      `🌹 *Kapasitas:* ${targetCount} Bunga (${flowerCount} terpasang)\n` +
+      `💌 *Pesan Kartu:* "${cardMessage}"\n\n` +
+      `Rancang buket custom impianmu secara gratis di: ${typeof window !== 'undefined' ? window.location.origin : 'https://bucketbunga-laysa.vercel.app'}`;
 
   const handleSendWA = () => {
     const encoded = encodeURIComponent(summaryShareText);
@@ -155,15 +165,15 @@ export default function MobileShareModal({ isOpen, onClose, canvasRef }: Props) 
                 <Share2 size={20} />
               </div>
               <div>
-                <h3 className="ms-title">Kirim & Unduh Buket</h3>
-                <p className="ms-subtitle">Buat link kado berlagu, unduh HD, atau kirim WA</p>
+                <h3 className="ms-title">{isEn ? 'Share & Download Bouquet' : 'Kirim & Unduh Buket'}</h3>
+                <p className="ms-subtitle">{isEn ? 'Create musical gift link, download HD, or share via WA' : 'Buat link kado berlagu, unduh HD, atau kirim WA'}</p>
               </div>
             </div>
             <button
               type="button"
               onClick={onClose}
               className="ms-close-btn"
-              aria-label="Tutup"
+              aria-label={isEn ? 'Close' : 'Tutup'}
             >
               <X size={16} />
             </button>
@@ -178,7 +188,7 @@ export default function MobileShareModal({ isOpen, onClose, canvasRef }: Props) 
                 onClick={() => setActiveTab('gift')}
               >
                 <Gift size={13} />
-                <span>Buat Link & Lagu</span>
+                <span>{isEn ? 'Gift Link & Song' : 'Buat Link & Lagu'}</span>
               </button>
               <button
                 type="button"
@@ -186,7 +196,7 @@ export default function MobileShareModal({ isOpen, onClose, canvasRef }: Props) 
                 onClick={() => setActiveTab('download')}
               >
                 <Download size={13} />
-                <span>Unduh Gambar</span>
+                <span>{isEn ? 'Download Image' : 'Unduh Gambar'}</span>
               </button>
               <button
                 type="button"
@@ -194,7 +204,7 @@ export default function MobileShareModal({ isOpen, onClose, canvasRef }: Props) 
                 onClick={() => setActiveTab('whatsapp')}
               >
                 <MessageCircle size={13} />
-                <span>Teks WA</span>
+                <span>{isEn ? 'WA Text' : 'Teks WA'}</span>
               </button>
             </div>
 
@@ -205,16 +215,20 @@ export default function MobileShareModal({ isOpen, onClose, canvasRef }: Props) 
                   <form onSubmit={handleCreateDigitalGift}>
                     <div style={{ marginBottom: '12px', background: '#F8FAFC', borderRadius: '14px', padding: '10px 12px', border: '1px solid #E2E8F0' }}>
                       <p style={{ fontSize: '11px', color: '#475569', margin: 0, lineHeight: 1.4 }}>
-                        ✨ <strong>Kado Digital Interaktif:</strong> Penerima akan membuka amplop surat virtual yang diiringi musik pilihanmu dan animasi buket mekar!
+                        {isEn ? (
+                          <>✨ <strong>Interactive Digital Gift:</strong> The recipient opens an animated virtual envelope with background music and blooming bouquets!</>
+                        ) : (
+                          <>✨ <strong>Kado Digital Interaktif:</strong> Penerima akan membuka amplop surat virtual yang diiringi musik pilihanmu dan animasi buket mekar!</>
+                        )}
                       </p>
                     </div>
 
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px', marginBottom: '10px' }}>
                       <div>
-                        <label className="ms-form-label">Nama Kamu</label>
+                        <label className="ms-form-label">{isEn ? 'Your Name' : 'Nama Kamu'}</label>
                         <input
                           type="text"
-                          placeholder="Cth: Nadia"
+                          placeholder={isEn ? 'Ex: Sarah' : 'Cth: Nadia'}
                           value={senderName}
                           onChange={(e) => setSenderName(e.target.value)}
                           className="ms-input"
@@ -222,10 +236,10 @@ export default function MobileShareModal({ isOpen, onClose, canvasRef }: Props) 
                         />
                       </div>
                       <div>
-                        <label className="ms-form-label">Nama Penerima</label>
+                        <label className="ms-form-label">{isEn ? 'Recipient Name' : 'Nama Penerima'}</label>
                         <input
                           type="text"
-                          placeholder="Cth: Farhan"
+                          placeholder={isEn ? 'Ex: David' : 'Cth: Farhan'}
                           value={recipientName}
                           onChange={(e) => setRecipientName(e.target.value)}
                           className="ms-input"
@@ -235,13 +249,13 @@ export default function MobileShareModal({ isOpen, onClose, canvasRef }: Props) 
                     </div>
 
                     <div className="ms-form-field">
-                      <label className="ms-form-label">Pesan / Ucapan Spesial</label>
+                      <label className="ms-form-label">{isEn ? 'Personal Message / Wishes' : 'Pesan / Ucapan Spesial'}</label>
                       <textarea
                         rows={3}
                         value={personalMessage}
                         onChange={(e) => setPersonalMessage(e.target.value)}
                         className="ms-textarea"
-                        placeholder="Tulis ucapan personal..."
+                        placeholder={isEn ? 'Write your personal wishes...' : 'Tulis ucapan personal...'}
                         maxLength={350}
                       />
                     </div>
@@ -250,7 +264,7 @@ export default function MobileShareModal({ isOpen, onClose, canvasRef }: Props) 
                     <div className="ms-form-field">
                       <label className="ms-form-label">
                         <Music size={13} style={{ color: '#7C3AED' }} />
-                        <span>Pilih Lagu Musik Pengiring</span>
+                        <span>{isEn ? 'Choose Background Music Track' : 'Pilih Lagu Musik Pengiring'}</span>
                       </label>
                       <div className="ms-music-grid">
                         {MUSIC_OPTIONS.map((m) => {
@@ -263,7 +277,7 @@ export default function MobileShareModal({ isOpen, onClose, canvasRef }: Props) 
                               onClick={() => setMusicTrack(m.id)}
                             >
                               <span className="ms-music-title">{m.label}</span>
-                              <span className="ms-music-desc">{m.desc}</span>
+                              <span className="ms-music-desc">{isEn ? m.descEn : m.desc}</span>
                             </button>
                           );
                         })}
@@ -289,12 +303,12 @@ export default function MobileShareModal({ isOpen, onClose, canvasRef }: Props) 
                       {isCreatingGift ? (
                         <>
                           <span className="spinner" />
-                          <span>Menyiapkan Link Kado...</span>
+                          <span>{isEn ? 'Preparing Gift Link...' : 'Menyiapkan Link Kado...'}</span>
                         </>
                       ) : (
                         <>
                           <Send size={15} />
-                          <span>Buat Link Hadiah Digital</span>
+                          <span>{isEn ? 'Generate Digital Gift Link' : 'Buat Link Hadiah Digital'}</span>
                         </>
                       )}
                     </button>
@@ -308,10 +322,14 @@ export default function MobileShareModal({ isOpen, onClose, canvasRef }: Props) 
                       </div>
                       <div>
                         <h4 style={{ margin: 0, fontSize: '13.5px', fontWeight: 800, color: '#1E293B' }}>
-                          Link Kado Siap Dikirim! 🎉
+                          {isEn ? 'Gift Link is Ready! 🎉' : 'Link Kado Siap Dikirim! 🎉'}
                         </h4>
                         <p style={{ margin: '2px 0 0', fontSize: '11px', color: '#64748B' }}>
-                          Khusus untuk <strong>{recipientName || 'penerima'}</strong> dengan lagu {MUSIC_OPTIONS.find(m => m.id === musicTrack)?.label.split(' ')[1] || 'spesial'}.
+                          {isEn ? (
+                            <>Special for <strong>{recipientName || 'recipient'}</strong> with {MUSIC_OPTIONS.find(m => m.id === musicTrack)?.label.split(' ')[1] || 'special'} soundtrack.</>
+                          ) : (
+                            <>Khusus untuk <strong>{recipientName || 'penerima'}</strong> dengan lagu {MUSIC_OPTIONS.find(m => m.id === musicTrack)?.label.split(' ')[1] || 'spesial'}.</>
+                          )}
                         </p>
                       </div>
                     </div>
@@ -331,7 +349,7 @@ export default function MobileShareModal({ isOpen, onClose, canvasRef }: Props) 
                         onClick={handleCopyGiftLink}
                       >
                         {isCopiedGift ? <Check size={14} /> : <Copy size={14} />}
-                        <span>{isCopiedGift ? 'Tersalin!' : 'Salin'}</span>
+                        <span>{isCopiedGift ? (isEn ? 'Copied!' : 'Tersalin!') : (isEn ? 'Copy' : 'Salin')}</span>
                       </button>
                     </div>
 
@@ -357,7 +375,7 @@ export default function MobileShareModal({ isOpen, onClose, canvasRef }: Props) 
                         }}
                       >
                         <MessageCircle size={16} />
-                        <span>Kirim Link via WhatsApp</span>
+                        <span>{isEn ? 'Send Link via WhatsApp' : 'Kirim Link via WhatsApp'}</span>
                       </a>
 
                       <a
@@ -380,7 +398,7 @@ export default function MobileShareModal({ isOpen, onClose, canvasRef }: Props) 
                         }}
                       >
                         <ExternalLink size={15} />
-                        <span>Buka Pratinjau Kado</span>
+                        <span>{isEn ? 'Open Gift Preview' : 'Buka Pratinjau Kado'}</span>
                       </a>
                     </div>
 
@@ -398,7 +416,7 @@ export default function MobileShareModal({ isOpen, onClose, canvasRef }: Props) 
                         marginTop: '4px',
                       }}
                     >
-                      Ubah Pesan / Buat Link Baru
+                      {isEn ? 'Edit Message / Create New Link' : 'Ubah Pesan / Buat Link Baru'}
                     </button>
                   </div>
                 )}
@@ -408,7 +426,7 @@ export default function MobileShareModal({ isOpen, onClose, canvasRef }: Props) 
             {/* ─── TAB 2: UNDUH GAMBAR BUKET (PNG / JPG) ─── */}
             {activeTab === 'download' && (
               <div>
-                <p className="ms-preset-title">Pilih Format Gambar Unduhan</p>
+                <p className="ms-preset-title">{isEn ? 'Select Image Download Format' : 'Pilih Format Gambar Unduhan'}</p>
                 <div className="ms-format-grid">
                   <button
                     type="button"
@@ -416,10 +434,10 @@ export default function MobileShareModal({ isOpen, onClose, canvasRef }: Props) 
                     onClick={() => setFormat('png')}
                   >
                     <div className="ms-format-title">
-                      <span>PNG Transparan</span>
+                      <span>{isEn ? 'Transparent PNG' : 'PNG Transparan'}</span>
                       {format === 'png' && <CheckCircle size={15} />}
                     </div>
-                    <span className="ms-format-desc">Latar transparan, kualitas HD murni jernih</span>
+                    <span className="ms-format-desc">{isEn ? 'Transparent background, pure crisp HD quality' : 'Latar transparan, kualitas HD murni jernih'}</span>
                   </button>
 
                   <button
@@ -428,25 +446,25 @@ export default function MobileShareModal({ isOpen, onClose, canvasRef }: Props) 
                     onClick={() => setFormat('jpg')}
                   >
                     <div className="ms-format-title">
-                      <span>JPG Bersih</span>
+                      <span>{isEn ? 'Clean JPG' : 'JPG Bersih'}</span>
                       {format === 'jpg' && <CheckCircle size={15} />}
                     </div>
-                    <span className="ms-format-desc">Latar warna studio, ukuran file ringan</span>
+                    <span className="ms-format-desc">{isEn ? 'Studio backdrop color, lightweight file size' : 'Latar warna studio, ukuran file ringan'}</span>
                   </button>
                 </div>
 
                 {/* File spec card */}
                 <div style={{ background: '#F8FAFC', borderRadius: '14px', padding: '12px', border: '1px solid #E2E8F0', marginBottom: '14px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11.5px', marginBottom: '6px' }}>
-                    <span style={{ color: '#64748B' }}>Resolusi Kanvas:</span>
+                    <span style={{ color: '#64748B' }}>{isEn ? 'Canvas Resolution:' : 'Resolusi Kanvas:'}</span>
                     <strong style={{ color: '#1E293B' }}>600 × 600px (1:1 HD)</strong>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11.5px', marginBottom: '6px' }}>
-                    <span style={{ color: '#64748B' }}>Format File:</span>
+                    <span style={{ color: '#64748B' }}>{isEn ? 'File Format:' : 'Format File:'}</span>
                     <strong style={{ color: '#1E293B' }}>{format.toUpperCase()} Image</strong>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11.5px' }}>
-                    <span style={{ color: '#64748B' }}>Kualitas Gambar:</span>
+                    <span style={{ color: '#64748B' }}>{isEn ? 'Image Quality:' : 'Kualitas Gambar:'}</span>
                     <strong style={{ color: '#059669' }}>Ultra High (Lossless)</strong>
                   </div>
                 </div>
@@ -465,26 +483,26 @@ export default function MobileShareModal({ isOpen, onClose, canvasRef }: Props) 
                   {downloadStatus === 'idle' && (
                     <>
                       <Download size={16} />
-                      <span>Unduh Desain Buket ({format.toUpperCase()})</span>
+                      <span>{isEn ? `Download Bouquet (${format.toUpperCase()})` : `Unduh Desain Buket (${format.toUpperCase()})`}</span>
                     </>
                   )}
                   {downloadStatus === 'downloading' && (
                     <>
                       <span className="spinner" />
-                      <span>Menyiapkan File Gambar HD...</span>
+                      <span>{isEn ? 'Preparing HD Image File...' : 'Menyiapkan File Gambar HD...'}</span>
                     </>
                   )}
                   {downloadStatus === 'done' && (
                     <>
                       <CheckCircle size={16} />
-                      <span>Berhasil Diunduh! ✓</span>
+                      <span>{isEn ? 'Downloaded Successfully! ✓' : 'Berhasil Diunduh! ✓'}</span>
                     </>
                   )}
                 </button>
 
                 {downloadStatus === 'done' && (
                   <div style={{ marginTop: '10px', padding: '10px', background: '#ECFDF5', border: '1px solid #A7F3D0', borderRadius: '12px', fontSize: '11px', color: '#065F46', textAlign: 'center' }}>
-                    🎉 File buket bunga berhasil disimpan ke perangkat ponsel Anda!
+                    {isEn ? '🎉 Bouquet artwork successfully saved to your device!' : '🎉 File buket bunga berhasil disimpan ke perangkat ponsel Anda!'}
                   </div>
                 )}
               </div>
@@ -499,16 +517,20 @@ export default function MobileShareModal({ isOpen, onClose, canvasRef }: Props) 
                       #LAYSA-BUKET-CUSTOM
                     </span>
                     <span style={{ borderRadius: '9999px', background: '#ECFDF5', padding: '2px 8px', fontSize: '10px', fontWeight: 800, color: '#059669' }}>
-                      Siap Dikirim
+                      {isEn ? 'Ready to Send' : 'Siap Dikirim'}
                     </span>
                   </div>
                   <h4 style={{ marginTop: '6px', fontSize: '13.5px', fontWeight: 900, color: '#1E293B' }}>{currentBucket.label}</h4>
                   <p style={{ marginTop: '2px', fontSize: '11px', color: '#64748B' }}>
-                    {flowerCount} Bunga Terpasang • Kapasitas {targetCount} Tangkai
+                    {isEn
+                      ? `${flowerCount} Flowers Arranged • Capacity ${targetCount} Stems`
+                      : `${flowerCount} Bunga Terpasang • Kapasitas ${targetCount} Tangkai`}
                   </p>
 
                   <div style={{ marginTop: '8px', borderRadius: '10px', background: '#FFFFFF', padding: '8px 10px' }}>
-                    <p style={{ fontSize: '9.5px', fontWeight: 800, color: '#94A3B8', textTransform: 'uppercase', margin: 0 }}>Isi Kartu:</p>
+                    <p style={{ fontSize: '9.5px', fontWeight: 800, color: '#94A3B8', textTransform: 'uppercase', margin: 0 }}>
+                      {isEn ? 'Card Message:' : 'Isi Kartu:'}
+                    </p>
                     <p style={{ marginTop: '2px', fontSize: '11.5px', fontStyle: 'italic', color: '#334155', margin: 0 }}>"{cardMessage}"</p>
                   </div>
                 </div>
@@ -533,7 +555,7 @@ export default function MobileShareModal({ isOpen, onClose, canvasRef }: Props) 
                   }}
                 >
                   <MessageCircle size={16} />
-                  <span>Kirim Pesan ke WhatsApp</span>
+                  <span>{isEn ? 'Send Message to WhatsApp' : 'Kirim Pesan ke WhatsApp'}</span>
                 </button>
 
                 <button
@@ -555,7 +577,7 @@ export default function MobileShareModal({ isOpen, onClose, canvasRef }: Props) 
                   }}
                 >
                   {copiedText ? <Check size={15} style={{ color: '#059669' }} /> : <Copy size={15} />}
-                  <span>{copiedText ? 'Teks Berhasil Disalin!' : 'Salin Teks Ringkasan Buket'}</span>
+                  <span>{copiedText ? (isEn ? 'Text Copied!' : 'Teks Berhasil Disalin!') : (isEn ? 'Copy Bouquet Summary Text' : 'Salin Teks Ringkasan Buket')}</span>
                 </button>
               </div>
             )}

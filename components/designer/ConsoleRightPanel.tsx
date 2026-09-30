@@ -2,6 +2,7 @@
 
 import React, { useMemo } from 'react';
 import { useDesign } from '@/context/DesignContext';
+import { useLanguage } from '@/context/LanguageContext';
 import ConsoleRadarChart from './ConsoleRadarChart';
 import ConsoleFlowerController from './ConsoleFlowerController';
 import { computeAestheticMetrics } from '@/utils/bouquetConsolePresets';
@@ -23,6 +24,7 @@ export default function ConsoleRightPanel({
     premiumUserName,
     premiumTier,
   } = useDesign();
+  const { t, isEn } = useLanguage();
 
   // Compute live aesthetic metrics
   const metrics = useMemo(() => {
@@ -32,15 +34,11 @@ export default function ConsoleRightPanel({
     );
   }, [design.selectedFlowers, design.targetFlowerCount]);
 
-  // Estimate bouquet value
-  const estimatedPrice = useMemo(() => {
-    const baseWrap = 45000;
-    const flowerCost = design.selectedFlowers.length * 6000;
-    return (baseWrap + flowerCost).toLocaleString('id-ID');
-  }, [design.selectedFlowers.length]);
+  const targetCount = design.targetFlowerCount || 25;
+  const currentCount = design.selectedFlowers.length;
 
   return (
-    <aside className="console-right-panel" aria-label="Panel Analisis & Controller Konsol">
+    <aside className="console-right-panel" aria-label={isEn ? 'Analysis & Console Controller Panel' : 'Panel Analisis & Controller Konsol'}>
       {/* ── 1. VIP Profile Status Capsule ── */}
       <div className="console-user-card">
         <div className="flex items-center gap-3">
@@ -53,10 +51,10 @@ export default function ConsoleRightPanel({
           </div>
           <div className="flex flex-col min-w-0">
             <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
-              {isPremiumUnlocked ? 'Member Studio' : 'Mode Reguler'}
+              {isPremiumUnlocked ? (isEn ? 'Studio Member' : 'Member Studio') : (isEn ? 'Regular Mode' : 'Mode Reguler')}
             </span>
             <span className="text-xs font-bold text-slate-100 truncate max-w-[130px]">
-              {isPremiumUnlocked ? premiumUserName || 'VIP Member' : 'Studio Tamu'}
+              {isPremiumUnlocked ? premiumUserName || 'VIP Member' : (isEn ? 'Guest Studio' : 'Studio Tamu')}
             </span>
           </div>
         </div>
@@ -69,9 +67,9 @@ export default function ConsoleRightPanel({
               onOpenVipCard();
             }}
             className="console-vip-status-btn active"
-            title="Buka Kartu Identitas VIP"
+            title={isEn ? 'Open VIP Pass' : 'Buka Kartu Identitas VIP'}
           >
-            <span>VIP Card</span>
+            <span>{isEn ? 'VIP Pass' : 'VIP Card'}</span>
             <ChevronRight size={12} />
           </button>
         ) : (
@@ -82,17 +80,17 @@ export default function ConsoleRightPanel({
               onOpenVipModal();
             }}
             className="console-vip-status-btn unlock"
-            title="Buka Koleksi Bunga & Pembungkus VIP Eksklusif"
+            title={isEn ? 'Unlock VIP Flowers & Wrappings' : 'Buka Koleksi Bunga & Pembungkus VIP Eksklusif'}
           >
             <Gem size={12} className="text-amber-300" />
-            <span>Buka VIP</span>
+            <span>{isEn ? 'Unlock VIP' : 'Buka VIP'}</span>
           </button>
         )}
       </div>
 
       {/* ── 2. Aesthetic Radar Chart Widget ── */}
       <div className="console-panel-section">
-        <ConsoleRadarChart metrics={metrics} targetCount={design.targetFlowerCount || 25} />
+        <ConsoleRadarChart metrics={metrics} targetCount={targetCount} />
       </div>
 
       {/* ── 3. Console D-Pad & Controller Widget ── */}
@@ -100,20 +98,22 @@ export default function ConsoleRightPanel({
         <ConsoleFlowerController />
       </div>
 
-      {/* ── 4. Live Commercial Estimate Pill ── */}
+      {/* ── 4. Live Arrangement Capacity Progress Pill ── */}
       <div className="console-estimate-card">
         <div className="flex items-center justify-between text-[11px] text-slate-300 mb-1">
           <span className="flex items-center gap-1.5 text-slate-400">
             <Info size={12} className="text-cyan-400" />
-            <span>Estimasi Rangkaian:</span>
+            <span>{isEn ? 'Bouquet Capacity:' : 'Kapasitas Rangkaian:'}</span>
           </span>
-          <span className="font-extrabold text-cyan-300 font-mono">Rp {estimatedPrice}</span>
+          <span className="font-extrabold text-cyan-300 font-mono">
+            {currentCount} / {targetCount} {isEn ? 'Stems' : 'Tangkai'}
+          </span>
         </div>
         <div className="w-full bg-slate-800/80 rounded-full h-1.5 overflow-hidden">
           <div
             className="bg-gradient-to-r from-cyan-500 to-indigo-500 h-full rounded-full transition-all duration-300"
             style={{
-              width: `${Math.min(100, Math.round((design.selectedFlowers.length / (design.targetFlowerCount || 25)) * 100))}%`,
+              width: `${Math.min(100, Math.round((currentCount / targetCount) * 100))}%`,
             }}
           />
         </div>

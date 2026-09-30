@@ -16,6 +16,7 @@ import {
   CANVAS_RATIO_DIMENSIONS,
   BACKGROUND_THEMES,
   drawCanvasBackground,
+  preloadImage,
 } from '@/utils/canvasUtils';
 import { CanvasRatio, BackgroundTheme } from '@/types/design';
 import { useLanguage } from '@/context/LanguageContext';
@@ -38,7 +39,7 @@ interface DragState {
 }
 
 export default function PreviewCanvas({ canvasRef: externalRef }: PreviewCanvasProps) {
-  const { t } = useLanguage();
+  const { t, isEn } = useLanguage();
   const internalRef = useRef<HTMLCanvasElement>(null);
   const canvasRef = externalRef ?? internalRef;
 
@@ -225,7 +226,9 @@ export default function PreviewCanvas({ canvasRef: externalRef }: PreviewCanvasP
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(
-      isSelected ? '🪣 Buket • Seret / Putar / Ukuran' : '🪣 Buket (Ketuk)',
+      isSelected
+        ? (isEn ? '🪣 Bouquet • Drag / Rotate / Scale' : '🪣 Buket • Seret / Putar / Ukuran')
+        : (isEn ? '🪣 Bouquet (Tap)' : '🪣 Buket (Ketuk)'),
       bcx,
       pillY + pillH / 2,
     );
@@ -349,8 +352,16 @@ export default function PreviewCanvas({ canvasRef: externalRef }: PreviewCanvasP
     // Clear canvas
     ctx.clearRect(0, 0, canvasW, canvasH);
 
-    // Dynamic Curated Studio Backdrop Theme
-    drawCanvasBackground(ctx, currentTheme, canvasW, canvasH);
+    // Dynamic Curated Studio Backdrop Theme or Custom Image
+    let customImg: HTMLImageElement | null = null;
+    if (currentTheme === 'custom' && design.customBgImage) {
+      try {
+        customImg = await preloadImage(design.customBgImage);
+      } catch {
+        // fallback
+      }
+    }
+    drawCanvasBackground(ctx, currentTheme, canvasW, canvasH, customImg);
 
     // 1. Draw bouquet back wrapper + flowers + front — all inside a rotation transform
     const bouquetRotDeg = design.bouquetRotation ?? 0;
@@ -401,7 +412,11 @@ export default function PreviewCanvas({ canvasRef: externalRef }: PreviewCanvasP
       ctx.font = '600 11px Inter, sans-serif';
       ctx.fillStyle = 'rgba(184, 134, 11, 0.7)';
       ctx.textAlign = 'center';
-      ctx.fillText('Area Kantung Bunga (Bebas Geser)', centerX, guideCenterY - guideH / 2 - 8);
+      ctx.fillText(
+        isEn ? 'Flower Pocket Area (Free Drag)' : 'Area Kantung Bunga (Bebas Geser)',
+        centerX,
+        guideCenterY - guideH / 2 - 8
+      );
       ctx.restore();
     }
 
@@ -540,7 +555,7 @@ export default function PreviewCanvas({ canvasRef: externalRef }: PreviewCanvasP
         ctx.fillStyle = '#FFFFFF';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText('✉️ Seret Kartu Ucapan', b.cx, b.y - 9);
+        ctx.fillText(isEn ? '✉️ Drag Greeting Card' : '✉️ Seret Kartu Ucapan', b.cx, b.y - 9);
 
         // Scale Handle (Bottom-Right corner square with diagonal arrow)
         const scaleHandleX = b.x + b.w + 6;

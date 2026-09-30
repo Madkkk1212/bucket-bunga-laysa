@@ -1,4 +1,4 @@
-﻿# DEPLOYMENT CHECKLIST
+# DEPLOYMENT CHECKLIST
 ## Buket Bunga — Laysa Studio (branch: `restructure`)
 > Disiapkan: 25 September 2026 | Review sebelum merge ke `main`
 
@@ -99,7 +99,13 @@ Warnings (tidak perlu diperbaiki segera):
     - Aktifkan RLS + kunci code_devices ke service_role (sebelumnya RLS dinonaktifkan!)
     - Kunci write digital_gifts ke service_role, pertahankan SELECT publik
 
-[ ] Verifikasi RLS aktif di Supabase Dashboard: access_codes, code_devices, digital_gifts, pricing_settings
+[ ] Apply migration 009: Jalankan isi supabase/migrations/009_multi_tier_and_garden.sql
+    - Tambah kolom multi-tier pricing (daily, weekly, lifetime) dan streak garden access
+
+[ ] Apply migration 010: Jalankan isi supabase/migrations/010_encrypted_vip_drafts.sql
+    - Buat tabel vip_bouquet_drafts untuk autosave terenkripsi AES-256 khusus VIP
+
+[ ] Verifikasi RLS aktif di Supabase Dashboard: access_codes, code_devices, digital_gifts, pricing_settings, vip_bouquet_drafts
 
 [ ] Uji koneksi service role: buka /api/admin/diagnostics (dengan cookie admin) pastikan connected: true
 

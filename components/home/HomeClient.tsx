@@ -6,11 +6,13 @@ import { Sparkles, Monitor, Smartphone } from 'lucide-react';
 import Navbar from '@/components/layout/Navbar';
 import HeroActions from '@/components/home/HeroActions';
 import { DesignProvider } from '@/context/DesignContext';
+import { useLanguage } from '@/context/LanguageContext';
 import MobileDashboard from './mobile/MobileDashboard';
 import HomeBackgroundVideo from './HomeBackgroundVideo';
 
 export default function HomeClient() {
   const [viewMode, setViewMode] = useState<'mobile' | 'desktop'>('mobile');
+  const { isEn } = useLanguage();
 
   return (
     <DesignProvider>
@@ -107,7 +109,9 @@ export default function HomeClient() {
                   <span className="hero-title-accent">BEAUTIFUL.</span>
                 </h1>
                 <p className="hero-subtitle">
-                  Sentuhan keindahan bunga segar untuk setiap momen berharga Anda. Pilih bucket favorit, atur tata letak bunga sesuka hati, dan wujudkan buket impian yang memukau.
+                  {isEn
+                    ? 'A touch of fresh floral beauty for every precious moment. Choose your favorite wrapping, arrange flowers freely, and create your breathtaking dream bouquet.'
+                    : 'Sentuhan keindahan bunga segar untuk setiap momen berharga Anda. Pilih bucket favorit, atur tata letak bunga sesuka hati, dan wujudkan buket impian yang memukau.'}
                 </p>
                 <HeroActions />
               </div>

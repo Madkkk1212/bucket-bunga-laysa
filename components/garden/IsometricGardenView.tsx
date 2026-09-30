@@ -11,6 +11,8 @@ import {
   BookOpen, FastForward, Trash2, Scissors, Volume2, VolumeX, ShoppingBag
 } from 'lucide-react';
 import { useDesign } from '@/context/DesignContext';
+import { useLanguage } from '@/context/LanguageContext';
+import LanguageSwitcher from '@/components/ui/LanguageSwitcher';
 import { FLOWERS } from '@/data/flowers';
 import PremiumUnlockModal from '@/components/designer/PremiumUnlockModal';
 import { 
@@ -442,6 +444,7 @@ function generateDefault5x5Grid(): GardenTile[] {
 
 export default function IsometricGardenView() {
   const { premiumUserName, isPremiumUnlocked, addFlower } = useDesign();
+  const { isEn } = useLanguage();
   const [hasMounted, setHasMounted] = useState(false);
   const [isVipModalOpen, setIsVipModalOpen] = useState(false);
 
@@ -1470,20 +1473,20 @@ export default function IsometricGardenView() {
             <div className="garden-streak-pill">
               <span className="flex items-center gap-1.5 text-amber-300 font-extrabold">
                 <Flame size={13} className="animate-bounce text-amber-400" />
-                {streakCount} Hari Streak 🔥
+                {streakCount} {isEn ? 'Days Streak 🔥' : 'Hari Streak 🔥'}
               </span>
               <span className="hud-sep">•</span>
               <span className="text-emerald-300 font-bold">
-                {plantedCount}/25 Ditanam 🌸
+                {plantedCount}/25 {isEn ? 'Planted 🌸' : 'Ditanam 🌸'}
               </span>
               <button
                 type="button"
                 className="ml-1 px-2 py-0.5 bg-amber-400/20 hover:bg-amber-400/35 border border-amber-300/40 rounded-full text-[10px] font-extrabold text-amber-300 flex items-center gap-1 transition"
                 onClick={handleSimulateNextDay}
-                title="Simulasi hari esok (tanah kering untuk perkembangan)"
+                title={isEn ? 'Simulate next day (dries soil for growth)' : 'Simulasi hari esok (tanah kering untuk perkembangan)'}
               >
                 <FastForward size={11} />
-                <span>Esok Hari</span>
+                <span>{isEn ? 'Tomorrow' : 'Esok Hari'}</span>
               </button>
             </div>
           </div>
@@ -1495,10 +1498,10 @@ export default function IsometricGardenView() {
               type="button"
               className={`garden-audio-btn ${isAudioEnabled ? 'active' : ''}`}
               onClick={handleToggleAudio}
-              title={isAudioEnabled ? 'Matikan Suara Alam' : 'Nyalakan Suara Alam Imersif (Burung / Air / Jangkrik)'}
+              title={isAudioEnabled ? (isEn ? 'Mute Nature Ambience' : 'Matikan Suara Alam') : (isEn ? 'Turn On Nature Ambience' : 'Nyalakan Suara Alam Imersif (Burung / Air / Jangkrik)')}
             >
               {isAudioEnabled ? <Volume2 size={13} className="text-amber-300" /> : <VolumeX size={13} />}
-              <span className="hidden sm:inline">{isAudioEnabled ? 'Audio Aktif' : 'Suara Alam'}</span>
+              <span className="hidden sm:inline">{isAudioEnabled ? (isEn ? 'Audio Active' : 'Audio Aktif') : (isEn ? 'Nature Sound' : 'Suara Alam')}</span>
               {isAudioEnabled && (
                 <div className="equalizer-bars" aria-hidden="true">
                   <span className="eq-bar" />
@@ -1514,19 +1517,21 @@ export default function IsometricGardenView() {
               type="button"
               className="garden-hud-btn"
               onClick={() => { setIsBasketDrawerOpen(true); playSound('click'); }}
-              title="Keranjang Bunga Hasil Petik (Siap Dirangkai di Studio Buket)"
+              title={isEn ? 'Harvested Flowers Basket (Ready for Bouquet Studio)' : 'Keranjang Bunga Hasil Petik (Siap Dirangkai di Studio Buket)'}
             >
               <ShoppingBag size={14} className="text-rose-400" />
-              <span className="font-bold text-rose-300">Buket ({harvestedBasket.length})</span>
+              <span className="font-bold text-rose-300">{isEn ? 'Bouquet' : 'Buket'} ({harvestedBasket.length})</span>
             </button>
 
             {/* Automatic Real-Time Atmosphere Badge */}
             <div 
               className="time-auto-badge" 
-              title={`Nuansa kebun otomatis mengikuti jam lokal: ${timeOfDay === 'night' ? 'Malam Berpendar' : timeOfDay === 'sunset' ? 'Senja Emas' : 'Siang Cerah'}`}
+              title={isEn ? `Garden atmosphere syncs with local time: ${timeOfDay === 'night' ? 'Glowing Night' : timeOfDay === 'sunset' ? 'Golden Sunset' : 'Bright Day'}` : `Nuansa kebun otomatis mengikuti jam lokal: ${timeOfDay === 'night' ? 'Malam Berpendar' : timeOfDay === 'sunset' ? 'Senja Emas' : 'Siang Cerah'}`}
             >
               <span>{timeOfDay === 'night' ? '🌙' : timeOfDay === 'sunset' ? '🌅' : '☀️'}</span>
-              <span className="hidden md:inline font-bold">{timeOfDay === 'night' ? 'Malam' : timeOfDay === 'sunset' ? 'Senja' : 'Siang'}</span>
+              <span className="hidden md:inline font-bold">
+                {timeOfDay === 'night' ? (isEn ? 'Night' : 'Malam') : timeOfDay === 'sunset' ? (isEn ? 'Sunset' : 'Senja') : (isEn ? 'Day' : 'Siang')}
+              </span>
             </div>
 
             {/* Ensiklopedia Bunga 40 (Flora Dex) */}
@@ -1534,10 +1539,10 @@ export default function IsometricGardenView() {
               type="button"
               className="garden-hud-btn"
               onClick={() => { setIsHerbariumOpen(true); playSound('click'); }}
-              title="Ensiklopedia 40 Bunga (Flora Dex)"
+              title={isEn ? 'Encyclopedia of 40 Flowers (Flora Dex)' : 'Ensiklopedia 40 Bunga (Flora Dex)'}
             >
               <BookOpen size={14} className="text-amber-300" />
-              <span className="hidden md:inline">Koleksi ({discoveredKeys.size}/40)</span>
+              <span className="hidden md:inline">{isEn ? 'Collection' : 'Koleksi'} ({discoveredKeys.size}/40)</span>
             </button>
 
             {/* Diary Catatan Cinta */}
@@ -1545,7 +1550,7 @@ export default function IsometricGardenView() {
               type="button"
               className="garden-hud-btn"
               onClick={() => setIsNotesModalOpen(true)}
-              title="Buku Catatan Cinta"
+              title={isEn ? 'Love Notes Diary' : 'Buku Catatan Cinta'}
             >
               <Heart size={14} className="text-pink-400" />
               <span className="hidden md:inline">Diary</span>
@@ -1556,11 +1561,14 @@ export default function IsometricGardenView() {
               type="button"
               className="garden-hud-btn"
               onClick={() => setIsCodeModalOpen(true)}
-              title="Undang Pasangan (Kode Kebun)"
+              title={isEn ? 'Invite Partner (Garden Code)' : 'Undang Pasangan (Kode Kebun)'}
             >
               <Share2 size={14} className="text-amber-400" />
-              <span className="hidden md:inline">Undang</span>
+              <span className="hidden md:inline">{isEn ? 'Invite' : 'Undang'}</span>
             </button>
+
+            {/* Language Switcher */}
+            <LanguageSwitcher variant="compact" />
           </div>
         </div>
       </header>
@@ -2823,15 +2831,15 @@ export default function IsometricGardenView() {
             <div className="vip-gate-perks-list">
               <div className="vip-perk-item">
                 <span>👑</span>
-                <span>Akses 40+ Koleksi Bunga Eksklusif & Langka</span>
+                <span>{isEn ? 'Access 40+ Rare & Exclusive Flowers' : 'Akses 40+ Koleksi Bunga Eksklusif & Langka'}</span>
               </div>
               <div className="vip-perk-item">
                 <span>💧</span>
-                <span>Sistem Rawat & Siram Harian Bersama Pasangan</span>
+                <span>{isEn ? 'Daily Growth & Streak Watering System' : 'Sistem Rawat & Siram Harian Bersama Pasangan'}</span>
               </div>
               <div className="vip-perk-item">
                 <span>✨</span>
-                <span>Papan Pesona & Surat Cinta Terenkripsi</span>
+                <span>{isEn ? 'Love Letters Diary & Encrypted Garden' : 'Papan Pesona & Surat Cinta Terenkripsi'}</span>
               </div>
             </div>
 
@@ -2842,11 +2850,11 @@ export default function IsometricGardenView() {
                 onClick={() => setIsVipModalOpen(true)}
               >
                 <Sparkles size={18} />
-                <span>Buka Akses VIP Sultan Sekarang</span>
+                <span>{isEn ? 'Unlock Sultan VIP Access Now' : 'Buka Akses VIP Sultan Sekarang'}</span>
               </button>
               <Link href="/menu" className="vip-gate-btn-secondary">
                 <ArrowLeft size={15} />
-                <span>Kembali ke Menu Utama</span>
+                <span>{isEn ? 'Back to Main Menu' : 'Kembali ke Menu Utama'}</span>
               </Link>
             </div>
           </div>
@@ -2917,7 +2925,7 @@ export default function IsometricGardenView() {
                   color: '#cbd5e1',
                   cursor: 'pointer',
                 }}
-                aria-label="Tutup"
+                aria-label={isEn ? 'Close' : 'Tutup'}
               >
                 <X size={16} />
               </button>
@@ -2955,27 +2963,29 @@ export default function IsometricGardenView() {
                 marginBottom: '10px',
               }}
             >
-              VIP Sultan Selamanya
+              {isEn ? 'Lifetime Sultan VIP' : 'VIP Sultan Selamanya'}
             </span>
 
             <h2 style={{ fontSize: '20px', fontWeight: 800, margin: '0 0 6px', color: '#ffffff' }}>
-              Beri Nama Kebun Bunga Anda 🌸
+              {isEn ? 'Name Your Flower Garden 🌸' : 'Beri Nama Kebun Bunga Anda 🌸'}
             </h2>
 
             <p style={{ fontSize: '13px', color: '#cbd5e1', lineHeight: '1.5', margin: '0 0 18px' }}>
-              Sebagai pemilik VIP Sultan, kebun Anda wajib diberi nama sebelum mulai menanam dan merawat bunga:
+              {isEn
+                ? 'As a Sultan VIP member, please name your garden before planting and caring for flowers:'
+                : 'Sebagai pemilik VIP Sultan, kebun Anda wajib diberi nama sebelum mulai menanam dan merawat bunga:'}
             </p>
 
             <form onSubmit={handleSaveGardenName} style={{ display: 'flex', flexDirection: 'column', gap: '14px', textAlign: 'left' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#fcd34d', marginBottom: '6px' }}>
-                  Nama Kebun Bunga <span style={{ color: '#f87171' }}>*</span>
+                  {isEn ? 'Flower Garden Name' : 'Nama Kebun Bunga'} <span style={{ color: '#f87171' }}>*</span>
                 </label>
                 <input
                   type="text"
                   value={gardenNameDraft}
                   onChange={(e) => setGardenNameDraft(e.target.value)}
-                  placeholder="Cth: Kebun Cinta Laysa, Taman Mawar Kita..."
+                  placeholder={isEn ? 'E.g.: Laysa Love Sanctuary, Our Rose Garden...' : 'Cth: Kebun Cinta Laysa, Taman Mawar Kita...'}
                   required
                   autoFocus
                   style={{
@@ -2994,13 +3004,13 @@ export default function IsometricGardenView() {
 
               <div>
                 <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#94a3b8', marginBottom: '6px' }}>
-                  Nama Pemilik / Pasangan (Opsional)
+                  {isEn ? 'Owner / Partner Name (Optional)' : 'Nama Pemilik / Pasangan (Opsional)'}
                 </label>
                 <input
                   type="text"
                   value={partnerNameDraft}
                   onChange={(e) => setPartnerNameDraft(e.target.value)}
-                  placeholder="Cth: Laysa & Pasangan"
+                  placeholder={isEn ? 'E.g.: Sarah & Partner' : 'Cth: Laysa & Pasangan'}
                   style={{
                     width: '100%',
                     padding: '12px 14px',
@@ -3016,8 +3026,13 @@ export default function IsometricGardenView() {
               </div>
 
               <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', margin: '2px 0 6px' }}>
-                <span style={{ fontSize: '11px', color: '#94a3b8', alignSelf: 'center' }}>Contoh:</span>
-                {['Taman Mawar Kita 🌹', 'Kebun Kasih Laysa ✨', 'Puspa Bahagia 🌼'].map((preset) => (
+                <span style={{ fontSize: '11px', color: '#94a3b8', alignSelf: 'center' }}>
+                  {isEn ? 'Examples:' : 'Contoh:'}
+                </span>
+                {(isEn 
+                  ? ['Our Rose Sanctuary 🌹', 'Laysa Love Garden ✨', 'Happy Blossoms 🌼']
+                  : ['Taman Mawar Kita 🌹', 'Kebun Kasih Laysa ✨', 'Puspa Bahagia 🌼']
+                ).map((preset) => (
                   <button
                     key={preset}
                     type="button"
@@ -3060,7 +3075,7 @@ export default function IsometricGardenView() {
                 }}
               >
                 <Sparkles size={16} />
-                <span>Simpan & Masuk Kebun Bunga 🌸</span>
+                <span>{isEn ? 'Save & Enter Flower Garden 🌸' : 'Simpan & Masuk Kebun Bunga 🌸'}</span>
               </button>
             </form>
           </div>

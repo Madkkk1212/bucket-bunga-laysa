@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react';
 import { Sparkles, X, LogOut, ShieldCheck, Crown, ExternalLink } from 'lucide-react';
 import ModalPortal from '../ui/ModalPortal';
+import { useLanguage } from '@/context/LanguageContext';
 
 interface VipCardModalProps {
   isOpen: boolean;
@@ -12,6 +13,7 @@ interface VipCardModalProps {
 }
 
 export default function VipCardModal({ isOpen, onClose, userName, onRevoke }: VipCardModalProps) {
+  const { isEn } = useLanguage();
   const cardRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -22,6 +24,20 @@ export default function VipCardModal({ isOpen, onClose, userName, onRevoke }: Vi
   }, [isOpen, onClose]);
 
   const firstName = userName ? userName.split(' ')[0] : 'Member';
+
+  const vipPerks = isEn
+    ? [
+        '✓  All premium bouquet wrappers unlocked',
+        '✓  All rare flower variants available',
+        '✓  Download designs in HD resolution',
+        '✓  Lifetime access on this device',
+      ]
+    : [
+        '✓  Semua model bucket premium terbuka',
+        '✓  Semua varian bunga langka tersedia',
+        '✓  Download desain resolusi HD',
+        '✓  Akses selamanya di perangkat ini',
+      ];
 
   return (
     <ModalPortal isOpen={isOpen} onClose={onClose}>
@@ -50,6 +66,7 @@ export default function VipCardModal({ isOpen, onClose, userName, onRevoke }: Vi
           {/* Close */}
           <button
             onClick={onClose}
+            aria-label={isEn ? 'Close' : 'Tutup'}
             style={{
               position: 'absolute', top: '14px', right: '14px',
               background: 'rgba(255,255,255,0.08)', border: 'none',
@@ -83,13 +100,13 @@ export default function VipCardModal({ isOpen, onClose, userName, onRevoke }: Vi
             </div>
 
             <p style={{ color: 'rgba(251,191,36,0.7)', fontSize: '11px', fontWeight: 700, letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '6px' }}>
-              Member VIP Studio Buket
+              {isEn ? 'Bouquet Studio VIP Member' : 'Member VIP Studio Buket'}
             </p>
             <h2 style={{ color: '#fff', fontSize: '22px', fontWeight: 800, margin: '0 0 4px', lineHeight: 1.2 }}>
-              Halo, {firstName}! 🌸
+              {isEn ? `Hello, ${firstName}! 🌸` : `Halo, ${firstName}! 🌸`}
             </h2>
             <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '13px', margin: 0 }}>
-              Akses penuh semua koleksi premium aktif
+              {isEn ? 'Full access to all premium collections active' : 'Akses penuh semua koleksi premium aktif'}
             </p>
           </div>
 
@@ -105,14 +122,11 @@ export default function VipCardModal({ isOpen, onClose, userName, onRevoke }: Vi
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
                 <Sparkles size={15} color="#f59e0b" />
-                <span style={{ color: '#f59e0b', fontSize: '12px', fontWeight: 700 }}>Keistimewaan VIP Anda</span>
+                <span style={{ color: '#f59e0b', fontSize: '12px', fontWeight: 700 }}>
+                  {isEn ? 'Your VIP Privileges' : 'Keistimewaan VIP Anda'}
+                </span>
               </div>
-              {[
-                '✓  Semua model bucket premium terbuka',
-                '✓  Semua varian bunga langka tersedia',
-                '✓  Download desain resolusi HD',
-                '✓  Akses selamanya di perangkat ini',
-              ].map((item, i) => (
+              {vipPerks.map((item, i) => (
                 <div key={i} style={{ color: 'rgba(255,255,255,0.7)', fontSize: '12px', lineHeight: '22px' }}>{item}</div>
               ))}
             </div>
@@ -125,21 +139,29 @@ export default function VipCardModal({ isOpen, onClose, userName, onRevoke }: Vi
               border: '1px solid rgba(255,255,255,0.08)',
             }}>
               <div>
-                <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '10px', fontWeight: 700, letterSpacing: '1px', textTransform: 'uppercase' }}>Terdaftar atas nama</div>
-                <div style={{ color: '#fff', fontSize: '15px', fontWeight: 800, marginTop: '2px' }}>{userName || 'Member VIP'}</div>
+                <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '10px', fontWeight: 700, letterSpacing: '1px', textTransform: 'uppercase' }}>
+                  {isEn ? 'Registered To' : 'Terdaftar atas nama'}
+                </div>
+                <div style={{ color: '#fff', fontSize: '15px', fontWeight: 800, marginTop: '2px' }}>
+                  {userName || (isEn ? 'VIP Member' : 'Member VIP')}
+                </div>
               </div>
               <div style={{
                 background: 'rgba(251,191,36,0.15)', border: '1px solid rgba(251,191,36,0.3)',
                 borderRadius: '8px', padding: '4px 10px',
               }}>
-                <span style={{ color: '#f59e0b', fontSize: '11px', fontWeight: 700 }}>AKTIF</span>
+                <span style={{ color: '#f59e0b', fontSize: '11px', fontWeight: 700 }}>
+                  {isEn ? 'ACTIVE' : 'AKTIF'}
+                </span>
               </div>
             </div>
 
             {/* Security note */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '16px' }}>
               <ShieldCheck size={13} color="rgba(255,255,255,0.3)" />
-              <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: '11px' }}>Tersimpan aman di perangkat ini</span>
+              <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: '11px' }}>
+                {isEn ? 'Stored securely on this device' : 'Tersimpan aman di perangkat ini'}
+              </span>
             </div>
 
             {/* Revoke button */}
@@ -158,7 +180,7 @@ export default function VipCardModal({ isOpen, onClose, userName, onRevoke }: Vi
               id="btn-revoke-vip-card"
             >
               <LogOut size={14} />
-              Keluar / Cabut VIP di Perangkat Ini
+              {isEn ? 'Sign Out / Revoke VIP on This Device' : 'Keluar / Cabut VIP di Perangkat Ini'}
             </button>
           </div>
         </div>

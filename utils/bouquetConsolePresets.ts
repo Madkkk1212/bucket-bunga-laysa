@@ -11,6 +11,7 @@ export interface AestheticMetrics {
   diversityScore: number; // 0 - 100 (Flower variety & filler distribution)
   totalScore: number;     // 0 - 100 (Weighted aesthetic evaluation)
   ratingLabel: string;
+  ratingLabelEn: string;
   flowerCount: number;
   uniqueSpeciesCount: number;
 }
@@ -31,6 +32,7 @@ export function computeAestheticMetrics(
       diversityScore: 0,
       totalScore: 0,
       ratingLabel: 'Buket Belum Berisi',
+      ratingLabelEn: 'Empty Bouquet',
       flowerCount: 0,
       uniqueSpeciesCount: 0,
     };
@@ -96,11 +98,23 @@ export function computeAestheticMetrics(
   );
 
   let ratingLabel = 'Sedang Dirangkai';
-  if (totalScore >= 90) ratingLabel = 'Masterpiece Sangat Harmonis';
-  else if (totalScore >= 80) ratingLabel = 'Rangkaian Cantik & Elegan';
-  else if (totalScore >= 65) ratingLabel = 'Komposisi Menarik';
-  else if (totalScore >= 40) ratingLabel = 'Perlu Penyesuaian Bunga';
-  else ratingLabel = 'Awal Rangkaian';
+  let ratingLabelEn = 'In Progress';
+  if (totalScore >= 90) {
+    ratingLabel = 'Masterpiece Sangat Harmonis';
+    ratingLabelEn = 'Harmonious Masterpiece';
+  } else if (totalScore >= 80) {
+    ratingLabel = 'Rangkaian Cantik & Elegan';
+    ratingLabelEn = 'Charming & Elegant';
+  } else if (totalScore >= 65) {
+    ratingLabel = 'Komposisi Menarik';
+    ratingLabelEn = 'Delightful Composition';
+  } else if (totalScore >= 40) {
+    ratingLabel = 'Perlu Penyesuaian Bunga';
+    ratingLabelEn = 'Needs Flower Tweaks';
+  } else {
+    ratingLabel = 'Awal Rangkaian';
+    ratingLabelEn = 'Early Arrangement';
+  }
 
   return {
     harmonyScore,
@@ -109,6 +123,7 @@ export function computeAestheticMetrics(
     diversityScore,
     totalScore,
     ratingLabel,
+    ratingLabelEn,
     flowerCount: count,
     uniqueSpeciesCount: uniqueCount,
   };

@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import Image from 'next/image';
 import { useDesign } from '@/context/DesignContext';
+import { useLanguage } from '@/context/LanguageContext';
 import { FLOWERS } from '@/data/flowers';
 import { ArrowUpToLine, ArrowDownToLine, Trash2, X, SlidersHorizontal, Plus, Minus } from 'lucide-react';
 
@@ -11,6 +12,7 @@ interface SelectionSummaryProps {
 }
 
 export default function SelectionSummary({ onClose }: SelectionSummaryProps) {
+  const { isEn } = useLanguage();
   const {
     design,
     updateFlower,
@@ -51,8 +53,8 @@ export default function SelectionSummary({ onClose }: SelectionSummaryProps) {
       <div className="simple-atur-header">
         <div className="simple-atur-title-wrap">
           <SlidersHorizontal size={15} className="text-pink-600" />
-          <span className="simple-atur-title">Daftar Bunga di Buket</span>
-          <span className="simple-atur-count-pill">{placed.length} Bunga</span>
+          <span className="simple-atur-title">{isEn ? 'Flowers in Bouquet' : 'Daftar Bunga di Buket'}</span>
+          <span className="simple-atur-count-pill">{placed.length} {isEn ? 'Flowers' : 'Bunga'}</span>
         </div>
 
         {onClose && (
@@ -60,8 +62,8 @@ export default function SelectionSummary({ onClose }: SelectionSummaryProps) {
             type="button"
             className="simple-atur-close-btn"
             onClick={onClose}
-            aria-label="Tutup menu atur bunga"
-            title="Tutup menu atur bunga"
+            aria-label={isEn ? 'Close arrange menu' : 'Tutup menu atur bunga'}
+            title={isEn ? 'Close arrange menu' : 'Tutup menu atur bunga'}
           >
             <X size={15} />
           </button>
@@ -72,24 +74,24 @@ export default function SelectionSummary({ onClose }: SelectionSummaryProps) {
       {placed.length > 0 && (
         <div className="atur-posisi-buket-bar">
           <div className="atur-posisi-label">
-            <span>Posisi Semua Bunga Sekaligus:</span>
+            <span>{isEn ? 'Position All Flowers:' : 'Posisi Semua Bunga Sekaligus:'}</span>
           </div>
           <div className="atur-posisi-toggle-wrap">
             <button
               type="button"
               className={`atur-posisi-btn ${(design.flowerPlacementMode || 'inside') === 'inside' ? 'active' : ''}`}
               onClick={() => setFlowerPlacementMode('inside')}
-              title="Semua bunga terselip alami ke dalam kantung buket"
+              title={isEn ? 'All flowers placed inside bouquet pocket' : 'Semua bunga terselip alami ke dalam kantung buket'}
             >
-              📥 Semua di Dalam
+              📥 {isEn ? 'All Inside' : 'Semua di Dalam'}
             </button>
             <button
               type="button"
               className={`atur-posisi-btn ${design.flowerPlacementMode === 'front' ? 'active-gold' : ''}`}
               onClick={() => setFlowerPlacementMode('front')}
-              title="Semua bunga mekar di depan gambar buket dan pita"
+              title={isEn ? 'All flowers bloom in front of wrapper and ribbon' : 'Semua bunga mekar di depan gambar buket dan pita'}
             >
-              ✨ Semua di Depan
+              ✨ {isEn ? 'All in Front' : 'Semua di Depan'}
             </button>
           </div>
         </div>
@@ -101,7 +103,9 @@ export default function SelectionSummary({ onClose }: SelectionSummaryProps) {
           <div className="simple-atur-empty">
             <span className="text-2xl mb-1">🌸</span>
             <p className="text-xs text-gray-500 font-medium">
-              Belum ada bunga di buket. Pilih bunga di atas untuk mulai merangkai!
+              {isEn
+                ? 'No flowers in bouquet yet. Select flowers above to begin arranging!'
+                : 'Belum ada bunga di buket. Pilih bunga di atas untuk mulai merangkai!'}
             </p>
           </div>
         ) : (
@@ -119,7 +123,7 @@ export default function SelectionSummary({ onClose }: SelectionSummaryProps) {
                   onClick={() => setSelectedFlowerUid(isSelected ? null : f.uid)}
                   onMouseEnter={() => setHoveredFlowerUid(f.uid)}
                   onMouseLeave={() => setHoveredFlowerUid(null)}
-                  title="Klik untuk memilih bunga ini di kanvas"
+                  title={isEn ? 'Click to select this flower on canvas' : 'Klik untuk memilih bunga ini di kanvas'}
                 >
                   {/* Baris 1: Header Bunga (Nomor, Thumbnail, Nama, dan Tombol Hapus) */}
                   <div className="flower-card-top-row">
@@ -140,7 +144,9 @@ export default function SelectionSummary({ onClose }: SelectionSummaryProps) {
                       </div>
                       <div className="flower-card-meta">
                         <span className="flower-card-name" title={flowerName}>{flowerName}</span>
-                        <span className="flower-card-sub">Bunga #{idx + 1} • Ukuran {Math.round((f.scale || 1) * 100)}%</span>
+                        <span className="flower-card-sub">
+                          {isEn ? `Flower #${idx + 1}` : `Bunga #${idx + 1}`} • {isEn ? 'Size' : 'Ukuran'} {Math.round((f.scale || 1) * 100)}%
+                        </span>
                       </div>
                     </div>
 
@@ -151,8 +157,8 @@ export default function SelectionSummary({ onClose }: SelectionSummaryProps) {
                         e.stopPropagation();
                         removeFlowerByUid(f.uid);
                       }}
-                      title={`Hapus ${flowerName}`}
-                      aria-label="Hapus bunga"
+                      title={isEn ? `Delete ${flowerName}` : `Hapus ${flowerName}`}
+                      aria-label={isEn ? 'Delete flower' : 'Hapus bunga'}
                     >
                       <Trash2 size={14} />
                     </button>
@@ -160,7 +166,7 @@ export default function SelectionSummary({ onClose }: SelectionSummaryProps) {
 
                   {/* Baris 2: Posisi Bunga di Buket (Di Dalam vs Di Depan) */}
                   <div className="flower-card-posisi-row" onClick={(e) => e.stopPropagation()}>
-                    <span className="flower-posisi-label">Posisi Buket:</span>
+                    <span className="flower-posisi-label">{isEn ? 'Position:' : 'Posisi Buket:'}</span>
                     <div className="flower-posisi-toggle">
                       <button
                         type="button"
@@ -169,9 +175,9 @@ export default function SelectionSummary({ onClose }: SelectionSummaryProps) {
                           e.stopPropagation();
                           setFlowerLayer(f.uid, 'inside');
                         }}
-                        title="Selipkan bunga ini ke dalam buket"
+                        title={isEn ? 'Place this flower inside bouquet' : 'Selipkan bunga ini ke dalam buket'}
                       >
-                        📥 Di Dalam
+                        📥 {isEn ? 'Inside' : 'Di Dalam'}
                       </button>
                       <button
                         type="button"
@@ -180,9 +186,9 @@ export default function SelectionSummary({ onClose }: SelectionSummaryProps) {
                           e.stopPropagation();
                           setFlowerLayer(f.uid, 'front');
                         }}
-                        title="Tampilkan bunga ini mekar di depan buket / pita"
+                        title={isEn ? 'Show this flower blooming in front of wrapper' : 'Tampilkan bunga ini mekar di depan buket / pita'}
                       >
-                        ✨ Di Depan
+                        ✨ {isEn ? 'In Front' : 'Di Depan'}
                       </button>
                     </div>
                   </div>
@@ -194,7 +200,7 @@ export default function SelectionSummary({ onClose }: SelectionSummaryProps) {
                   >
                     {/* Urutan Tumpukan Bunga */}
                     <div className="flower-card-order-group">
-                      <span className="flower-actions-sublabel">Tumpuk:</span>
+                      <span className="flower-actions-sublabel">{isEn ? 'Stack:' : 'Tumpuk:'}</span>
                       <button
                         type="button"
                         className="flower-card-btn layer-btn"
@@ -202,10 +208,10 @@ export default function SelectionSummary({ onClose }: SelectionSummaryProps) {
                           e.stopPropagation();
                           changeFlowerLayer(f.uid, 'top');
                         }}
-                        title="Bawa urutan bunga ini ke paling atas tumpukan"
+                        title={isEn ? 'Bring this flower to the top of the stack' : 'Bawa urutan bunga ini ke paling atas tumpukan'}
                       >
                         <ArrowUpToLine size={12} />
-                        <span>Atas</span>
+                        <span>{isEn ? 'Top' : 'Atas'}</span>
                       </button>
                       <button
                         type="button"
@@ -214,10 +220,10 @@ export default function SelectionSummary({ onClose }: SelectionSummaryProps) {
                           e.stopPropagation();
                           changeFlowerLayer(f.uid, 'bottom');
                         }}
-                        title="Kirim urutan bunga ini ke paling bawah tumpukan"
+                        title={isEn ? 'Send this flower to the bottom of the stack' : 'Kirim urutan bunga ini ke paling bawah tumpukan'}
                       >
                         <ArrowDownToLine size={12} />
-                        <span>Bawah</span>
+                        <span>{isEn ? 'Bottom' : 'Bawah'}</span>
                       </button>
                     </div>
 
@@ -235,8 +241,8 @@ export default function SelectionSummary({ onClose }: SelectionSummaryProps) {
                             size: Math.round(92 * newScale),
                           });
                         }}
-                        title="Perkecil bunga"
-                        aria-label="Perkecil bunga"
+                        title={isEn ? 'Shrink flower' : 'Perkecil bunga'}
+                        aria-label={isEn ? 'Shrink flower' : 'Perkecil bunga'}
                       >
                         <Minus size={11} />
                       </button>
@@ -255,8 +261,8 @@ export default function SelectionSummary({ onClose }: SelectionSummaryProps) {
                             size: Math.round(92 * newScale),
                           });
                         }}
-                        title="Perbesar bunga"
-                        aria-label="Perbesar bunga"
+                        title={isEn ? 'Enlarge flower' : 'Perbesar bunga'}
+                        aria-label={isEn ? 'Enlarge flower' : 'Perbesar bunga'}
                       >
                         <Plus size={11} />
                       </button>

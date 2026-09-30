@@ -99,7 +99,8 @@ export type TextPosition = 'top' | 'center' | 'bottom';
 export type FontWeight = 'normal' | 'bold';
 
 export type CanvasRatio = '9:16' | '4:5' | '1:1' | '3:4';
-export type BackgroundTheme = 'studio-warm' | 'rose-milk' | 'midnight-noir' | 'sage-botanical' | 'kraft-warm';
+export type BackgroundTheme = 'studio-warm' | 'rose-milk' | 'midnight-noir' | 'sage-botanical' | 'kraft-warm' | 'custom';
+export type ExportResolution = 'hd' | '2k' | '4k';
 
 export interface TextConfig {
   content: string;
@@ -138,6 +139,7 @@ export interface DesignState {
   final2D: Final2DProduct;
   canvasRatio?: CanvasRatio;
   bgTheme?: BackgroundTheme;
+  customBgImage?: string | null;
   bouquetScale?: number;
   /** Rotation of the entire bouquet in degrees (default: 0) */
   bouquetRotation?: number;
@@ -187,6 +189,12 @@ export interface DesignContextType {
   /** Aspect ratio, background theme, bouquet scale and rotation controls */
   setCanvasRatio: (ratio: CanvasRatio) => void;
   setBgTheme: (theme: BackgroundTheme) => void;
+  setCustomBgImage: (url: string | null) => void;
+  exportResolution: ExportResolution;
+  setExportResolution: (res: ExportResolution) => void;
+  cloudSyncStatus: 'idle' | 'saving' | 'saved' | 'error';
+  lastCloudSavedAt: string | null;
+  manualCloudSave: () => Promise<boolean>;
   setBouquetScale: (scale: number) => void;
   setBouquetRotation: (deg: number) => void;
   /** Offset seluruh posisi buket di canvas (drag bucket bebas) */

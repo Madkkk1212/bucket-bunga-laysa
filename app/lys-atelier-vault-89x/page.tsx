@@ -30,6 +30,10 @@ import {
   ShieldCheck,
   ChevronRight,
   MessageCircle,
+  Gift,
+  Music,
+  Heart,
+  Calendar,
 } from 'lucide-react';
 
 interface AccessCodeItem {
@@ -119,7 +123,7 @@ export default function LaysaCleanPortalPage() {
   const [lockoutSeconds, setLockoutSeconds] = useState<number>(0);
 
   // ── Dashboard States ──
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'tokens' | 'pricing' | 'diagnostics'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'tokens' | 'gifts' | 'pricing' | 'diagnostics'>('dashboard');
   const [codes, setCodes] = useState<AccessCodeItem[]>([]);
   const [isLoadingCodes, setIsLoadingCodes] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -215,6 +219,15 @@ export default function LaysaCleanPortalPage() {
   // Diagnostics State
   const [diagData, setDiagData] = useState<any>(null);
   const [isLoadingDiag, setIsLoadingDiag] = useState<boolean>(false);
+
+  // Digital Gifts & VIP Drafts Database State
+  const [giftsList, setGiftsList] = useState<any[]>([]);
+  const [isLoadingGifts, setIsLoadingGifts] = useState<boolean>(false);
+  const [totalGiftsCount, setTotalGiftsCount] = useState<number>(0);
+  const [totalGiftsViews, setTotalGiftsViews] = useState<number>(0);
+  const [vipDraftsCount, setVipDraftsCount] = useState<number>(0);
+  const [giftsSearchQuery, setGiftsSearchQuery] = useState<string>('');
+  const [deletingGiftId, setDeletingGiftId] = useState<string | null>(null);
 
   // Copy Feedback
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -350,18 +363,62 @@ export default function LaysaCleanPortalPage() {
     }
   }, []);
 
+  const fetchGifts = useCallback(async () => {
+    setIsLoadingGifts(true);
+    try {
+      const res = await fetch('/api/admin/gifts', { credentials: 'same-origin' });
+      const data = await res.json();
+      if (data.success && Array.isArray(data.gifts)) {
+        setGiftsList(data.gifts);
+        setTotalGiftsCount(data.totalGifts || data.gifts.length);
+        setTotalGiftsViews(data.totalViews || 0);
+        setVipDraftsCount(data.vipDraftsCount || 0);
+      }
+    } catch (err) {
+      console.error('Fetch gifts error:', err);
+    } finally {
+      setIsLoadingGifts(false);
+    }
+  }, []);
+
+  const handleDeleteGift = async (id: string) => {
+    if (!confirm(`Hapus hadiah digital "${id}" secara permanen dari database?`)) return;
+    setDeletingGiftId(id);
+    try {
+      const res = await fetch(`/api/admin/gifts?id=${id}`, {
+        method: 'DELETE',
+        credentials: 'same-origin',
+      });
+      const data = await res.json();
+      if (data.success) {
+        setGiftsList((prev) => prev.filter((g) => g.id !== id));
+        setTotalGiftsCount((prev) => Math.max(0, prev - 1));
+      } else {
+        alert(data.message || 'Gagal menghapus hadiah digital.');
+      }
+    } catch {
+      alert('Terjadi kesalahan jaringan.');
+    } finally {
+      setDeletingGiftId(null);
+    }
+  };
+
   useEffect(() => {
     if (isAuthenticated) {
       fetchCodes();
       fetchPricing();
+      fetchGifts();
     }
-  }, [isAuthenticated, fetchCodes, fetchPricing]);
+  }, [isAuthenticated, fetchCodes, fetchPricing, fetchGifts]);
 
   useEffect(() => {
     if (isAuthenticated && activeTab === 'diagnostics') {
       fetchDiagnostics();
     }
-  }, [isAuthenticated, activeTab, fetchDiagnostics]);
+    if (isAuthenticated && activeTab === 'gifts') {
+      fetchGifts();
+    }
+  }, [isAuthenticated, activeTab, fetchDiagnostics, fetchGifts]);
 
   // Generate kode acak
   const handleRandomizeCode = () => {
@@ -716,6 +773,20 @@ export default function LaysaCleanPortalPage() {
     });
   }, [codes, searchQuery, filterStatus]);
 
+  // Filtered Digital Gifts
+  const filteredGifts = useMemo(() => {
+    return giftsList.filter((g) => {
+      if (!giftsSearchQuery.trim()) return true;
+      const q = giftsSearchQuery.toLowerCase();
+      const idMatch = g.id && g.id.toLowerCase().includes(q);
+      const senderMatch = g.sender && g.sender.toLowerCase().includes(q);
+      const recipientMatch = g.recipient && g.recipient.toLowerCase().includes(q);
+      const msgMatch = g.message && g.message.toLowerCase().includes(q);
+      const musicMatch = g.music && g.music.toLowerCase().includes(q);
+      return idMatch || senderMatch || recipientMatch || msgMatch || musicMatch;
+    });
+  }, [giftsList, giftsSearchQuery]);
+
   // ═════════════════════════════════════════════════════════════
   // VIEW A: LOGIN SESUAI GAYA LOGINUI.HTML (UNAUTHENTICATED)
   // ═════════════════════════════════════════════════════════════
@@ -847,11 +918,23 @@ export default function LaysaCleanPortalPage() {
 
             <button
               type="button"
+              onClick={() => setActiveTab('gifts')}
+              className={`adm-nav-item ${activeTab === 'gifts' ? 'active' : ''}`}
+            >
+              <Gift size={17} />
+              <span>Database Hadiah</span>
+              {totalGiftsCount > 0 && (
+                <span className="adm-mobile-badge" style={{ marginLeft: 'auto' }}>{totalGiftsCount}</span>
+              )}
+            </button>
+
+            <button
+              type="button"
               onClick={() => setActiveTab('pricing')}
               className={`adm-nav-item ${activeTab === 'pricing' ? 'active' : ''}`}
             >
               <Tag size={17} />
-              <span>Atur Harga & Promo</span>
+              <span>Atur Harga &amp; Promo</span>
             </button>
 
             <button
@@ -942,6 +1025,16 @@ export default function LaysaCleanPortalPage() {
 
               <button
                 type="button"
+                onClick={() => setActiveTab('gifts')}
+                className={`adm-mobile-tab-btn ${activeTab === 'gifts' ? 'active' : ''}`}
+              >
+                <Gift size={14} />
+                <span>Hadiah</span>
+                {totalGiftsCount > 0 && <span className="adm-mobile-badge">{totalGiftsCount}</span>}
+              </button>
+
+              <button
+                type="button"
                 onClick={() => setActiveTab('pricing')}
                 className={`adm-mobile-tab-btn ${activeTab === 'pricing' ? 'active' : ''}`}
               >
@@ -994,7 +1087,7 @@ export default function LaysaCleanPortalPage() {
                 <div className="adm-hero-illustration">💐</div>
               </div>
 
-              {/* 3 Kartu Statistik (Harga dihilangkan sesuai permintaan) */}
+              {/* 5 Kartu Statistik Dashboard */}
               <div className="adm-stats-grid">
                 <div
                   className="adm-stat-card card-theme-purple"
@@ -1038,6 +1131,36 @@ export default function LaysaCleanPortalPage() {
                   <div className="adm-stat-info">
                     <h4>{stats.used}</h4>
                     <p>Terklaim Pembeli</p>
+                  </div>
+                </div>
+
+                <div
+                  className="adm-stat-card card-theme-rose"
+                  onClick={() => setActiveTab('gifts')}
+                  style={{ cursor: 'pointer' }}
+                  title="Klik untuk lihat database kado digital"
+                >
+                  <div className="adm-stat-icon">
+                    <Gift size={20} />
+                  </div>
+                  <div className="adm-stat-info">
+                    <h4>{totalGiftsCount}</h4>
+                    <p>Hadiah Digital Dibuat</p>
+                  </div>
+                </div>
+
+                <div
+                  className="adm-stat-card card-theme-blue"
+                  onClick={() => setActiveTab('gifts')}
+                  style={{ cursor: 'pointer' }}
+                  title="Klik untuk pantau total kunjungan amplop"
+                >
+                  <div className="adm-stat-icon">
+                    <Eye size={20} />
+                  </div>
+                  <div className="adm-stat-info">
+                    <h4>{totalGiftsViews}</h4>
+                    <p>Views Amplop Kado</p>
                   </div>
                 </div>
               </div>
@@ -2512,6 +2635,490 @@ export default function LaysaCleanPortalPage() {
                     Klik tombol &quot;Periksa Sekarang&quot; untuk memuat status koneksi database.
                   </div>
                 )}
+              </div>
+            </div>
+          )}
+
+          {/* ═══════════════════════════════════════════
+              TAB 4: DATABASE HADIAH DIGITAL & DRAFT VIP
+              ═══════════════════════════════════════════ */}
+          {activeTab === 'gifts' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              {/* Header Tab */}
+              <div className="adm-form-card">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '14px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                    <div
+                      className="adm-form-card-icon"
+                      style={{ background: 'linear-gradient(135deg, #ec4899, #be185d)', color: '#fff' }}
+                    >
+                      <Gift size={20} />
+                    </div>
+                    <div>
+                      <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-dark)', margin: 0 }}>
+                        Database Hadiah Digital &amp; Draft Cloud VIP
+                      </h2>
+                      <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: '4px 0 0 0' }}>
+                        Kelola seluruh tautan amplop kado interaktif yang telah dibuat pengguna, pantau jumlah buka amplop (views), serta sinkronisasi draft cloud.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    <button
+                      type="button"
+                      onClick={() => fetchGifts()}
+                      disabled={isLoadingGifts}
+                      className="adm-btn-secondary"
+                      style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', padding: '8px 14px' }}
+                    >
+                      <RefreshCw size={14} className={isLoadingGifts ? 'animate-spin' : ''} />
+                      <span>{isLoadingGifts ? 'Menyinkronkan...' : 'Segarkan Data'}</span>
+                    </button>
+                    <Link
+                      href="/"
+                      target="_blank"
+                      className="adm-btn-primary"
+                      style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', padding: '8px 14px', textDecoration: 'none' }}
+                    >
+                      <ExternalLink size={14} />
+                      <span>Buka Studio Buket</span>
+                    </Link>
+                  </div>
+                </div>
+
+                {/* 3 Metric Cards Ringkasan */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px', marginTop: '20px' }}>
+                  <div
+                    style={{
+                      background: 'linear-gradient(135deg, #fff1f2, #ffe4e6)',
+                      borderRadius: '16px',
+                      padding: '16px 20px',
+                      border: '1px solid #fecdd3',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '4px',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#be123c', fontSize: '0.82rem', fontWeight: 700 }}>
+                      <Gift size={16} />
+                      <span>Total Hadiah Digital</span>
+                    </div>
+                    <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#881337', marginTop: '4px' }}>
+                      {totalGiftsCount.toLocaleString('id-ID')}
+                    </div>
+                    <span style={{ fontSize: '0.74rem', color: '#9f1239' }}>Tautan amplop aktif di database</span>
+                  </div>
+
+                  <div
+                    style={{
+                      background: 'linear-gradient(135deg, #f0f9ff, #e0f2fe)',
+                      borderRadius: '16px',
+                      padding: '16px 20px',
+                      border: '1px solid #bae6fd',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '4px',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#0369a1', fontSize: '0.82rem', fontWeight: 700 }}>
+                      <Eye size={16} />
+                      <span>Total Buka Amplop (Views)</span>
+                    </div>
+                    <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#0c4a6e', marginTop: '4px' }}>
+                      {totalGiftsViews.toLocaleString('id-ID')}
+                    </div>
+                    <span style={{ fontSize: '0.74rem', color: '#0284c7' }}>Akumulasi dibaca oleh penerima</span>
+                  </div>
+
+                  <div
+                    style={{
+                      background: 'linear-gradient(135deg, #fdf4ff, #fae8ff)',
+                      borderRadius: '16px',
+                      padding: '16px 20px',
+                      border: '1px solid #f5d0fe',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '4px',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#7e22ce', fontSize: '0.82rem', fontWeight: 700 }}>
+                      <Database size={16} />
+                      <span>Draft VIP Terenkripsi</span>
+                    </div>
+                    <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#581c87', marginTop: '4px' }}>
+                      {vipDraftsCount.toLocaleString('id-ID')}
+                    </div>
+                    <span style={{ fontSize: '0.74rem', color: '#6b21a8' }}>Autosave AES-256 tersimpan di Cloud</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Pencarian & Tabel Hadiah Digital */}
+              <div className="adm-table-card">
+                {/* Search Bar */}
+                <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+                  <div style={{ position: 'relative', flex: '1', minWidth: '240px', maxWidth: '420px' }}>
+                    <Search
+                      size={16}
+                      style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-dim)' }}
+                    />
+                    <input
+                      type="text"
+                      value={giftsSearchQuery}
+                      onChange={(e) => setGiftsSearchQuery(e.target.value)}
+                      placeholder="Cari penerima, pengirim, kata pesan, atau ID..."
+                      className="vault-input-field"
+                      style={{ paddingLeft: '40px', fontSize: '0.85rem' }}
+                    />
+                    {giftsSearchQuery && (
+                      <button
+                        type="button"
+                        onClick={() => setGiftsSearchQuery('')}
+                        style={{
+                          position: 'absolute',
+                          right: '12px',
+                          top: '50%',
+                          transform: 'translateY(-50%)',
+                          background: 'none',
+                          border: 'none',
+                          cursor: 'pointer',
+                          color: 'var(--text-dim)',
+                          fontSize: '0.75rem',
+                          fontWeight: 700,
+                        }}
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
+
+                  <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                    Menampilkan <strong>{filteredGifts.length}</strong> dari <strong>{giftsList.length}</strong> kado digital
+                  </div>
+                </div>
+
+                {/* ── TAMPILAN DESKTOP TABLE ── */}
+                <div className="adm-desktop-table-wrap">
+                  {isLoadingGifts ? (
+                    <div style={{ textAlign: 'center', padding: '48px 20px', color: 'var(--text-dim)', fontSize: '0.88rem' }}>
+                      <RefreshCw size={24} className="animate-spin" style={{ margin: '0 auto 12px auto', display: 'block', color: 'var(--primary)' }} />
+                      Memuat database kado digital...
+                    </div>
+                  ) : filteredGifts.length === 0 ? (
+                    <div style={{ textAlign: 'center', padding: '60px 20px' }}>
+                      <div style={{ fontSize: '2.5rem', marginBottom: '8px' }}>💌</div>
+                      <div style={{ fontWeight: 700, color: 'var(--text-dark)', fontSize: '0.95rem' }}>
+                        {giftsSearchQuery ? 'Tidak ada hadiah yang cocok dengan pencarian' : 'Belum Ada Hadiah Digital Dibuat'}
+                      </div>
+                      <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', maxWidth: '420px', margin: '6px auto 0 auto' }}>
+                        {giftsSearchQuery
+                          ? 'Coba ganti kata kunci pencarian Anda.'
+                          : 'Setiap kali pengguna merangkai buket dan menekan "Buat Link Hadiah Digital" di Langkah 5, kado akan langsung tersimpan di sini.'}
+                      </p>
+                    </div>
+                  ) : (
+                    <table className="adm-table">
+                      <thead>
+                        <tr>
+                          <th>ID / Slug</th>
+                          <th>Pengirim &amp; Penerima</th>
+                          <th>Pesan Surat</th>
+                          <th>Musik Melodi</th>
+                          <th>Buka Amplop</th>
+                          <th>Waktu Dibuat</th>
+                          <th style={{ textAlign: 'center' }}>Aksi</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredGifts.map((gift) => {
+                          const giftUrl = typeof window !== 'undefined'
+                            ? `${window.location.origin}/gift/${gift.id}`
+                            : `/gift/${gift.id}`;
+
+                          return (
+                            <tr key={gift.id}>
+                              {/* ID / Kode Kado */}
+                              <td>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                  <span className="adm-code-tag" style={{ fontSize: '0.8rem', fontFamily: 'monospace' }}>
+                                    {gift.id}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      navigator.clipboard.writeText(giftUrl);
+                                      setCopiedId(gift.id);
+                                      setTimeout(() => setCopiedId(null), 2000);
+                                    }}
+                                    className="adm-btn-action"
+                                    title="Salin Tautan Hadiah"
+                                  >
+                                    {copiedId === gift.id ? <Check size={14} color="#16a34a" /> : <Copy size={14} />}
+                                  </button>
+                                </div>
+                              </td>
+
+                              {/* Pengirim & Penerima */}
+                              <td>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                                  <div style={{ fontSize: '0.84rem', fontWeight: 700, color: 'var(--text-dark)', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                    <span style={{ color: '#ec4899' }}>❤️</span>
+                                    <span>{gift.recipient || 'Penerima'}</span>
+                                  </div>
+                                  <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>
+                                    Dari: <strong style={{ color: 'var(--text-dark)' }}>{gift.sender || 'Anonim'}</strong>
+                                  </div>
+                                </div>
+                              </td>
+
+                              {/* Cuplikan Pesan */}
+                              <td style={{ maxWidth: '240px' }}>
+                                <div
+                                  style={{
+                                    fontSize: '0.78rem',
+                                    fontStyle: 'italic',
+                                    color: 'var(--text-muted)',
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    whiteSpace: 'nowrap',
+                                  }}
+                                  title={gift.message || 'Tanpa pesan'}
+                                >
+                                  &ldquo;{gift.message ? (gift.message.length > 45 ? `${gift.message.slice(0, 45)}...` : gift.message) : 'Tanpa pesan'}&rdquo;
+                                </div>
+                              </td>
+
+                              {/* Musik */}
+                              <td>
+                                <span
+                                  style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '4px',
+                                    fontSize: '0.74rem',
+                                    fontWeight: 600,
+                                    background: '#fdf2f8',
+                                    color: '#be185d',
+                                    padding: '3px 8px',
+                                    borderRadius: '6px',
+                                    border: '1px solid #fbcfe8',
+                                  }}
+                                >
+                                  <Music size={12} />
+                                  <span>{gift.music || 'Default Piano'}</span>
+                                </span>
+                              </td>
+
+                              {/* Views */}
+                              <td>
+                                <span
+                                  style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '5px',
+                                    fontWeight: 700,
+                                    fontSize: '0.78rem',
+                                    color: '#0284c7',
+                                    background: '#f0f9ff',
+                                    padding: '3px 9px',
+                                    borderRadius: '8px',
+                                    border: '1px solid #bae6fd',
+                                  }}
+                                >
+                                  <Eye size={13} />
+                                  <span>{gift.views || 0}x dibuka</span>
+                                </span>
+                              </td>
+
+                              {/* Tanggal */}
+                              <td style={{ fontSize: '0.76rem', color: 'var(--text-dim)', whiteSpace: 'nowrap' }}>
+                                {gift.createdAt
+                                  ? new Date(gift.createdAt).toLocaleDateString('id-ID', {
+                                      day: 'numeric',
+                                      month: 'short',
+                                      year: 'numeric',
+                                      hour: '2-digit',
+                                      minute: '2-digit',
+                                    })
+                                  : '-'}
+                              </td>
+
+                              {/* Aksi */}
+                              <td style={{ textAlign: 'center' }}>
+                                <div style={{ display: 'flex', justifyContent: 'center', gap: '6px' }}>
+                                  <a
+                                    href={`/gift/${gift.id}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="adm-btn-action"
+                                    title="Buka Halaman Hadiah"
+                                    style={{ color: '#1d6ff2', textDecoration: 'none' }}
+                                  >
+                                    <ExternalLink size={14} />
+                                  </a>
+
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeleteGift(gift.id)}
+                                    disabled={deletingGiftId === gift.id}
+                                    className="adm-btn-action delete"
+                                    title="Hapus Kado Permanen"
+                                    style={{ color: '#ef4444' }}
+                                  >
+                                    <Trash2 size={14} />
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
+
+                {/* ── TAMPILAN SMARTPHONE (MOBILE CARDS VIEW) ── */}
+                <div className="adm-mobile-cards-wrap">
+                  {isLoadingGifts ? (
+                    <div style={{ textAlign: 'center', padding: '24px', color: 'var(--text-muted)', fontSize: '0.82rem' }}>
+                      Memuat daftar kado digital...
+                    </div>
+                  ) : filteredGifts.length === 0 ? (
+                    <div style={{ textAlign: 'center', padding: '24px', color: 'var(--text-muted)', fontSize: '0.82rem' }}>
+                      Tidak ada kado digital yang sesuai pencarian.
+                    </div>
+                  ) : (
+                    filteredGifts.map((gift) => {
+                      const giftUrl = typeof window !== 'undefined'
+                        ? `${window.location.origin}/gift/${gift.id}`
+                        : `/gift/${gift.id}`;
+
+                      return (
+                        <div key={gift.id} className="adm-code-card-mobile">
+                          {/* Baris Atas: ID + Views */}
+                          <div className="adm-code-card-top">
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <span className="adm-code-tag" style={{ fontSize: '0.82rem', padding: '4px 8px' }}>
+                                {gift.id}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  navigator.clipboard.writeText(giftUrl);
+                                  setCopiedId(gift.id);
+                                  setTimeout(() => setCopiedId(null), 2000);
+                                }}
+                                style={{
+                                  background: 'none',
+                                  border: 'none',
+                                  cursor: 'pointer',
+                                  padding: '4px',
+                                  color: 'var(--text-dim)',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                }}
+                                title="Salin Link"
+                              >
+                                {copiedId === gift.id ? <Check size={14} color="#22c55e" /> : <Copy size={14} />}
+                              </button>
+                            </div>
+
+                            <span
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                                fontSize: '0.7rem',
+                                fontWeight: 700,
+                                background: '#f0f9ff',
+                                color: '#0284c7',
+                                padding: '2px 8px',
+                                borderRadius: '6px',
+                                border: '1px solid #bae6fd',
+                              }}
+                            >
+                              <Eye size={12} />
+                              <span>{gift.views || 0}x</span>
+                            </span>
+                          </div>
+
+                          {/* Penerima & Pengirim */}
+                          <div style={{ margin: '8px 0', fontSize: '0.82rem' }}>
+                            <div style={{ fontWeight: 700, color: 'var(--text-dark)', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                              <span style={{ color: '#ec4899' }}>❤️ Kepada:</span> {gift.recipient || 'Penerima'}
+                            </div>
+                            <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                              Dari: {gift.sender || 'Anonim'}
+                            </div>
+                          </div>
+
+                          {/* Cuplikan Pesan */}
+                          {gift.message && (
+                            <div
+                              style={{
+                                fontSize: '0.76rem',
+                                fontStyle: 'italic',
+                                color: 'var(--text-muted)',
+                                background: 'var(--bg-subtle)',
+                                padding: '8px 10px',
+                                borderRadius: '8px',
+                                marginBottom: '10px',
+                                lineHeight: 1.4,
+                              }}
+                            >
+                              &ldquo;{gift.message.length > 80 ? `${gift.message.slice(0, 80)}...` : gift.message}&rdquo;
+                            </div>
+                          )}
+
+                          {/* Musik & Waktu */}
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.72rem', color: 'var(--text-dim)', marginBottom: '10px' }}>
+                            <span>🎵 {gift.music || 'Default Piano'}</span>
+                            <span>
+                              {gift.createdAt ? new Date(gift.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }) : '-'}
+                            </span>
+                          </div>
+
+                          {/* Aksi Cepat */}
+                          <div className="adm-code-card-actions">
+                            <a
+                              href={`/gift/${gift.id}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="adm-btn-mobile-wa"
+                              style={{ textDecoration: 'none', justifyContent: 'center' }}
+                            >
+                              <ExternalLink size={13} />
+                              <span>Buka Kado</span>
+                            </a>
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                navigator.clipboard.writeText(giftUrl);
+                                setCopiedId(gift.id);
+                                setTimeout(() => setCopiedId(null), 2000);
+                              }}
+                              className="adm-btn-mobile-toggle"
+                            >
+                              {copiedId === gift.id ? '✓ Tersalin' : 'Salin Link'}
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteGift(gift.id)}
+                              disabled={deletingGiftId === gift.id}
+                              className="adm-btn-mobile-icon delete"
+                              title="Hapus Kado"
+                            >
+                              <Trash2 size={13} />
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
               </div>
             </div>
           )}

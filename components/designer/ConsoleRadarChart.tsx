@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { AestheticMetrics } from '@/utils/bouquetConsolePresets';
+import { useLanguage } from '@/context/LanguageContext';
 import { Sparkles, Palette, CheckCircle2, Scale, Layers } from 'lucide-react';
 
 interface ConsoleRadarChartProps {
@@ -10,6 +11,8 @@ interface ConsoleRadarChartProps {
 }
 
 export default function ConsoleRadarChart({ metrics, targetCount }: ConsoleRadarChartProps) {
+  const { isEn } = useLanguage();
+
   // Center of 180x180 viewBox
   const cx = 90;
   const cy = 90;
@@ -21,10 +24,10 @@ export default function ConsoleRadarChart({ metrics, targetCount }: ConsoleRadar
   // Bottom (180 deg): Keseimbangan
   // Left (270 deg): Keragaman
   const axes = [
-    { label: 'Harmoni', key: 'harmonyScore', val: metrics.harmonyScore, angle: -Math.PI / 2, icon: Palette },
-    { label: 'Kerapatan', key: 'fullnessScore', val: metrics.fullnessScore, angle: 0, icon: Layers },
-    { label: 'Keseimbangan', key: 'balanceScore', val: metrics.balanceScore, angle: Math.PI / 2, icon: Scale },
-    { label: 'Keragaman', key: 'diversityScore', val: metrics.diversityScore, angle: Math.PI, icon: Sparkles },
+    { label: isEn ? 'Harmony' : 'Harmoni', key: 'harmonyScore', val: metrics.harmonyScore, angle: -Math.PI / 2, icon: Palette },
+    { label: isEn ? 'Fullness' : 'Kerapatan', key: 'fullnessScore', val: metrics.fullnessScore, angle: 0, icon: Layers },
+    { label: isEn ? 'Balance' : 'Seimbang', key: 'balanceScore', val: metrics.balanceScore, angle: Math.PI / 2, icon: Scale },
+    { label: isEn ? 'Variety' : 'Ragam', key: 'diversityScore', val: metrics.diversityScore, angle: Math.PI, icon: Sparkles },
   ];
 
   // Grid levels at 33%, 66%, 100%
@@ -66,7 +69,7 @@ export default function ConsoleRadarChart({ metrics, targetCount }: ConsoleRadar
         <div className="flex items-center gap-2">
           <div className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
           <span className="text-xs font-bold text-slate-200 tracking-wider uppercase">
-            Analisis Estetika
+            {isEn ? 'Aesthetic Analysis' : 'Analisis Estetika'}
           </span>
         </div>
         <div className={`px-2 py-0.5 rounded-full text-[11px] font-extrabold bg-gradient-to-r border shadow-sm ${getBadgeColor(metrics.totalScore)}`}>
@@ -76,7 +79,7 @@ export default function ConsoleRadarChart({ metrics, targetCount }: ConsoleRadar
 
       {/* SVG Radar Display */}
       <div className="console-radar-svg-wrap">
-        <svg viewBox="0 0 180 180" className="console-radar-svg" aria-label="Grafik Radar Estetika Rangkaian Buket">
+        <svg viewBox="0 0 180 180" className="console-radar-svg" aria-label={isEn ? 'Bouquet Aesthetics Radar Chart' : 'Grafik Radar Estetika Rangkaian Buket'}>
           <defs>
             {/* Radar area gradient */}
             <linearGradient id="consoleRadarGrad" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -146,16 +149,16 @@ export default function ConsoleRadarChart({ metrics, targetCount }: ConsoleRadar
 
           {/* Axis Labels in SVG */}
           <text x={cx} y={15} textAnchor="middle" fill="#94a3b8" fontSize="9" fontWeight="700">
-            Harmoni
+            {isEn ? 'Harmony' : 'Harmoni'}
           </text>
           <text x={172} y={cy + 3} textAnchor="end" fill="#94a3b8" fontSize="9" fontWeight="700">
-            Kerapatan
+            {isEn ? 'Fullness' : 'Kerapatan'}
           </text>
           <text x={cx} y={173} textAnchor="middle" fill="#94a3b8" fontSize="9" fontWeight="700">
-            Seimbang
+            {isEn ? 'Balance' : 'Seimbang'}
           </text>
           <text x={8} y={cy + 3} textAnchor="start" fill="#94a3b8" fontSize="9" fontWeight="700">
-            Ragam
+            {isEn ? 'Variety' : 'Ragam'}
           </text>
         </svg>
       </div>
@@ -163,21 +166,24 @@ export default function ConsoleRadarChart({ metrics, targetCount }: ConsoleRadar
       {/* Metrics Summary Strip */}
       <div className="console-radar-stats">
         <div className="console-stat-pill">
-          <span className="text-[10px] text-slate-400">Tangkai</span>
+          <span className="text-[10px] text-slate-400">{isEn ? 'Stems' : 'Tangkai'}</span>
           <span className="text-xs font-bold text-slate-100">
             {metrics.flowerCount} / {targetCount}
           </span>
         </div>
         <div className="console-stat-pill">
-          <span className="text-[10px] text-slate-400">Varietas</span>
+          <span className="text-[10px] text-slate-400">{isEn ? 'Species' : 'Varietas'}</span>
           <span className="text-xs font-bold text-cyan-300">
-            {metrics.uniqueSpeciesCount} Jenis
+            {metrics.uniqueSpeciesCount} {isEn ? 'Types' : 'Jenis'}
           </span>
         </div>
         <div className="console-stat-pill">
-          <span className="text-[10px] text-slate-400">Status</span>
-          <span className="text-xs font-bold text-emerald-300 truncate max-w-[85px]" title={metrics.ratingLabel}>
-            {metrics.ratingLabel}
+          <span className="text-[10px] text-slate-400">{isEn ? 'Rating' : 'Status'}</span>
+          <span
+            className="text-xs font-bold text-emerald-300 truncate max-w-[85px]"
+            title={isEn ? (metrics.ratingLabelEn || metrics.ratingLabel) : metrics.ratingLabel}
+          >
+            {isEn ? (metrics.ratingLabelEn || metrics.ratingLabel) : metrics.ratingLabel}
           </span>
         </div>
       </div>

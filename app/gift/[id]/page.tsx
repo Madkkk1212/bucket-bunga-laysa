@@ -18,6 +18,8 @@ import {
 } from 'lucide-react';
 import { getBucketSize } from '@/data/buckets';
 import { BACKGROUND_THEMES } from '@/utils/canvasUtils';
+import { useLanguage } from '@/context/LanguageContext';
+import LanguageSwitcher from '@/components/ui/LanguageSwitcher';
 
 interface GiftData {
   id: string;
@@ -31,6 +33,7 @@ interface GiftData {
 }
 
 export default function GiftReceiverPage() {
+  const { isEn } = useLanguage();
   const params = useParams();
   const giftId = params?.id as string;
 
@@ -199,22 +202,27 @@ export default function GiftReceiverPage() {
           type="button"
           className="gift-bgm-toggle"
           onClick={toggleAudio}
-          title={isAudioPlaying ? 'Matikan Melodi' : 'Nyalakan Melodi'}
-          aria-label="Toggle musik latar"
+          title={isAudioPlaying ? (isEn ? 'Mute Music' : 'Matikan Melodi') : (isEn ? 'Play Music' : 'Nyalakan Melodi')}
+          aria-label={isEn ? 'Toggle background music' : 'Toggle musik latar'}
         >
           {isAudioPlaying ? (
             <>
               <Volume2 size={16} className="text-pink-600 animate-pulse" />
-              <span>Melodi Bunga</span>
+              <span>{isEn ? 'Floral Melody' : 'Melodi Bunga'}</span>
             </>
           ) : (
             <>
               <VolumeX size={16} className="text-gray-400" />
-              <span>Melodi Hening</span>
+              <span>{isEn ? 'Muted' : 'Melodi Hening'}</span>
             </>
           )}
         </button>
       )}
+
+      {/* Floating Language Switcher */}
+      <div style={{ position: 'fixed', top: '16px', right: '16px', zIndex: 50 }}>
+        <LanguageSwitcher variant="compact" />
+      </div>
 
       {/* STATE 1: ENVELOPE COVER (BEFORE UNSEALING) */}
       {!isOpen ? (
@@ -222,7 +230,7 @@ export default function GiftReceiverPage() {
           <div className="gift-envelope-box">
             <div className="gift-envelope-badge">
               <Sparkles size={14} />
-              <span>HADIAH SPESIAL DIGITAL</span>
+              <span>{isEn ? 'SPECIAL DIGITAL GIFT' : 'HADIAH SPESIAL DIGITAL'}</span>
             </div>
 
             <div className="gift-envelope-wax-seal" onClick={handleOpenGift}>
@@ -233,14 +241,14 @@ export default function GiftReceiverPage() {
 
             <div className="gift-envelope-addresses">
               <div className="gift-addr-to">
-                <span className="gift-addr-label">Untuk yang teristimewa:</span>
+                <span className="gift-addr-label">{isEn ? 'To the most special one:' : 'Untuk yang teristimewa:'}</span>
                 <h1 className="gift-addr-name">{gift.recipientName}</h1>
               </div>
 
               <div className="gift-addr-divider" />
 
               <div className="gift-addr-from">
-                <span className="gift-addr-label">Rangkaian penuh kasih dari:</span>
+                <span className="gift-addr-label">{isEn ? 'Arranged with love from:' : 'Rangkaian penuh kasih dari:'}</span>
                 <p className="gift-sender-name">{gift.senderName}</p>
               </div>
             </div>
@@ -252,9 +260,9 @@ export default function GiftReceiverPage() {
               id="btn-open-gift-envelope"
             >
               <Sparkles size={18} />
-              <span>Buka Amplop & Lihat Buketmu</span>
+              <span>{isEn ? 'Open Envelope & View Bouquet' : 'Buka Amplop & Lihat Buketmu'}</span>
             </button>
-            <span className="gift-open-hint">Sentuh tombol untuk membuka kejutan</span>
+            <span className="gift-open-hint">{isEn ? 'Tap the button to open your surprise' : 'Sentuh tombol untuk membuka kejutan'}</span>
           </div>
         </div>
       ) : (
@@ -264,11 +272,17 @@ export default function GiftReceiverPage() {
           <div className="gift-revealed-header">
             <span className="gift-greeting-chip">
               <Heart size={14} className="text-pink-500 fill-pink-500" />
-              <span>Untuk {gift.recipientName}</span>
+              <span>{isEn ? `For ${gift.recipientName}` : `Untuk ${gift.recipientName}`}</span>
             </span>
-            <h2 className="gift-revealed-title">Buket Bunga Cantik Khusus Untukmu</h2>
+            <h2 className="gift-revealed-title">
+              {isEn ? 'A Gorgeous Floral Bouquet Just For You' : 'Buket Bunga Cantik Khusus Untukmu'}
+            </h2>
             <p className="gift-revealed-sub">
-              Dirangkai dengan tulus oleh <strong>{gift.senderName}</strong> di Studio Buket Laysa
+              {isEn ? (
+                <>Arranged with heartfelt care by <strong>{gift.senderName}</strong> at Laysa Bouquet Studio</>
+              ) : (
+                <>Dirangkai dengan tulus oleh <strong>{gift.senderName}</strong> di Studio Buket Laysa</>
+              )}
             </p>
           </div>
 
@@ -322,9 +336,9 @@ export default function GiftReceiverPage() {
           {/* Letter Card Message */}
           <div className="gift-letter-card">
             <div className="gift-letter-header">
-              <span className="gift-letter-label">Surat & Ucapan Spesial</span>
+              <span className="gift-letter-label">{isEn ? 'Special Letter & Note' : 'Surat & Ucapan Spesial'}</span>
               <span className="gift-letter-date">
-                {new Date().toLocaleDateString('id-ID', {
+                {new Date().toLocaleDateString(isEn ? 'en-US' : 'id-ID', {
                   day: 'numeric',
                   month: 'long',
                   year: 'numeric',
@@ -338,11 +352,15 @@ export default function GiftReceiverPage() {
                 {gift.message ? (
                   <p>{gift.message}</p>
                 ) : (
-                  <p>Semoga buket bunga ini selalu menghadirkan senyuman dan kebahagiaan di setiap langkahmu! 💐✨</p>
+                  <p>
+                    {isEn
+                      ? 'May this floral bouquet always bring warmth, smiles, and happiness to your journey! 💐✨'
+                      : 'Semoga buket bunga ini selalu menghadirkan senyuman dan kebahagiaan di setiap langkahmu! 💐✨'}
+                  </p>
                 )}
               </div>
               <p className="gift-letter-signature">
-                Dari yang selalu mendoakanmu,
+                {isEn ? 'With love & best wishes,' : 'Dari yang selalu mendoakanmu,'}
                 <br />
                 <strong>{gift.senderName}</strong>
               </p>
@@ -353,11 +371,11 @@ export default function GiftReceiverPage() {
           <div className="gift-footer-actions">
             <Link href="/designer" className="btn btn-primary gift-btn-make-own" id="btn-gift-create-own">
               <Sparkles size={16} />
-              <span>Rangkai Buket Hadiahmu Sendiri</span>
+              <span>{isEn ? 'Design Your Own Bouquet' : 'Rangkai Buket Hadiahmu Sendiri'}</span>
             </Link>
 
             <Link href="/" className="btn btn-secondary gift-btn-home">
-              <span>Kunjungi Laysa Florist</span>
+              <span>{isEn ? 'Visit Laysa Florist' : 'Kunjungi Laysa Florist'}</span>
             </Link>
           </div>
         </div>
