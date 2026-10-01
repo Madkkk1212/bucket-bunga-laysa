@@ -1,7 +1,7 @@
 // utils/bouquetConsolePresets.ts
 // Intelligent preset formations and aesthetic radar analysis for Desktop Bouquet Console
 
-import { PlacedFlower, FlowerDef } from '@/types/design';
+import { PlacedFlower } from '@/types/design';
 import { FLOWERS } from '@/data/flowers';
 
 export interface AestheticMetrics {
@@ -41,7 +41,7 @@ export function computeAestheticMetrics(
   // 1. Fullness (0 - 100)
   const target = Math.max(1, targetCount);
   const fullnessRatio = count / target;
-  let fullnessScore = Math.min(100, Math.round(fullnessRatio * 100));
+  const fullnessScore = Math.min(100, Math.round(fullnessRatio * 100));
 
   // 2. Diversity Score (0 - 100)
   const speciesSet = new Set(flowers.map((f) => f.flowerId));
@@ -179,7 +179,6 @@ export function generatePresetLayout(
         { count: Math.ceil(n * 0.45), radius: 108, yOffset: -18 },
       ];
 
-      let idx = 0;
       return flowersToArrange.map((f, i) => {
         let tierIndex = 0;
         let runningCount = 0;
