@@ -792,8 +792,8 @@ export default function LaysaCleanPortalPage() {
   // ═════════════════════════════════════════════════════════════
   if (!isAuthenticated) {
     return (
-      <div className="loginui-page-wrapper">
-        <div className="container">
+      <div className="loginui-page-wrapper" suppressHydrationWarning>
+        <div className="container" suppressHydrationWarning>
           {/* SISI KIRI: GAMBAR ARTISAN BOUQUET */}
           <div className="left-panel">
             <div className="brand-top">
@@ -878,7 +878,7 @@ export default function LaysaCleanPortalPage() {
   // ═════════════════════════════════════════════════════════════
   const hasSidebar = activeTab === 'dashboard';
   return (
-    <div className="vault-wrapper">
+    <div className="vault-wrapper" suppressHydrationWarning>
       <div
         className="dashboard-main"
         style={{
