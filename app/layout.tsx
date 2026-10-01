@@ -302,7 +302,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="id" className={`${montserrat.variable} ${playfair.variable} ${cormorant.variable} ${greatVibes.variable}`}>
+    <html
+      lang="id"
+      className={`${montserrat.variable} ${playfair.variable} ${cormorant.variable} ${greatVibes.variable}`}
+      suppressHydrationWarning
+    >
       <head>
         <script
           type="application/ld+json"

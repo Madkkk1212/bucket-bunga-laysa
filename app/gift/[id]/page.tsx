@@ -143,7 +143,7 @@ export default function GiftReceiverPage() {
 
   if (loading) {
     return (
-      <div className="gift-page-container flex-col">
+      <div className="gift-page-container flex-col" suppressHydrationWarning>
         <div className="gift-spinner-ring" />
         <p className="mt-4 text-sm font-medium text-pink-700 animate-pulse">
           Mempersiapkan buket hadiah digital Anda...
@@ -154,7 +154,7 @@ export default function GiftReceiverPage() {
 
   if (error || !gift) {
     return (
-      <div className="gift-page-container">
+      <div className="gift-page-container" suppressHydrationWarning>
         <div className="gift-card-envelope text-center p-8 max-w-md">
           <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-red-50 flex items-center justify-center text-red-500 text-2xl">
             🥀
@@ -180,6 +180,7 @@ export default function GiftReceiverPage() {
   return (
     <div
       className="gift-page-root"
+      suppressHydrationWarning
       style={{
         background: currentTheme?.previewColor
           ? `radial-gradient(circle at 50% 30%, #ffffff 0%, ${currentTheme.previewColor} 100%)`
