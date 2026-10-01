@@ -27,7 +27,7 @@ import {
   Trash2,
   ExternalLink,
 } from 'lucide-react';
-import HomeBackgroundVideo from '@/components/home/HomeBackgroundVideo';
+import { consoleAudio } from '@/utils/consoleAudio';
 import FlowerCountModal from '@/components/designer/FlowerCountModal';
 import LanguageSwitcher from '@/components/ui/LanguageSwitcher';
 import { useLanguage } from '@/context/LanguageContext';
@@ -55,44 +55,14 @@ export default function TutorialClientView() {
   const [demoMusicTrack, setDemoMusicTrack] = useState<string>('romantic-piano');
   const [demoResolution, setDemoResolution] = useState<'1x' | '2x' | '4x'>('2x');
 
-  // Sound synthesizer (Web Audio API)
+  // Sound synthesizer using singleton consoleAudio (no memory leaks)
   const playSfx = (type: 'hover' | 'click' | 'portal') => {
     try {
-      const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-      if (!AudioCtx) return;
-      const ctx = new AudioCtx();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-
-      if (type === 'hover') {
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(460, ctx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(580, ctx.currentTime + 0.06);
-        gain.gain.setValueAtTime(0.03, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.06);
-        osc.start();
-        osc.stop(ctx.currentTime + 0.06);
-      } else if (type === 'click') {
-        osc.type = 'triangle';
-        osc.frequency.setValueAtTime(523.25, ctx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(659.25, ctx.currentTime + 0.09);
-        gain.gain.setValueAtTime(0.06, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.09);
-        osc.start();
-        osc.stop(ctx.currentTime + 0.09);
-      } else if (type === 'portal') {
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(392, ctx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.18);
-        gain.gain.setValueAtTime(0.08, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.18);
-        osc.start();
-        osc.stop(ctx.currentTime + 0.18);
-      }
+      if (type === 'hover') consoleAudio.play('soft');
+      else if (type === 'click') consoleAudio.play('click');
+      else if (type === 'portal') consoleAudio.play('chime');
     } catch {
-      // Audio might be muted or restricted before interaction
+      // Audio might be muted or restricted
     }
   };
 
@@ -159,10 +129,7 @@ export default function TutorialClientView() {
 
   return (
     <div className="tutorial-page-container min-h-screen" suppressHydrationWarning>
-      {/* ── 1. CINEMATIC VIDEO BACKGROUND ── */}
-      <HomeBackgroundVideo />
-
-      {/* ── 2. TOP HUD NAVIGATION BAR ── */}
+      {/* ── 1. TOP HUD NAVIGATION BAR ── */}
       <header className="tutorial-hud-header" aria-label="Tutorial Header">
         <div className="tutorial-hud-inner">
           <Link
@@ -185,16 +152,6 @@ export default function TutorialClientView() {
           </div>
         </div>
       </header>
-
-      {/* ── 3. FLOATING FLORAL PARTICLES DECOR ── */}
-      <div className="floral-frame-decor" aria-hidden="true">
-        <span className="floating-petal petal-1">🌸</span>
-        <span className="floating-petal petal-2">✨</span>
-        <span className="floating-petal petal-3">🌺</span>
-        <span className="floating-petal petal-4">🌸</span>
-        <span className="floating-petal petal-5">✨</span>
-        <span className="floating-petal petal-6">🌷</span>
-      </div>
 
       {/* ── 4. STICKY QUICK-JUMP CHAPTER TIMELINE ── */}
       <nav className="tutorial-quick-nav-bar" aria-label="Chapter Navigator">

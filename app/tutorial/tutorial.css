@@ -1,10 +1,10 @@
 /* ═══════════════════════════════════════════════════════════════════
    LAYSABOUQUET STUDIO — COMPREHENSIVE VISUAL TUTORIAL SYSTEM
    File: app/tutorial/tutorial.css
-   Style: Long-form Rich Annotated Walkthrough (Option B)
+   Style: Long-form Rich Annotated Walkthrough (Optimized 60 FPS)
    ═══════════════════════════════════════════════════════════════════ */
 
-/* ── Container Layout ── */
+/* ── Container Layout with Lightweight Aesthetic Background ── */
 .tutorial-page-container {
   min-height: 100vh;
   display: flex;
@@ -13,34 +13,16 @@
   overflow-x: hidden;
   color: #1e293b;
   font-family: var(--font-montserrat), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: radial-gradient(circle at 10% 12%, #fff1f2 0%, #fffbf0 28%, #faf5ff 55%, #fdf2f8 85%, #fff5f7 100%);
+  background-attachment: fixed;
 }
 
-/* Background video / backdrop */
-.tutorial-page-container .home-video-bg-container {
-  position: fixed !important;
-  inset: 0 !important;
-  width: 100vw !important;
-  height: 100vh !important;
-  z-index: 0 !important;
-  pointer-events: none !important;
-  filter: brightness(0.92);
-}
-
-.tutorial-page-container .floral-frame-decor {
-  position: fixed !important;
-  inset: 0 !important;
-  pointer-events: none !important;
-  z-index: 1 !important;
-}
-
-/* ── TOP HUD HEADER ── */
+/* ── TOP HUD HEADER (Solid Fast Opaque) ── */
 .tutorial-hud-header {
   position: sticky;
   top: 0;
   z-index: 40;
-  background: rgba(15, 23, 42, 0.88);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
+  background: #0f172a;
   border-bottom: 1.5px solid rgba(255, 255, 255, 0.12);
   padding: 12px 20px;
 }
@@ -66,7 +48,7 @@
   font-size: 13px;
   font-weight: 600;
   text-decoration: none;
-  transition: all 0.2s ease;
+  transition: background 0.15s ease, transform 0.15s ease;
   white-space: nowrap;
 }
 
@@ -108,16 +90,14 @@
   letter-spacing: 0.02em;
 }
 
-/* ── STICKY QUICK-JUMP CHAPTER BAR ── */
+/* ── STICKY QUICK-JUMP CHAPTER BAR (Solid Crisp Clean) ── */
 .tutorial-quick-nav-bar {
   position: sticky;
-  top: 61px;
+  top: 59px;
   z-index: 35;
-  background: rgba(255, 255, 255, 0.92);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  background: #ffffff;
   border-bottom: 1.5px solid rgba(244, 114, 182, 0.25);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
   padding: 10px 16px;
 }
 
@@ -163,7 +143,7 @@
   font-weight: 700;
   cursor: pointer;
   white-space: nowrap;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: background 0.15s ease, color 0.15s ease, transform 0.15s ease;
 }
 
 .tutorial-nav-chip:hover,
@@ -171,7 +151,7 @@
   background: linear-gradient(135deg, #ec4899 0%, #be185d 100%);
   color: #ffffff;
   border-color: #f472b6;
-  box-shadow: 0 4px 14px rgba(190, 24, 93, 0.35);
+  box-shadow: 0 4px 12px rgba(190, 24, 93, 0.25);
   transform: translateY(-1px);
 }
 
@@ -180,7 +160,7 @@
   flex: 1;
   position: relative;
   z-index: 10;
-  padding: 36px 20px 80px;
+  padding: 32px 20px 80px;
 }
 
 .tutorial-content-container {
@@ -188,18 +168,16 @@
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  gap: 36px;
+  gap: 32px;
 }
 
 /* ── HERO BANNER TOP ── */
 .tutorial-hero-intro {
   text-align: center;
-  background: rgba(255, 255, 255, 0.94);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
+  background: #ffffff;
   border-radius: 28px;
-  border: 2px solid #ffffff;
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.08);
+  border: 1px solid #fce7f3;
+  box-shadow: 0 10px 30px rgba(244, 114, 182, 0.08);
   padding: 36px 28px;
   position: relative;
   overflow: hidden;
@@ -250,7 +228,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 24px;
+  gap: 20px;
   flex-wrap: wrap;
   padding-top: 18px;
   border-top: 1px dashed #e2e8f0;
@@ -260,7 +238,7 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  background: rgba(241, 245, 249, 0.85);
+  background: #f8fafc;
   border: 1px solid #cbd5e1;
   padding: 6px 14px;
   border-radius: 9999px;
@@ -274,28 +252,18 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   STEP CARD COMPONENT (LONG-FORM CHAPTER)
+   STEP CARD COMPONENT (FAST GPU CACHED WITH content-visibility)
    ═══════════════════════════════════════════════════════════════════ */
 .tutorial-step-card {
   position: relative;
-  background: rgba(255, 255, 255, 0.96);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
+  background: #ffffff;
   border-radius: 28px;
   padding: 32px 36px;
-  border: 2px solid #ffffff;
-  box-shadow:
-    0 16px 40px rgba(0, 0, 0, 0.08),
-    0 0 0 1px rgba(244, 114, 182, 0.15);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  border: 1px solid #fce7f3;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
   scroll-margin-top: 130px;
-}
-
-.tutorial-step-card:hover {
-  transform: translateY(-2px);
-  box-shadow:
-    0 20px 48px rgba(0, 0, 0, 0.12),
-    0 0 24px rgba(244, 63, 94, 0.14);
+  content-visibility: auto;
+  contain-intrinsic-size: 1px 720px;
 }
 
 .tutorial-step-header {
@@ -372,19 +340,13 @@
   display: flex;
   align-items: flex-start;
   gap: 12px;
-  background: rgba(248, 250, 252, 0.95);
+  background: #f8fafc;
   border: 1px solid #e2e8f0;
   border-radius: 14px;
   padding: 12px 14px;
   font-size: 13px;
   line-height: 1.5;
   color: #334155;
-  transition: border-color 0.2s;
-}
-
-.tutorial-feature-item:hover {
-  border-color: #cbd5e1;
-  background: #ffffff;
 }
 
 .tutorial-feature-icon {
@@ -424,7 +386,6 @@
   font-size: 13px;
   line-height: 1.55;
   color: #854d0e;
-  box-shadow: 0 4px 14px rgba(245, 158, 11, 0.08);
 }
 
 .tutorial-pro-tip-tag {
@@ -450,18 +411,16 @@
 .tutorial-mockup-frame {
   position: relative;
   background: #0f172a;
-  border: 3px solid #1e293b;
-  border-radius: 24px;
+  border: 2px solid #1e293b;
+  border-radius: 22px;
   overflow: hidden;
-  box-shadow:
-    0 20px 48px rgba(0, 0, 0, 0.25),
-    0 0 0 1px rgba(255, 255, 255, 0.1);
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.16);
 }
 
 /* Top toolbar simulation */
 .mockup-toolbar-header {
   background: #1e293b;
-  border-bottom: 1.5px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   padding: 8px 12px;
   display: flex;
   align-items: center;
@@ -499,7 +458,6 @@
   background: #e11d48;
   color: #ffffff;
   border-color: #f43f5e;
-  box-shadow: 0 0 10px rgba(225, 29, 72, 0.5);
 }
 
 .mockup-stepper {
@@ -560,7 +518,7 @@
   z-index: 3;
   display: inline-block;
   cursor: pointer;
-  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 0.18s ease-out;
 }
 
 .mockup-selection-box {
@@ -569,7 +527,6 @@
   border: 2px dashed #f59e0b;
   border-radius: 12px;
   pointer-events: none;
-  box-shadow: 0 0 14px rgba(245, 158, 11, 0.35);
 }
 
 /* Transform handles */
@@ -609,14 +566,13 @@
   background: #f59e0b;
   border: 2px solid #ffffff;
   border-radius: 50%;
-  box-shadow: 0 0 10px rgba(245, 158, 11, 0.7);
   display: flex;
   align-items: center;
   justify-content: center;
   color: #fff;
 }
 
-/* ── VISUAL ANNOTATION CALLOUT CARDS ── */
+/* ── VISUAL ANNOTATION CALLOUT CARDS (Lightweight & Clean) ── */
 .tutorial-callouts-strip {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
@@ -631,7 +587,7 @@
   border: 1.5px solid #e2e8f0;
   border-radius: 12px;
   padding: 8px 10px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
 .callout-badge-number {
@@ -646,13 +602,6 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  box-shadow: 0 0 8px rgba(236, 72, 153, 0.5);
-  animation: pulseBeacon 2s infinite ease-in-out;
-}
-
-@keyframes pulseBeacon {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.12); box-shadow: 0 0 14px rgba(236, 72, 153, 0.8); }
 }
 
 .callout-pill-text {
@@ -665,7 +614,7 @@
 /* ── LIVE INTERACTIVE PLAYGROUND (STEP 3) ── */
 .mockup-interactive-bar {
   background: #1e293b;
-  border-top: 1.5px solid rgba(255, 255, 255, 0.1);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
   padding: 10px 14px;
   display: flex;
   flex-direction: column;
@@ -700,17 +649,12 @@
   font-size: 11.5px;
   font-weight: 700;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background 0.12s ease;
 }
 
 .mockup-interactive-btn:hover {
   background: #f43f5e;
   border-color: #fda4af;
-  transform: translateY(-1px);
-}
-
-.mockup-interactive-btn:active {
-  transform: translateY(0);
 }
 
 /* ── STEP 4 GREETING CARD MOCKUP ── */
@@ -729,7 +673,7 @@
   background: #fff;
   border-radius: 18px;
   border: 2px solid #fbcfe8;
-  box-shadow: 0 12px 30px rgba(244, 63, 94, 0.15);
+  box-shadow: 0 8px 24px rgba(244, 63, 94, 0.12);
   padding: 16px 18px;
 }
 
@@ -792,7 +736,7 @@
   font-size: 11px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: background 0.12s;
 }
 
 .mockup-template-chip:hover,
@@ -847,7 +791,7 @@
   font-size: 11px;
   color: #cbd5e1;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: background 0.12s;
 }
 
 .mockup-music-track-item.active {
@@ -870,7 +814,6 @@
   justify-content: center;
   gap: 6px;
   cursor: default;
-  box-shadow: 0 4px 12px rgba(190, 24, 93, 0.4);
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -883,23 +826,8 @@
   border-radius: 32px;
   padding: 44px 28px;
   text-align: center;
-  box-shadow:
-    0 24px 60px rgba(0, 0, 0, 0.4),
-    0 0 35px rgba(251, 191, 36, 0.25);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
   overflow: hidden;
-}
-
-.tutorial-bottom-cta-card::before {
-  content: '';
-  position: absolute;
-  top: -50%;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 500px;
-  height: 500px;
-  background: radial-gradient(circle, rgba(236, 72, 153, 0.25) 0%, transparent 70%);
-  filter: blur(40px);
-  pointer-events: none;
 }
 
 .tutorial-cta-content {
@@ -960,13 +888,13 @@
   font-size: 16px;
   font-weight: 800;
   cursor: pointer;
-  box-shadow: 0 10px 28px rgba(225, 29, 72, 0.45);
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 8px 24px rgba(225, 29, 72, 0.35);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
 .tutorial-btn-primary-launch:hover {
   transform: translateY(-2px) scale(1.02);
-  box-shadow: 0 14px 34px rgba(225, 29, 72, 0.6);
+  box-shadow: 0 12px 30px rgba(225, 29, 72, 0.5);
   border-color: #ffffff;
 }
 
@@ -982,7 +910,7 @@
   font-size: 15px;
   font-weight: 700;
   text-decoration: none;
-  transition: all 0.2s;
+  transition: background 0.15s;
 }
 
 .tutorial-btn-secondary-back:hover {
@@ -1009,7 +937,7 @@
 
 @media (max-width: 640px) {
   .tutorial-quick-nav-bar {
-    top: 57px;
+    top: 55px;
     padding: 8px 12px;
   }
   .tutorial-hud-header {
