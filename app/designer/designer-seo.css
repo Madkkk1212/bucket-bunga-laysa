@@ -1,0 +1,235 @@
+/* ====================================================
+   DESIGNER SEO & STUDIO GUIDE SECTION
+   Clean editorial styling, fully accessible, user-visible
+   ==================================================== */
+
+.designer-page-wrapper {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  width: 100%;
+  background: #f8fafc;
+}
+
+.designer-seo-section {
+  width: 100%;
+  background: linear-gradient(180deg, #fdf8f5 0%, #ffffff 100%);
+  border-top: 1px solid #f1e5dc;
+  color: #1e293b;
+  padding: 4rem 1.5rem 5rem;
+  font-family: var(--font-montserrat), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  box-sizing: border-box;
+}
+
+.designer-seo-container {
+  max-width: 1080px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 3.5rem;
+}
+
+/* Header & Intro */
+.designer-seo-header {
+  text-align: center;
+  max-width: 820px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.designer-seo-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  align-self: center;
+  padding: 0.35rem 0.9rem;
+  background: rgba(190, 24, 93, 0.08);
+  color: #be185d;
+  border-radius: 9999px;
+  font-size: 0.825rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.designer-seo-title {
+  font-family: var(--font-playfair), Georgia, serif;
+  font-size: 2.25rem;
+  font-weight: 700;
+  line-height: 1.25;
+  color: #4a2515;
+  margin: 0;
+}
+
+@media (max-width: 640px) {
+  .designer-seo-title {
+    font-size: 1.65rem;
+  }
+}
+
+.designer-seo-intro {
+  font-size: 1.05rem;
+  line-height: 1.7;
+  color: #475569;
+  margin: 0;
+}
+
+/* Steps Block */
+.designer-seo-steps-block {
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+}
+
+.designer-seo-subheading {
+  font-family: var(--font-playfair), Georgia, serif;
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #4a2515;
+  margin: 0;
+  text-align: center;
+}
+
+.designer-seo-steps-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.25rem;
+}
+
+@media (min-width: 1024px) {
+  .designer-seo-steps-grid {
+    grid-template-columns: repeat(5, 1fr);
+    gap: 1rem;
+  }
+}
+
+.designer-seo-step-card {
+  background: #ffffff;
+  border: 1px solid #ebdcd0;
+  border-radius: 14px;
+  padding: 1.35rem 1.15rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  box-shadow: 0 4px 12px rgba(139, 90, 60, 0.04);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.designer-seo-step-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(139, 90, 60, 0.08);
+  border-color: #be185d;
+}
+
+.designer-seo-step-badge {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #be185d;
+  background: #fdf2f8;
+  padding: 0.25rem 0.6rem;
+  border-radius: 6px;
+  align-self: flex-start;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.designer-seo-step-title {
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0;
+  line-height: 1.35;
+}
+
+.designer-seo-step-desc {
+  font-size: 0.875rem;
+  line-height: 1.55;
+  color: #64748b;
+  margin: 0;
+}
+
+/* FAQ Block */
+.designer-seo-faq-block {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  max-width: 860px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.designer-seo-faq-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.designer-seo-details {
+  background: #ffffff;
+  border: 1px solid #ebdcd0;
+  border-radius: 12px;
+  overflow: hidden;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.designer-seo-details[open] {
+  border-color: #be185d;
+  box-shadow: 0 4px 14px rgba(190, 24, 93, 0.06);
+}
+
+.designer-seo-summary {
+  padding: 1.1rem 1.35rem;
+  font-size: 0.98rem;
+  font-weight: 600;
+  color: #1e293b;
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  user-select: none;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.designer-seo-summary::-webkit-details-marker {
+  display: none;
+}
+
+.designer-seo-summary:hover {
+  background: #fdfaf8;
+  color: #be185d;
+}
+
+.designer-seo-summary:focus-visible {
+  outline: 2px solid #be185d;
+  outline-offset: -2px;
+}
+
+.designer-seo-summary-icon {
+  flex-shrink: 0;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #be185d;
+  transition: transform 0.2s ease;
+}
+
+.designer-seo-details[open] .designer-seo-summary-icon {
+  transform: rotate(180deg);
+}
+
+.designer-seo-answer {
+  padding: 0 1.35rem 1.25rem 1.35rem;
+  border-top: 1px solid #f8eee7;
+  padding-top: 0.85rem;
+}
+
+.designer-seo-answer p {
+  font-size: 0.925rem;
+  line-height: 1.65;
+  color: #475569;
+  margin: 0;
+}
