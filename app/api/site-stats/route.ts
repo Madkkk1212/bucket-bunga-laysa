@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { readVisitorStats } from '@/lib/visitorStorage';
+import { readVisitorStatsAsync } from '@/lib/visitorStorage';
 
 // Supaya selalu mendapatkan data status terbaru saat dipanggil
 export const dynamic = 'force-dynamic';
@@ -11,7 +11,7 @@ export const dynamic = 'force-dynamic';
  */
 export async function GET() {
   try {
-    const stats = readVisitorStats();
+    const stats = await readVisitorStatsAsync();
     const effectiveCount = (stats.totalVisits || 0) + (stats.customOffset || 0);
 
     return NextResponse.json(

@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import { getSupabase } from '@/lib/supabaseClient';
 
 export interface VisitorStatsData {
   totalVisits: number;
@@ -32,6 +33,28 @@ const DEFAULT_STATS: VisitorStatsData = {
   updatedAt: new Date().toISOString(),
   dailyStats: {},
 };
+
+// ── Sinkronisasi Background ke Supabase (Jika Dikonfigurasi) ──
+async function syncToSupabase(stats: VisitorStatsData) {
+  try {
+    const supabase = getSupabase();
+    if (!supabase) return;
+
+    await supabase.from('site_stats').upsert({
+      id: 'default',
+      total_visits: stats.totalVisits,
+      unique_visitors: stats.uniqueVisitors,
+      today_visits: stats.todayVisits,
+      show_on_home: stats.showOnHome,
+      custom_offset: stats.customOffset,
+      last_date: stats.lastDate,
+      updated_at: stats.updatedAt,
+      daily_stats: stats.dailyStats,
+    });
+  } catch {
+    // Abaikan jika tabel site_stats belum dibuat di Supabase
+  }
+}
 
 export function readVisitorStats(): VisitorStatsData {
   try {
@@ -77,6 +100,41 @@ export function readVisitorStats(): VisitorStatsData {
   }
 }
 
+export async function readVisitorStatsAsync(): Promise<VisitorStatsData> {
+  const localStats = readVisitorStats();
+
+  try {
+    const supabase = getSupabase();
+    if (!supabase) return localStats;
+
+    const { data, error } = await supabase
+      .from('site_stats')
+      .select('total_visits, unique_visitors, today_visits, show_on_home, custom_offset, last_date, updated_at, daily_stats')
+      .eq('id', 'default')
+      .maybeSingle();
+
+    if (!error && data) {
+      const merged: VisitorStatsData = {
+        totalVisits: Number(data.total_visits) || localStats.totalVisits,
+        uniqueVisitors: Number(data.unique_visitors) || localStats.uniqueVisitors,
+        todayVisits: Number(data.today_visits) || localStats.todayVisits,
+        showOnHome: typeof data.show_on_home === 'boolean' ? data.show_on_home : localStats.showOnHome,
+        customOffset: Number(data.custom_offset) || localStats.customOffset,
+        lastDate: data.last_date || localStats.lastDate,
+        updatedAt: data.updated_at || localStats.updatedAt,
+        dailyStats: (data.daily_stats as Record<string, number>) || localStats.dailyStats,
+      };
+
+      writeVisitorStats(merged);
+      return merged;
+    }
+  } catch {
+    // Fallback ke local
+  }
+
+  return localStats;
+}
+
 export function writeVisitorStats(stats: VisitorStatsData): boolean {
   try {
     const dir = path.dirname(statsFilePath);
@@ -115,6 +173,9 @@ export function recordNewVisit(isUnique: boolean = false): VisitorStatsData {
   }
 
   writeVisitorStats(current);
+  // Sinkronisasi ke Supabase di background jika terhubung
+  syncToSupabase(current).catch(() => {});
+
   return current;
 }
 
@@ -131,6 +192,8 @@ export function updateVisitorSettings(updates: { showOnHome?: boolean; customOff
 
   current.updatedAt = new Date().toISOString();
   writeVisitorStats(current);
+  syncToSupabase(current).catch(() => {});
+
   return current;
 }
 
@@ -147,5 +210,7 @@ export function resetVisitorStats(): VisitorStatsData {
     dailyStats: { [today]: 0 },
   };
   writeVisitorStats(resetData);
+  syncToSupabase(resetData).catch(() => {});
+
   return resetData;
 }

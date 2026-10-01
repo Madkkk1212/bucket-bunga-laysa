@@ -1,12 +1,12 @@
 {
-  "totalVisits": 0,
-  "uniqueVisitors": 0,
-  "todayVisits": 0,
+  "totalVisits": 1,
+  "uniqueVisitors": 1,
+  "todayVisits": 1,
   "lastDate": "2026-10-01",
-  "showOnHome": false,
+  "showOnHome": true,
   "customOffset": 0,
-  "updatedAt": "2026-10-01T06:13:56.350Z",
+  "updatedAt": "2026-10-01T06:15:27.255Z",
   "dailyStats": {
-    "2026-10-01": 0
+    "2026-10-01": 1
   }
 }

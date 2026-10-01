@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import {
-  readVisitorStats,
+  readVisitorStatsAsync,
   updateVisitorSettings,
   resetVisitorStats,
 } from '@/lib/visitorStorage';
@@ -13,7 +13,7 @@ export const dynamic = 'force-dynamic';
  */
 export async function GET() {
   try {
-    const stats = readVisitorStats();
+    const stats = await readVisitorStatsAsync();
     return NextResponse.json({
       success: true,
       stats: {
