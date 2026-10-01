@@ -16927,6 +16927,81 @@ body.modal-backdrop-blur-active .ds-root {
   color: #cbd5e1;
 }
 
+/* ── Home Page Live Visitor Counter Pill ── */
+.home-visitor-counter-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 18px;
+  padding: 8px 18px;
+  background: rgba(255, 255, 255, 0.94);
+  border: 1.5px solid rgba(244, 114, 182, 0.45);
+  border-radius: 9999px;
+  box-shadow: 0 4px 16px rgba(244, 114, 182, 0.14), 0 2px 4px rgba(0, 0, 0, 0.04);
+  font-size: 13px;
+  color: #475569;
+  backdrop-filter: blur(8px);
+  animation: visitorFadeIn 0.4s ease-out;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  user-select: none;
+}
+
+.home-visitor-counter-pill:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(244, 114, 182, 0.22);
+}
+
+.visitor-pill-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+  animation: visitorDotPulse 2s infinite;
+  flex-shrink: 0;
+}
+
+@keyframes visitorDotPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.6);
+  }
+  70% {
+    box-shadow: 0 0 0 6px rgba(16, 185, 129, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+  }
+}
+
+.visitor-pill-icon {
+  font-size: 14px;
+  line-height: 1;
+}
+
+.visitor-pill-text {
+  font-weight: 500;
+  letter-spacing: 0.01em;
+}
+
+.visitor-pill-text strong {
+  font-weight: 700;
+  color: #db2777;
+  font-feature-settings: "tnum";
+  font-variant-numeric: tabular-nums;
+}
+
+@keyframes visitorFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+
 
 
 

@@ -234,6 +234,27 @@ export default function LaysaCleanPortalPage() {
   const [copiedSql, setCopiedSql] = useState<boolean>(false);
   const [copiedBroadcastKey, setCopiedBroadcastKey] = useState<string | null>(null);
 
+  // Visitor Tracking & Home Counter State
+  const [visitorStats, setVisitorStats] = useState<{
+    totalVisits: number;
+    uniqueVisitors: number;
+    todayVisits: number;
+    showOnHome: boolean;
+    customOffset: number;
+    effectiveTotal: number;
+  }>({
+    totalVisits: 0,
+    uniqueVisitors: 0,
+    todayVisits: 0,
+    showOnHome: false,
+    customOffset: 0,
+    effectiveTotal: 0,
+  });
+  const [isLoadingVisitorStats, setIsLoadingVisitorStats] = useState<boolean>(false);
+  const [isSavingVisitorConfig, setIsSavingVisitorConfig] = useState<boolean>(false);
+  const [visitorOffsetInput, setVisitorOffsetInput] = useState<string>('0');
+  const [visitorMsg, setVisitorMsg] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
+
   // ── 1. Cek Sesi Cookie Saat Pertama Kali Dimuat ──
   useEffect(() => {
     let isMounted = true;
@@ -403,13 +424,86 @@ export default function LaysaCleanPortalPage() {
     }
   };
 
+  const fetchVisitorStats = useCallback(async () => {
+    setIsLoadingVisitorStats(true);
+    try {
+      const res = await fetch('/api/admin/site-stats', { credentials: 'same-origin' });
+      const data = await res.json();
+      if (data.success && data.stats) {
+        setVisitorStats(data.stats);
+        setVisitorOffsetInput(String(data.stats.customOffset || 0));
+      }
+    } catch (err) {
+      console.error('Fetch visitor stats error:', err);
+    } finally {
+      setIsLoadingVisitorStats(false);
+    }
+  }, []);
+
+  const handleToggleHomeVisibility = async () => {
+    setIsSavingVisitorConfig(true);
+    setVisitorMsg(null);
+    try {
+      const newShowOnHome = !visitorStats.showOnHome;
+      const res = await fetch('/api/admin/site-stats', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ showOnHome: newShowOnHome }),
+      });
+      const data = await res.json();
+      if (data.success && data.stats) {
+        setVisitorStats(data.stats);
+        setVisitorMsg({
+          text: newShowOnHome
+            ? 'Counter kunjungan sekarang AKTIF dan DITAMPILKAN di halaman utama (Home)!'
+            : 'Counter kunjungan sekarang DISEMBUNYIKAN dari halaman utama (hanya tampil di Admin).',
+          type: 'success',
+        });
+      } else {
+        setVisitorMsg({ text: data.error || 'Gagal mengubah pengaturan.', type: 'error' });
+      }
+    } catch {
+      setVisitorMsg({ text: 'Terjadi kesalahan koneksi server.', type: 'error' });
+    } finally {
+      setIsSavingVisitorConfig(false);
+    }
+  };
+
+  const handleSaveVisitorOffset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSavingVisitorConfig(true);
+    setVisitorMsg(null);
+    try {
+      const offsetNum = parseInt(visitorOffsetInput, 10) || 0;
+      const res = await fetch('/api/admin/site-stats', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ customOffset: offsetNum }),
+      });
+      const data = await res.json();
+      if (data.success && data.stats) {
+        setVisitorStats(data.stats);
+        setVisitorMsg({ text: 'Angka awal (offset) pengunjung berhasil disimpan!', type: 'success' });
+      } else {
+        setVisitorMsg({ text: data.error || 'Gagal menyimpan.', type: 'error' });
+      }
+    } catch {
+      setVisitorMsg({ text: 'Terjadi kesalahan jaringan.', type: 'error' });
+    } finally {
+      setIsSavingVisitorConfig(false);
+    }
+  };
+
   useEffect(() => {
     if (isAuthenticated) {
       fetchCodes();
       fetchPricing();
       fetchGifts();
+      fetchVisitorStats();
     }
-  }, [isAuthenticated, fetchCodes, fetchPricing, fetchGifts]);
+  }, [isAuthenticated, fetchCodes, fetchPricing, fetchGifts, fetchVisitorStats]);
 
   useEffect(() => {
     if (isAuthenticated && activeTab === 'diagnostics') {
@@ -1161,6 +1255,235 @@ export default function LaysaCleanPortalPage() {
                   <div className="adm-stat-info">
                     <h4>{totalGiftsViews}</h4>
                     <p>Views Amplop Kado</p>
+                  </div>
+                </div>
+
+                {/* KARTU KE-6: KUNJUNGAN WEBSITE */}
+                <div
+                  className="adm-stat-card card-theme-purple"
+                  onClick={() => {
+                    const el = document.getElementById('visitor-stats-panel');
+                    if (el) el.scrollIntoView({ behavior: 'smooth' });
+                  }}
+                  style={{ cursor: 'pointer' }}
+                  title="Klik untuk ke panel kontrol counter pengunjung"
+                >
+                  <div className="adm-stat-icon" style={{ background: 'rgba(236, 72, 153, 0.12)', color: '#db2777' }}>
+                    <Users size={20} />
+                  </div>
+                  <div className="adm-stat-info">
+                    <h4>{(visitorStats.effectiveTotal || 0).toLocaleString()}</h4>
+                    <p style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                      <span>Kunjungan Web</span>
+                      <span
+                        style={{
+                          fontSize: '10px',
+                          fontWeight: 700,
+                          padding: '1px 6px',
+                          borderRadius: '9999px',
+                          background: visitorStats.showOnHome ? '#dcfce7' : '#f1f5f9',
+                          color: visitorStats.showOnHome ? '#15803d' : '#64748b',
+                        }}
+                      >
+                        {visitorStats.showOnHome ? 'Home ON' : 'Admin Only'}
+                      </span>
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* PANEL KONTROL COUNTER PENGUNJUNG (HOME COUNTER) */}
+              <div id="visitor-stats-panel" className="adm-card" style={{ marginTop: '20px', marginBottom: '20px' }}>
+                <div className="adm-card-header" style={{ marginBottom: '16px', display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div>
+                    <h3 className="adm-card-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ fontSize: '1.2rem' }}>🌸</span>
+                      Statistik Pengunjung & Kontrol Counter Home
+                    </h3>
+                    <p className="adm-card-sub">
+                      Pantau data lalu lintas pengunjung website dan atur apakah badge counter ditampilkan kepada publik di Halaman Utama (Home).
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={fetchVisitorStats}
+                    disabled={isLoadingVisitorStats}
+                    className="adm-btn-site"
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem', padding: '6px 14px' }}
+                  >
+                    <RefreshCw size={14} className={isLoadingVisitorStats ? 'spin-icon' : ''} />
+                    {isLoadingVisitorStats ? 'Memuat...' : 'Segarkan'}
+                  </button>
+                </div>
+
+                {visitorMsg && (
+                  <div
+                    style={{
+                      padding: '10px 14px',
+                      borderRadius: '8px',
+                      fontSize: '0.84rem',
+                      marginBottom: '16px',
+                      background: visitorMsg.type === 'success' ? '#f0fdf4' : '#fef2f2',
+                      color: visitorMsg.type === 'success' ? '#166534' : '#991b1b',
+                      border: `1px solid ${visitorMsg.type === 'success' ? '#bbf7d0' : '#fecaca'}`,
+                    }}
+                  >
+                    {visitorMsg.text}
+                  </div>
+                )}
+
+                {/* 4 Kartu Metrik Cepat */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '12px', marginBottom: '20px' }}>
+                  <div style={{ background: '#f8fafc', padding: '14px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                    <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>Kunjungan Asli</div>
+                    <div style={{ fontSize: '1.3rem', fontWeight: 800, color: '#0f172a', marginTop: '4px' }}>
+                      {(visitorStats.totalVisits || 0).toLocaleString()}
+                    </div>
+                  </div>
+                  <div style={{ background: '#f8fafc', padding: '14px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                    <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>Pengunjung Unik</div>
+                    <div style={{ fontSize: '1.3rem', fontWeight: 800, color: '#2563eb', marginTop: '4px' }}>
+                      {(visitorStats.uniqueVisitors || 0).toLocaleString()}
+                    </div>
+                  </div>
+                  <div style={{ background: '#f8fafc', padding: '14px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                    <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>Hari Ini (WIB)</div>
+                    <div style={{ fontSize: '1.3rem', fontWeight: 800, color: '#16a34a', marginTop: '4px' }}>
+                      {(visitorStats.todayVisits || 0).toLocaleString()}
+                    </div>
+                  </div>
+                  <div style={{ background: '#fdf2f8', padding: '14px', borderRadius: '12px', border: '1px solid #fbcfe8' }}>
+                    <div style={{ fontSize: '11px', color: '#be185d', fontWeight: 600, textTransform: 'uppercase' }}>Total Tampil (Efektif)</div>
+                    <div style={{ fontSize: '1.3rem', fontWeight: 800, color: '#db2777', marginTop: '4px' }}>
+                      {(visitorStats.effectiveTotal || 0).toLocaleString()}
+                    </div>
+                  </div>
+                </div>
+
+                {/* SAKLAR KONTROL TAMPILAN HOME */}
+                <div
+                  style={{
+                    background: visitorStats.showOnHome ? 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)' : '#f8fafc',
+                    border: `1.5px solid ${visitorStats.showOnHome ? '#86efac' : '#e2e8f0'}`,
+                    borderRadius: '16px',
+                    padding: '18px 20px',
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: '16px',
+                    marginBottom: '20px',
+                  }}
+                >
+                  <div style={{ maxWidth: '560px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                      <span
+                        style={{
+                          fontSize: '11px',
+                          fontWeight: 800,
+                          textTransform: 'uppercase',
+                          padding: '3px 8px',
+                          borderRadius: '9999px',
+                          background: visitorStats.showOnHome ? '#16a34a' : '#64748b',
+                          color: '#ffffff',
+                          letterSpacing: '0.04em',
+                        }}
+                      >
+                        {visitorStats.showOnHome ? '● AKTIF DI BERANDA' : '○ NONAKTIF / PRIVAT'}
+                      </span>
+                      <strong style={{ fontSize: '0.95rem', color: '#0f172a' }}>
+                        {visitorStats.showOnHome ? 'Counter Muncul di Halaman Home' : 'Counter Hanya Tampil di Admin'}
+                      </strong>
+                    </div>
+                    <p style={{ fontSize: '0.82rem', color: '#475569', lineHeight: 1.5, margin: 0 }}>
+                      {visitorStats.showOnHome
+                        ? 'Pengunjung yang membuka web Laysa dapat melihat badge jumlah pecinta bunga yang berkunjung. Klik tombol untuk menyembunyikannya kembali kapan saja.'
+                        : 'Pengunjung umum TIDAK melihat angka kunjungan di beranda. Angka ini hanya tersimpan dan terlihat oleh Anda di admin ini.'}
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleToggleHomeVisibility}
+                    disabled={isSavingVisitorConfig}
+                    style={{
+                      background: visitorStats.showOnHome ? '#dc2626' : '#1d6ff2',
+                      color: '#ffffff',
+                      border: 'none',
+                      borderRadius: '12px',
+                      padding: '10px 20px',
+                      fontSize: '0.86rem',
+                      fontWeight: 700,
+                      cursor: isSavingVisitorConfig ? 'not-allowed' : 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      boxShadow: visitorStats.showOnHome ? '0 4px 14px rgba(220, 38, 38, 0.25)' : '0 4px 14px rgba(29, 111, 242, 0.25)',
+                      transition: 'all 0.15s ease',
+                      opacity: isSavingVisitorConfig ? 0.7 : 1,
+                    }}
+                  >
+                    {isSavingVisitorConfig ? (
+                      'Memproses...'
+                    ) : visitorStats.showOnHome ? (
+                      'Sembunyikan dari Home'
+                    ) : (
+                      'Tampilkan Counter di Home ✨'
+                    )}
+                  </button>
+                </div>
+
+                {/* Penyesuaian Angka Awal (Baseline Offset) & Live Preview */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
+                  {/* Form Offset */}
+                  <form onSubmit={handleSaveVisitorOffset} style={{ background: '#f8fafc', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                    <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
+                      Penyesuaian Angka Awal (Social Proof Offset):
+                    </label>
+                    <p style={{ fontSize: '0.74rem', color: '#64748b', marginBottom: '10px', lineHeight: 1.4 }}>
+                      Tambahkan angka baseline (misal: 500) agar counter terlihat ramai sejak awal promosi.
+                    </p>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <input
+                        type="number"
+                        min="0"
+                        value={visitorOffsetInput}
+                        onChange={(e) => setVisitorOffsetInput(e.target.value)}
+                        placeholder="Contoh: 500"
+                        style={{
+                          flex: 1,
+                          padding: '8px 12px',
+                          borderRadius: '8px',
+                          border: '1px solid #cbd5e1',
+                          fontSize: '0.85rem',
+                        }}
+                      />
+                      <button
+                        type="submit"
+                        disabled={isSavingVisitorConfig}
+                        className="adm-btn-primary"
+                        style={{ padding: '8px 16px', fontSize: '0.8rem', whiteSpace: 'nowrap' }}
+                      >
+                        Simpan Offset
+                      </button>
+                    </div>
+                  </form>
+
+                  {/* Live Preview Box */}
+                  <div style={{ background: '#fff5f7', padding: '16px', borderRadius: '12px', border: '1px dashed #f472b6', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                    <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#db2777', textTransform: 'uppercase', marginBottom: '8px' }}>
+                      Pratinjau Tampilan Badge di Beranda:
+                    </div>
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '6px 14px', borderRadius: '9999px', background: '#ffffff', border: '1.5px solid #f472b6', width: 'fit-content', boxShadow: '0 2px 8px rgba(244, 114, 182, 0.15)' }}>
+                      <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#10b981' }} />
+                      <span style={{ fontSize: '13px' }}>🌸</span>
+                      <span style={{ fontSize: '12px', color: '#475569' }}>
+                        <strong style={{ color: '#db2777', fontWeight: 700 }}>
+                          {(visitorStats.effectiveTotal || 0).toLocaleString()}
+                        </strong>{' '}
+                        Pecinta Bunga Telah Berkunjung & Merangkai
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>

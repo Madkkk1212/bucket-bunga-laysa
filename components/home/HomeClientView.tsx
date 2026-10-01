@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Navbar from '@/components/layout/Navbar';
 import HeroActions from '@/components/home/HeroActions';
@@ -8,6 +9,40 @@ import { useLanguage } from '@/context/LanguageContext';
 
 export default function HomeClientView() {
   const { t } = useLanguage();
+  const [siteStats, setSiteStats] = useState<{ show: boolean; count: number }>({ show: false, count: 0 });
+
+  useEffect(() => {
+    // 1. Catat kunjungan secara non-blocking (1x per session agar akurat)
+    try {
+      if (typeof window !== 'undefined') {
+        const hasTracked = sessionStorage.getItem('laysa_session_tracked');
+        if (!hasTracked) {
+          sessionStorage.setItem('laysa_session_tracked', '1');
+          const isUnique = !localStorage.getItem('laysa_unique_visitor');
+          if (isUnique) {
+            localStorage.setItem('laysa_unique_visitor', '1');
+          }
+          fetch('/api/track-visit', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ isUnique }),
+          }).catch(() => {});
+        }
+      }
+    } catch {
+      // Abaikan jika browser membatasi storage (misal incognito tertentu)
+    }
+
+    // 2. Ambil status apakah admin mengizinkan counter tampil di Home
+    fetch('/api/site-stats')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data && data.showOnHome) {
+          setSiteStats({ show: true, count: Number(data.count) || 0 });
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   return (
     <div className="home-page theme-pink game-theme-arena relative" suppressHydrationWarning>
@@ -67,6 +102,17 @@ export default function HomeClientView() {
 
             {/* 3D Action Command Button (Buat Buket Sekarang) */}
             <HeroActions />
+
+            {/* Live Visitor Counter Pill (Hanya tampil jika diizinkan oleh admin) */}
+            {siteStats.show && (
+              <div className="home-visitor-counter-pill" aria-label="Statistik Pengunjung">
+                <span className="visitor-pill-dot" aria-hidden="true" />
+                <span className="visitor-pill-icon" aria-hidden="true">🌸</span>
+                <span className="visitor-pill-text">
+                  <strong>{siteStats.count.toLocaleString()}</strong> {t('home_visitor_counter_label')}
+                </span>
+              </div>
+            )}
           </div>
 
           {/* SISI KANAN: 3D MYTHIC ITEM SHOWCASE (PEDESTAL) */}
