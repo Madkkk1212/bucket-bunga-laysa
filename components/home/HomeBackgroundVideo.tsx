@@ -6,7 +6,8 @@ export default function HomeBackgroundVideo() {
         loop
         muted
         playsInline
-        preload="auto"
+        preload="metadata"
+        poster="/images/home.png"
         className="home-video-bg"
       >
         <source src="/home.mp4" type="video/mp4" />
