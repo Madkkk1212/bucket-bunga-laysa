@@ -92,7 +92,7 @@ export default function FlowerLimitModal({
               💡 <strong>{isEn ? 'Want to arrange more?' : 'Ingin merangkai lebih banyak?'}</strong>{' '}
               {isEn
                 ? 'You can increase flower capacity up to 50 stems without losing existing flowers, or remove some flowers from the canvas.'
-                : 'Anda dapat menambah kuota bunga hingga 50 tangkai tanpa kehilangan susunan bunga yang sudah ada, atau hapus beberapa bunga dari kanvas.'}
+                : 'Kamu dapat menambah kuota bunga hingga 50 tangkai tanpa kehilangan susunan bunga yang sudah ada, atau hapus beberapa bunga dari kanvas.'}
             </p>
           </div>
 

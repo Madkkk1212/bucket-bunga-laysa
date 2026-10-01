@@ -426,12 +426,12 @@ export default function StepSize() {
             <div className="bucket-modal-header">
               <div className="bucket-modal-title-group">
                 <h3 id="bucket-modal-title" className="bucket-modal-title">
-                  {isEn ? 'Complete Bucket Collection' : 'Koleksi Lengkap Bucket'}
+                  {isEn ? 'Complete Bouquet Collection' : 'Koleksi Lengkap Buket'}
                 </h3>
                 <p className="bucket-modal-subtitle">
                   {isEn
-                    ? 'Choose your favorite bucket wrapping size and theme from Laysa collection'
-                    : 'Pilih ukuran dan tema pembungkus bucket favoritmu dari koleksi Laysa'}
+                    ? 'Choose your favorite bouquet wrapping size and theme from Laysa collection'
+                    : 'Pilih ukuran dan tema pembungkus buket favoritmu dari koleksi Laysa'}
                 </p>
               </div>
               <button

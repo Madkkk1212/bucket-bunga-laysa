@@ -110,15 +110,8 @@ function TutorialGameContent() {
             <h1 className="game-hud-heading">{t('tut_heading')}</h1>
           </div>
 
-          {/* Right cluster: Status Pemain & Language Switcher */}
+          {/* Right cluster: Language Switcher */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <div className="game-hud-player-status">
-              <span className="game-hud-badge-icon">📖</span>
-              <div className="game-hud-badge-info">
-                <span className="game-hud-player-rank">{t('tut_player_rank')}</span>
-                <span className="game-hud-player-level">{t('tut_player_level')}</span>
-              </div>
-            </div>
             <LanguageSwitcher variant="compact" />
           </div>
         </div>
@@ -478,12 +471,8 @@ function TutorialGameContent() {
         </div>
       </main>
 
-      {/* ── 6. BOTTOM GAME HUD FOOTER ── */}
-      <footer className="game-bottom-hud" aria-label="Game Tutorial Status">
-        <div className="game-hud-status">
-          <span className="game-status-dot" />
-          <span>{t('tut_hud_status')}</span>
-        </div>
+      {/* ── 6. BOTTOM HUD FOOTER ── */}
+      <footer className="game-bottom-hud" aria-label="Status Bar">
         <div className="game-hud-hint">
           <span>{t('tut_hud_hint')}</span>
         </div>

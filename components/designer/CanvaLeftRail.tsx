@@ -32,7 +32,7 @@ interface CanvaLeftRailProps {
 }
 
 const STEP_ITEMS = [
-  { step: 1, label: 'Bucket', icon: PackageOpen },
+  { step: 1, label: 'Buket', icon: PackageOpen },
   { step: 2, label: 'Bunga', icon: Flower2 },
   { step: 3, label: 'Kartu', icon: Mail },
   { step: 4, label: 'Pratinjau', icon: Eye },

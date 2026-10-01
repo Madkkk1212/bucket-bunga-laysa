@@ -233,7 +233,7 @@ export default function StepDownload({ canvasRef }: StepDownloadProps) {
             {/* Ribbon Header */}
             <div className="gift-ticket-ribbon">
               <span className="gift-ticket-seal">💌</span>
-              <span className="gift-ticket-ribbon-text">TIKET KADO DIGITAL INTERAKTIF</span>
+              <span className="gift-ticket-ribbon-text">{isEn ? 'DIGITAL GIFT PASS' : 'TIKET KADO DIGITAL'}</span>
             </div>
 
             {/* Ticket Body */}
@@ -242,13 +242,13 @@ export default function StepDownload({ canvasRef }: StepDownloadProps) {
               <div className="gift-ticket-info">
                 <div className="gift-ticket-to-from">
                   <div className="gift-ticket-to">
-                    <span className="gift-ticket-label">KEPADA</span>
-                    <span className="gift-ticket-name">{recipientName || 'Penerima Spesial'}</span>
+                    <span className="gift-ticket-label">{isEn ? 'TO' : 'KEPADA'}</span>
+                    <span className="gift-ticket-name">{recipientName || (isEn ? 'Special Recipient' : 'Penerima Spesial')}</span>
                   </div>
                   <div className="gift-ticket-arrow">❤️</div>
                   <div className="gift-ticket-from">
-                    <span className="gift-ticket-label">DARI</span>
-                    <span className="gift-ticket-name">{senderName || 'Seseorang yang Peduli'}</span>
+                    <span className="gift-ticket-label">{isEn ? 'FROM' : 'DARI'}</span>
+                    <span className="gift-ticket-name">{senderName || (isEn ? 'Someone Who Cares' : 'Seseorang yang Peduli')}</span>
                   </div>
                 </div>
 
@@ -279,7 +279,7 @@ export default function StepDownload({ canvasRef }: StepDownloadProps) {
               <div className="gift-ticket-qr-side">
                 <div className="gift-ticket-qr-label">
                   <QrCode size={13} />
-                  <span>Scan untuk Buka</span>
+                  <span>{isEn ? 'Scan to Open' : 'Scan untuk Buka'}</span>
                 </div>
                 <div className="gift-ticket-qr-wrap">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -489,7 +489,7 @@ export default function StepDownload({ canvasRef }: StepDownloadProps) {
         <div className="success-banner">
           {isEn
             ? '🎉 Your bouquet design image has been saved to your device!'
-            : '🎉 Gambar desain buket Anda berhasil disimpan ke perangkat!'}
+            : '🎉 Gambar desain buket berhasil disimpan ke perangkatmu!'}
         </div>
       )}
 

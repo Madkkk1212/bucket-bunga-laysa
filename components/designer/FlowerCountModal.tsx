@@ -69,7 +69,7 @@ const FLOWER_COUNT_VARIANTS: VariantOption[] = [
     subtitle: 'Grand Royale',
     badge: '👑 Mega Luxury',
     icon: '👑',
-    desc: 'Koleksi sultan spektakuler untuk perayaan akbar & lamaran',
+    desc: 'Koleksi spektakuler untuk perayaan akbar & lamaran',
     colorHex: '#10B981',
   },
 ];

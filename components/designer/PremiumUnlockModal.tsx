@@ -46,7 +46,7 @@ const DEFAULT_PERKS: Record<PricingTierKey, { title: string; badge?: string; fea
     ],
   },
   lifetime: {
-    title: '👑 Keuntungan Eksklusif VIP Sultan (Selamanya):',
+    title: '👑 Keuntungan Eksklusif Paket Selamanya (VIP):',
     badge: 'Paling Lengkap & Permanen',
     features: [
       'Akses VIP permanen SELAMANYA (sekali bayar tanpa langganan)',
@@ -85,7 +85,7 @@ const DEFAULT_PERKS_EN: Record<PricingTierKey, { title: string; badge?: string; 
     ],
   },
   lifetime: {
-    title: '👑 Exclusive Lifetime VIP Sultan Privileges:',
+    title: '👑 Exclusive Lifetime VIP Privileges:',
     badge: 'Ultimate & Permanent',
     features: [
       'Permanent VIP access FOREVER (one-time payment, no subscriptions)',
@@ -166,7 +166,7 @@ export default function PremiumUnlockModal({
       },
       lifetime: {
         key: 'lifetime',
-        name: 'Paket Selamanya (VIP Sultan)',
+        name: 'Paket Selamanya (VIP Lifetime)',
         durationLabel: 'Selamanya',
         basePrice: 85000,
         promoPrice: 17000,
@@ -221,8 +221,8 @@ export default function PremiumUnlockModal({
       : `Halo Admin Laysa Florist, saya ingin pesan Kode Akses VIP Paket Mingguan 7 Hari (${formattedPrice}).\n\nBenefit:\n• Bebas rangkai & edit semua bunga & buket (7 Hari)\n• Sangat cocok untuk kado wisuda & ultah\n• Hingga 5 perangkat bersamaan\n\nBoleh minta nomor rekening/QRIS untuk pembayarannya? Terima kasih!`;
   } else {
     waCustomText = isEn
-      ? `Hello Admin Laysa Florist, I would like to order a Lifetime VIP Sultan Access Code (${formattedPrice}).\n\nExclusive Benefits:\n• Permanent VIP Access Forever (One-time payment)\n• EXCLUSIVE: Unlock Daily Flower Garden Streak 🔥\n• Ultra HD 4K & Transparent WA Stickers\n• Up to 5 devices simultaneously\n\nMay I have the payment details / QRIS? Thank you!`
-      : `Halo Admin Laysa Florist, saya ingin pesan Kode Akses VIP Paket Selamanya Sultan (${formattedPrice}).\n\nBenefit Eksklusif:\n• Akses VIP Selamanya (Permanen Sekali Bayar)\n• EKSKLUSIF: Buka Fitur Kebun Bunga Streak 🔥\n• Ekspor Ultra HD 4K & Stiker WA Transparan\n• Hingga 5 perangkat bersamaan\n\nBoleh minta nomor rekening/QRIS untuk pembayarannya? Terima kasih!`;
+      ? `Hello Admin Laysa Florist, I would like to order a Lifetime VIP Access Code (${formattedPrice}).\n\nExclusive Benefits:\n• Permanent VIP Access Forever (One-time payment)\n• EXCLUSIVE: Unlock Daily Flower Garden Streak 🔥\n• Ultra HD 4K & Transparent WA Stickers\n• Up to 5 devices simultaneously\n\nMay I have the payment details / QRIS? Thank you!`
+      : `Halo Admin Laysa Florist, saya ingin pesan Kode Akses VIP Paket Selamanya (${formattedPrice}).\n\nBenefit Eksklusif:\n• Akses VIP Selamanya (Permanen Sekali Bayar)\n• EKSKLUSIF: Buka Fitur Kebun Bunga Streak 🔥\n• Ekspor Ultra HD 4K & Stiker WA Transparan\n• Hingga 5 perangkat bersamaan\n\nBoleh minta nomor rekening/QRIS untuk pembayarannya? Terima kasih!`;
   }
 
   const waUrl = `https://wa.me/${cleanWaNumber}?text=${encodeURIComponent(waCustomText)}`;
@@ -293,7 +293,7 @@ export default function PremiumUnlockModal({
 
     const isLifetime = verifiedTier === 'lifetime' || Boolean(codeInfo?.hasGardenAccess);
     if (isLifetime && !gardenNameInput.trim()) {
-      setErrorMsg(isEn ? 'As a VIP Sultan owner, your flower garden must be named first 🌸' : 'Sebagai pemilik VIP Sultan, kebun bunga Anda wajib dinamai terlebih dahulu 🌸');
+      setErrorMsg(isEn ? 'As a Lifetime VIP owner, your flower garden must be named first 🌸' : 'Sebagai pemilik Paket Selamanya, kebun bunga kamu wajib dinamai terlebih dahulu 🌸');
       return;
     }
 
@@ -472,7 +472,7 @@ export default function PremiumUnlockModal({
                 <div
                   className="voucher-ticket-item lifetime-gold"
                   onClick={() => handleSelectVoucher('lifetime')}
-                  title={isEn ? 'Click to select Lifetime VIP Sultan Package' : 'Klik untuk memilih Paket Selamanya VIP Sultan'}
+                  title={isEn ? 'Click to select Lifetime VIP Package' : 'Klik untuk memilih Paket Selamanya VIP'}
                 >
                   <div className="voucher-ticket-left">
                     <div className="voucher-ticket-badge-row">
@@ -485,7 +485,7 @@ export default function PremiumUnlockModal({
                       <span className="voucher-ticket-discount-sub">OFF</span>
                     </div>
                     <div className="voucher-ticket-title" style={{ color: '#92400e' }}>
-                      {isEn ? 'Lifetime Package (VIP Sultan)' : 'Paket Selamanya (VIP Sultan)'}
+                      {isEn ? 'Lifetime Package (VIP)' : 'Paket Selamanya (VIP)'}
                     </div>
                     <div className="voucher-ticket-sub">
                       <span className="voucher-ticket-price" style={{ color: '#b45309' }}>
@@ -506,7 +506,7 @@ export default function PremiumUnlockModal({
                       <Crown size={22} className="text-amber-700" />
                     </div>
                     <div className="voucher-ticket-brand-name" style={{ color: '#92400e' }}>
-                      VIP Sultan
+                      {isEn ? 'VIP Lifetime' : 'VIP Selamanya'}
                     </div>
                     <div className="voucher-ticket-validity" style={{ color: '#b45309', fontWeight: 700 }}>
                       {isEn ? 'Forever' : 'Selamanya'}
@@ -554,7 +554,7 @@ export default function PremiumUnlockModal({
                 <div className="boutique-price-left">
                   <span className="boutique-price-label">
                     {isEn
-                      ? (selectedTier === 'daily' ? 'Daily Package (24 Hours)' : selectedTier === 'weekly' ? 'Weekly Package (7 Days)' : 'Lifetime Package (VIP Sultan)')
+                      ? (selectedTier === 'daily' ? 'Daily Package (24 Hours)' : selectedTier === 'weekly' ? 'Weekly Package (7 Days)' : 'Lifetime Package (VIP)')
                       : activeTierConfig.name}
                   </span>
                   <div className="boutique-price-digits">
@@ -808,7 +808,7 @@ export default function PremiumUnlockModal({
                         <span className="text-rose-500 font-bold">*</span>
                       </span>
                       <span className="text-[10px] text-amber-700 font-extrabold px-1.5 py-0.5 rounded bg-amber-100">
-                        {isEn ? 'REQUIRED VIP SULTAN 👑' : 'WAJIB VIP SULTAN 👑'}
+                        {isEn ? 'LIFETIME VIP REQUIRED 👑' : 'KHUSUS PAKET SELAMANYA 👑'}
                       </span>
                     </label>
                     <div className="boutique-input-shell">
@@ -910,7 +910,7 @@ export default function PremiumUnlockModal({
                       ? (isEn ? '⏱️ Daily Pass (24 Hours)' : '⏱️ Paket Harian (24 Jam)')
                       : verifiedTier === 'weekly'
                       ? (isEn ? '📅 Weekly Pass (7 Days)' : '📅 Paket Mingguan (7 Hari)')
-                      : (isEn ? '👑 Lifetime Pass (VIP Sultan)' : '👑 Paket Selamanya (VIP Sultan)')
+                      : (isEn ? '👑 Lifetime Pass (VIP)' : '👑 Paket Selamanya (VIP)')
                   }
                 </div>
 

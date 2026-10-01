@@ -38,25 +38,25 @@ export default function StepPreview({ canvasRef }: StepPreviewProps) {
 
       <div className="preview-summary-card">
         <div className="summary-row">
-          <span className="summary-key">Jenis Pembungkus</span>
+          <span className="summary-key">{isEn ? 'Wrapping Style' : 'Jenis Pembungkus'}</span>
           <span className="summary-val">{bucket.label}</span>
         </div>
         <div className="summary-row">
-          <span className="summary-key">Total Bunga Terangkai</span>
-          <span className="summary-val">{total} tangkai</span>
+          <span className="summary-key">{isEn ? 'Total Arranged Flowers' : 'Total Bunga Terangkai'}</span>
+          <span className="summary-val">{total} {isEn ? 'stems' : 'tangkai'}</span>
         </div>
         {design.text.content && (
           <div className="summary-row">
-            <span className="summary-key">Pesan Kartu Ucapan</span>
+            <span className="summary-key">{isEn ? 'Greeting Card Message' : 'Pesan Kartu Ucapan'}</span>
             <span className="summary-val" style={{ fontStyle: 'italic', maxWidth: '200px', textAlign: 'right' }}>
               &quot;{design.text.content}&quot;
             </span>
           </div>
         )}
         <div className="summary-row">
-          <span className="summary-key">Status Produk</span>
+          <span className="summary-key">{isEn ? 'Design Status' : 'Status Desain'}</span>
           <span className="summary-val font-semibold text-emerald-600">
-            {design.final2D.status === 'final' ? 'FINAL ✓' : 'Siap Difinalisasi'}
+            {design.final2D.status === 'final' ? 'FINAL ✓' : (isEn ? 'Ready to Finalize' : 'Siap Difinalisasi')}
           </span>
         </div>
       </div>
@@ -65,7 +65,10 @@ export default function StepPreview({ canvasRef }: StepPreviewProps) {
         <div className="tip-item">
           <ShieldCheck size={16} className="tip-icon text-emerald-600" />
           <p>
-            <strong>Periksa Rangkaian:</strong> Desain pada kanvas ini adalah hasil akhir yang akan disimpan dan diunduh. Anda masih dapat kembali mengedit posisi bunga kapan saja.
+            <strong>{isEn ? 'Review Arrangement:' : 'Periksa Rangkaian:'}</strong>{' '}
+            {isEn
+              ? 'The bouquet on this canvas is the final design ready for download. You can still return to edit flower positions anytime.'
+              : 'Desain pada kanvas ini adalah hasil akhir yang akan disimpan dan diunduh. Kamu masih dapat kembali mengedit posisi bunga kapan saja.'}
           </p>
         </div>
       </div>
@@ -97,7 +100,7 @@ export default function StepPreview({ canvasRef }: StepPreviewProps) {
         totalSteps={5}
         onBack={() => setStep(3)}
         onNext={handleSaveFinal}
-        nextLabel="Simpan & Lanjut"
+        nextLabel={isEn ? 'Save & Continue' : 'Simpan & Lanjut'}
       />
     </div>
   );

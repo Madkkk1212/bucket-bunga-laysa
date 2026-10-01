@@ -4,9 +4,36 @@ import { DesignProvider } from '@/context/DesignContext';
 import DesignerClient from '@/components/designer/DesignerClient';
 
 export const metadata: Metadata = {
-  title: 'Studio Desain Buket — Bucket Bunga Laysa',
+  title: 'Studio Buat Buket — Bucket Bunga Laysa',
   description:
-    'Rancang buket bunga impianmu secara interaktif di Bucket Bunga Laysa. Pilih jenis buket, bunga, kartu ucapan, dan ekspor hasil desain berkualitas tinggi.',
+    'Rancang buket bunga virtual sesukamu secara gratis. Pilih kertas pembungkus, susun bunga di kanvas interaktif, tulis kartu ucapan, dan unduh gambar HD.',
+  alternates: {
+    canonical: '/designer',
+  },
+  openGraph: {
+    title: 'Studio Buat Buket — Bucket Bunga Laysa',
+    description:
+      'Rancang buket bunga virtual sesukamu secara gratis. Pilih kertas pembungkus, susun bunga di kanvas interaktif, tulis kartu ucapan, dan unduh gambar HD.',
+    url: 'https://bucketbunga-laysa.vercel.app/designer',
+    siteName: 'Bucket Bunga Laysa',
+    locale: 'id_ID',
+    type: 'website',
+    images: [
+      {
+        url: '/images/home.png',
+        width: 1200,
+        height: 630,
+        alt: 'Bucket Bunga Laysa — Studio Buat Buket',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Studio Buat Buket — Bucket Bunga Laysa',
+    description:
+      'Rancang buket bunga virtual sesukamu secara gratis. Pilih kertas pembungkus, susun bunga di kanvas interaktif, tulis kartu ucapan, dan unduh gambar HD.',
+    images: ['/images/home.png'],
+  },
 };
 
 export default function DesignerPage() {

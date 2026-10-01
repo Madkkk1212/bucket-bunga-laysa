@@ -69,7 +69,7 @@ export const BUCKET_SIZES: BucketSize[] = [
     maxFlowers: 35,
     canvasWidth: 500,
     canvasHeight: 520,
-    tag: 'Sultan Emerald',
+    tag: 'Royal Emerald',
     category: 'korean',
     themeName: 'Luxury Royal Edition',
     sizeCategory: '25-flowers',

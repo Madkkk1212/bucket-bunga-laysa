@@ -127,15 +127,8 @@ function GameMenuContent() {
             <h1 className="game-hud-heading">{t('menu_heading')}</h1>
           </div>
 
-          {/* Right cluster: Player Status & Language Switcher */}
+          {/* Right cluster: Language Switcher */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <div className="game-hud-player-status">
-              <span className="game-hud-badge-icon">👑</span>
-              <div className="game-hud-badge-info">
-                <span className="game-hud-player-rank">{t('menu_player_rank')}</span>
-                <span className="game-hud-player-level">{t('menu_player_level')}</span>
-              </div>
-            </div>
             <LanguageSwitcher variant="compact" />
           </div>
         </div>
@@ -350,12 +343,8 @@ function GameMenuContent() {
         </div>
       </main>
 
-      {/* ── 5. BOTTOM GAME HUD FOOTER (COMPACT) ── */}
-      <footer className="game-bottom-hud" aria-label="Game Hub Status">
-        <div className="game-hud-status">
-          <span className="game-status-dot" />
-          <span>{t('menu_hud_status')}</span>
-        </div>
+      {/* ── 5. BOTTOM HUD FOOTER (COMPACT) ── */}
+      <footer className="game-bottom-hud" aria-label="Status Bar">
         <div className="game-hud-hint">
           <span>{t('menu_hud_hint')}</span>
         </div>

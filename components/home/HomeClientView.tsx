@@ -60,7 +60,12 @@ export default function HomeClientView() {
               <span className="game-theme-title-accent">{t('home_hero_title_3')}</span>
             </h1>
 
-            {/* 3D Action Command Button (HANYA MULAI BUAT BUCKET) */}
+            {/* Subheadline Penjelas Produk */}
+            <p className="hero-subtitle text-slate-700 font-medium text-sm sm:text-base mt-3 mb-6 leading-relaxed max-w-md">
+              {t('home_hero_subtitle')}
+            </p>
+
+            {/* 3D Action Command Button (Buat Buket Sekarang) */}
             <HeroActions />
           </div>
 
@@ -86,7 +91,7 @@ export default function HomeClientView() {
               <div className="hero-image-wrapper game-floating-item">
                 <Image
                   src="/images/home.png"
-                  alt="Bucket Bunga Laysa — Legendary Bouquet"
+                  alt="Bucket Bunga Laysa — Buket Bunga Cantik"
                   width={640}
                   height={640}
                   priority
@@ -96,21 +101,10 @@ export default function HomeClientView() {
                 />
               </div>
 
-              {/* Floating RPG Item Stats Card */}
-              <div className="game-item-stats-card">
-                <div className="game-stat-row">
-                  <span className="game-stat-label">{t('home_stat_aesthetic')}</span>
-                  <div className="game-stat-bar-track">
-                    <div className="game-stat-bar-fill fill-pink" />
-                  </div>
-                  <span className="game-stat-num">9,999</span>
-                </div>
-                <div className="game-stat-row">
-                  <span className="game-stat-label">{t('home_stat_happiness')}</span>
-                  <div className="game-stat-bar-track">
-                    <div className="game-stat-bar-fill fill-amber" />
-                  </div>
-                  <span className="game-stat-num">MAX</span>
+              {/* Floating Benefit Highlights Card */}
+              <div className="game-item-stats-card" style={{ width: 'auto', padding: '10px 18px', textAlign: 'center' }}>
+                <div style={{ fontSize: '11px', fontWeight: 700, color: '#fbcfe8', letterSpacing: '0.02em', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                  <span>{t('home_stat_benefits')}</span>
                 </div>
               </div>
             </div>
@@ -118,12 +112,8 @@ export default function HomeClientView() {
         </div>
       </section>
 
-      {/* ── 5. BOTTOM GAME HUD FOOTER (TICKER) ── */}
-      <footer className="game-bottom-hud" aria-label="Game Status Bar">
-        <div className="game-hud-status">
-          <span className="game-status-dot" />
-          <span>{t('home_hud_status')}</span>
-        </div>
+      {/* ── 5. BOTTOM HUD FOOTER (TICKER) ── */}
+      <footer className="game-bottom-hud" aria-label="Status Bar">
         <div className="game-hud-hint">
           <span>{t('home_hud_hint')}</span>
         </div>
