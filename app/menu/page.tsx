@@ -103,7 +103,7 @@ function GameMenuContent() {
   };
 
   return (
-    <div className="game-menu-container theme-pink game-theme-arena relative min-h-screen">
+    <div className="game-menu-container theme-pink game-theme-arena relative min-h-screen" suppressHydrationWarning>
       {/* ── 1. CINEMATIC VIDEO BACKGROUND ── */}
       <HomeBackgroundVideo />
 

@@ -312,6 +312,26 @@ export default function RootLayout({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdStructuredData) }}
         />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){
+              function purge(){
+                var el = document.getElementById('chromane-theme-root');
+                if (el) el.remove();
+              }
+              purge();
+              if (typeof MutationObserver !== 'undefined') {
+                var observer = new MutationObserver(purge);
+                observer.observe(document.documentElement, { childList: true, subtree: true });
+                window.addEventListener('DOMContentLoaded', purge);
+                window.addEventListener('load', function() {
+                  purge();
+                  setTimeout(function() { observer.disconnect(); }, 5000);
+                });
+              }
+            })();`,
+          }}
+        />
       </head>
       <body suppressHydrationWarning>
         <LanguageProvider>{children}</LanguageProvider>

@@ -38,7 +38,7 @@ export const metadata: Metadata = {
 
 export default function DesignerPage() {
   return (
-    <div className="designer-page-wrapper">
+    <div className="designer-page-wrapper" suppressHydrationWarning>
       {/* ── 1. Studio Canvas & UI (Client-Side dynamic with ssr: false & Suspense) ── */}
       <StudioLoader />
 

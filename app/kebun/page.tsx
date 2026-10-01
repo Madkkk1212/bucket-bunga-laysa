@@ -38,7 +38,9 @@ export const metadata: Metadata = {
 export default function KebunPage() {
   return (
     <DesignProvider>
-      <IsometricGardenView />
+      <div suppressHydrationWarning>
+        <IsometricGardenView />
+      </div>
     </DesignProvider>
   );
 }

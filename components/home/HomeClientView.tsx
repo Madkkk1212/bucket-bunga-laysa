@@ -10,7 +10,7 @@ export default function HomeClientView() {
   const { t } = useLanguage();
 
   return (
-    <div className="home-page theme-pink game-theme-arena relative">
+    <div className="home-page theme-pink game-theme-arena relative" suppressHydrationWarning>
       {/* ── 1. BACKGROUND VIDEO CINEMATIC (home.mp4 — SILENT, INSTANT AUTOPLAY) ── */}
       <HomeBackgroundVideo />
 
