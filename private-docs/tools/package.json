@@ -1,0 +1,9 @@
+{
+  "name": "manual-book-pdf-tool",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "marked": "^18.0.14",
+    "puppeteer-core": "^25.12.0"
+  }
+}
