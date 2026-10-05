@@ -42,11 +42,11 @@ export default function DesignerLayout({ onBackToDashboard }: DesignerLayoutProp
   const { t, language } = useLanguage();
 
   const stepTitles: Record<number, string> = {
-    1: t('step_size_title'),
-    2: t('step_flowers_title'),
-    3: t('step_card_title'),
-    4: t('step_preview_title'),
-    5: t('step_download_title'),
+    1: t('step_1_title'),
+    2: t('step_2_title'),
+    3: t('step_3_title'),
+    4: t('step_4_title'),
+    5: t('step_5_title'),
   };
   const {
     design,

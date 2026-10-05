@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>A Love Letter</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Cinzel:wght@500;700&display=swap" rel="stylesheet">
+
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    min-height: 100vh;
+    min-height: 100dvh;
+    background: radial-gradient(circle at 50% 40%, #7a1220 0%, #3a0710 100%);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 80px 20px;
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    overflow-x: hidden;
+  }
+
+  /* ============================================
+     STAGE — amplop TETAP 3:2
+  ============================================ */
+  .stage {
+    position: relative;
+    width: min(560px, 92vw);
+    aspect-ratio: 3 / 2;
+    perspective: 1600px;
+    perspective-origin: 50% 40%;
+  }
+
+  /* ============================================
+     AMPLOP
+  ============================================ */
+  .env-back {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, #6b0f1a 0%, #8b1e2d 50%, #4a0a13 100%);
+    border-radius: 10px;
+    box-shadow:
+      0 30px 60px rgba(0,0,0,0.65),
+      inset 0 0 0 1px rgba(255,215,150,0.18);
+    z-index: 1;
+  }
+  .env-back::before {
+    content: "";
+    position: absolute;
+    inset: 12px;
+    border: 1px solid rgba(212,175,110,0.5);
+    border-radius: 5px;
+    pointer-events: none;
+  }
+  .env-back::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+      repeating-linear-gradient(45deg,
+        rgba(212,175,110,0.05) 0px,
+        rgba(212,175,110,0.05) 1px,
+        transparent 1px,
+        transparent 6px);
+    border-radius: 10px;
+    pointer-events: none;
+  }
+
+  .env-left {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 50%;
+    height: 100%;
+    background: linear-gradient(135deg, #7a1220, #5e0812);
+    clip-path: polygon(0 0, 100% 50%, 0 100%);
+    border-radius: 10px 0 0 10px;
+    z-index: 3;
+    pointer-events: none;
+  }
+
+  .env-right {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 50%;
+    height: 100%;
+    background: linear-gradient(225deg, #7a1220, #5e0812);
+    clip-path: polygon(100% 0, 0 50%, 100% 100%);
+    border-radius: 0 10px 10px 0;
+    z-index: 3;
+    pointer-events: none;
+  }
+
+  .env-bottom {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 60%;
+    background: linear-gradient(0deg, #8b1e2d, #6b0f1a);
+    clip-path: polygon(0 100%, 50% 0, 100% 100%);
+    border-radius: 0 0 10px 10px;
+    z-index: 4;
+    box-shadow: 0 -2px 12px rgba(0,0,0,0.35);
+    pointer-events: none;
+  }
+
+  .env-top {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 55%;
+    background: linear-gradient(180deg, #8b1e2d, #6b0f1a);
+    clip-path: polygon(0 0, 50% 100%, 100% 0);
+    border-radius: 10px 10px 0 0;
+    transform-origin: top center;
+    transform: rotateX(0deg);
+    transition: transform 1.2s cubic-bezier(0.6, -0.28, 0.735, 0.045);
+    z-index: 6;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.4);
+    backface-visibility: hidden;
+    pointer-events: none;
+  }
+
+  /* ============================================
+     SEGEL
+  ============================================ */
+  .seal {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 62px;
+    height: 62px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #e0525f 0%, #a51e2e 45%, #5e0812 100%);
+    box-shadow:
+      0 8px 20px rgba(0,0,0,0.6),
+      inset 0 -3px 6px rgba(0,0,0,0.4),
+      inset 0 3px 6px rgba(255,255,255,0.22);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: #fdf6e3;
+    z-index: 20;
+    cursor: pointer;
+    transition: transform 0.5s ease, opacity 0.5s ease;
+  }
+  .seal::before {
+    content: "";
+    position: absolute;
+    inset: 7px;
+    border-radius: 50%;
+    border: 1.5px dashed rgba(255,255,255,0.3);
+  }
+  .seal svg {
+    width: 26px;
+    height: 26px;
+    fill: #fdf6e3;
+    filter: drop-shadow(0 1px 2px rgba(0,0,0,0.5));
+  }
+  .seal:hover { transform: translate(-50%, -50%) scale(1.08); }
+
+  /* ============================================
+     SURAT — wrapper ukuran tetap 150% x 150%
+  ============================================ */
+  .letter {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 150%;                        /* ukuran FINAL, tidak berubah */
+    height: 150%;
+    transform: translate(-50%, -50%) scale(0.4);
+    transform-origin: center center;
+    opacity: 0;
+    z-index: 0;
+    pointer-events: none;
+    transition:
+      opacity 0.8s ease 0.6s,
+      transform 1.6s cubic-bezier(0.22, 1, 0.36, 1) 0.6s,
+      z-index 0s linear 0.6s;
+  }
+
+  /* ============================================
+     ISI SURAT (utuh di belakang)
+  ============================================ */
+  .letter-content {
+    position: absolute;
+    inset: 0;
+    background: #fdf6e3;
+    padding: 34px 40px 52px;
+    border-radius: 5px;
+    box-shadow: 0 40px 90px rgba(0,0,0,0.7);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    z-index: 1;
+  }
+
+  /* ============================================
+     4 OVERLAY KUADRAN (menutupi isi surat)
+     Tiap kuadran ukuran 50% x 50%
+  ============================================ */
+  .quadrant {
+    position: absolute;
+    width: 50%;
+    height: 50%;
+    background: #fdf6e3;
+    z-index: 5;
+    pointer-events: none;
+    box-shadow:
+      inset 0 0 0 1px rgba(122,14,31,0.1),
+      inset 0 0 20px rgba(122,14,31,0.06);
+    transition: transform 1s cubic-bezier(0.65, 0, 0.35, 1);
+  }
+
+  .q-tl { top: 0;    left: 0;    border-radius: 5px 0 0 0;    transform: translate(0, 0); }
+  .q-tr { top: 0;    left: 50%;  border-radius: 0 5px 0 0;    transform: translate(0, 0); }
+  .q-br { top: 50%;  left: 50%;  border-radius: 0 0 5px 0;    transform: translate(0, 0); }
+  .q-bl { top: 50%;  left: 0;    border-radius: 0 0 0 5px;    transform: translate(0, 0); }
+
+  /* ============================================
+     STATE TERBUKA
+  ============================================ */
+  .stage.open .env-top {
+    transform: rotateX(180deg);
+    z-index: 1;
+  }
+
+  .stage.open .seal {
+    transform: translate(-50%, -50%) scale(0);
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  /* Tahap 1: Surat muncul terlipat 1/2 (cuma kelihatan bagian atas) */
+  .stage.open .letter {
+    z-index: 30;
+    opacity: 1;
+    pointer-events: auto;
+    /* scaleY 0.5 + translateY supaya terlihat seperti terlipat horizontal */
+    transform: translate(-50%, -50%) scale(0.6);
+  }
+
+  /* Tahap 2: Surat terbuka jadi full (tidak lagi terlipat) */
+  .stage.open.grown .letter {
+    transform: translate(-50%, -50%) scale(1);
+  }
+
+  /* Tahap 3: 4 kuadran bergeser keluar, urutan MELINGKAR
+     Kiri-atas → Kanan-atas → Kanan-bawah → Kiri-bawah
+     Masing-masing geser ke arah luar surat */
+
+  /* Kiri-atas: geser ke kiri-atas */
+  .stage.open.grown .q-tl {
+    transform: translate(-105%, -105%);
+    transition-delay: 0.3s;
+  }
+  /* Kanan-atas: geser ke kanan-atas */
+  .stage.open.grown .q-tr {
+    transform: translate(105%, -105%);
+    transition-delay: 0.6s;
+  }
+  /* Kanan-bawah: geser ke kanan-bawah */
+  .stage.open.grown .q-br {
+    transform: translate(105%, 105%);
+    transition-delay: 0.9s;
+  }
+  /* Kiri-bawah: geser ke kiri-bawah */
+  .stage.open.grown .q-bl {
+    transform: translate(-105%, 105%);
+    transition-delay: 1.2s;
+  }
+
+  /* ============================================
+     HINT
+  ============================================ */
+  .hint {
+    position: absolute;
+    bottom: -46px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: rgba(253,246,227,0.75);
+    font-family: 'Cinzel', serif;
+    font-size: 11px;
+    letter-spacing: 3px;
+    animation: pulse 2s infinite;
+    white-space: nowrap;
+    transition: opacity 0.4s ease;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 0.4; }
+    50%      { opacity: 1; }
+  }
+  .stage.open .hint { opacity: 0; }
+
+  /* ============================================
+     ISI SURAT
+  ============================================ */
+  .letter-content h1 {
+    font-family: 'Cinzel', serif;
+    font-weight: 700;
+    font-size: clamp(20px, 2.8vw, 26px);
+    letter-spacing: 6px;
+    color: #7a0e1f;
+    text-align: center;
+    margin-bottom: 4px;
+  }
+  .divider {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 16px;
+    color: #b07a7a;
+  }
+  .divider::before, .divider::after {
+    content: "";
+    height: 1px;
+    width: 50px;
+    background: #b07a7a;
+  }
+  .divider span { font-size: 12px; }
+
+  .to-from {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    margin-bottom: 14px;
+  }
+  .line {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  .line span {
+    font-family: 'Cinzel', serif;
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: #8b5a5a;
+  }
+  .line .value {
+    font-family: 'Great Vibes', cursive;
+    font-size: 26px;
+    color: #7a0e1f;
+    border-bottom: 1px solid rgba(122,14,31,0.4);
+    padding: 0 12px 2px;
+    min-width: 90px;
+    line-height: 1;
+  }
+
+  .mini-photos { display: flex; gap: 10px; }
+  .mini-photo {
+    width: 90px;
+    height: 110px;
+    background: #fffaf0;
+    border: 1px solid #d9c4b0;
+    padding: 4px;
+    border-radius: 3px;
+    box-shadow: 3px 4px 12px rgba(0,0,0,0.2);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 10px;
+    color: #b09a8a;
+    font-style: italic;
+    transform: rotate(-4deg);
+  }
+  .mini-photo:nth-child(2) { transform: rotate(4deg); }
+  .mini-photo span {
+    width: 100%;
+    height: 100%;
+    background: #f4ece0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .script-title {
+    font-family: 'Great Vibes', cursive;
+    font-size: clamp(28px, 4.5vw, 38px);
+    color: #7a0e1f;
+    text-align: center;
+    line-height: 1;
+    margin-bottom: 12px;
+    margin-top: 6px;
+  }
+
+  .body-text {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: clamp(14px, 1.8vw, 17px);
+    line-height: 1.6;
+    color: #3a2b2b;
+    text-align: center;
+    margin-bottom: 14px;
+  }
+
+  .signature {
+    font-family: 'Great Vibes', cursive;
+    font-size: clamp(20px, 2.8vw, 26px);
+    color: #7a0e1f;
+    text-align: center;
+  }
+
+  .wax-seal-small {
+    position: absolute;
+    bottom: -22px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #e0525f 0%, #a51e2e 45%, #5e0812 100%);
+    box-shadow:
+      0 8px 18px rgba(0,0,0,0.5),
+      inset 0 -3px 6px rgba(0,0,0,0.35),
+      inset 0 3px 6px rgba(255,255,255,0.18);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 3;
+  }
+  .wax-seal-small::before {
+    content: "";
+    position: absolute;
+    inset: 4px;
+    border-radius: 50%;
+    border: 1.5px dashed rgba(255,255,255,0.2);
+  }
+  .wax-seal-small svg { width: 22px; height: 22px; fill: #fdf6e3; }
+
+  @media (max-width: 480px) {
+    .letter-content { padding: 24px 26px 40px; }
+    .letter { width: 155%; height: 155%; }
+    .mini-photo { width: 70px; height: 88px; font-size: 9px; }
+    .line .value { font-size: 22px; min-width: 80px; }
+    .seal { width: 52px; height: 52px; }
+    .seal svg { width: 22px; height: 22px; }
+  }
+</style>
+</head>
+<body>
+
+  <div class="stage" id="stage">
+
+    <!-- AMPLOP -->
+    <div class="env-back"></div>
+    <div class="env-left"></div>
+    <div class="env-right"></div>
+    <div class="env-bottom"></div>
+    <div class="env-top"></div>
+
+    <!-- SURAT — wrapper ukuran tetap 150% x 150% -->
+    <div class="letter" id="letter">
+
+      <!-- ISI SURAT (di belakang, utuh) -->
+      <div class="letter-content">
+        <h1>A LOVE LETTER</h1>
+        <div class="divider"><span>❦</span></div>
+
+        <div class="to-from">
+          <div>
+            <div class="line"><span>TO</span><div class="value">Clara</div></div>
+            <div class="line"><span>FROM</span><div class="value">Allen</div></div>
+          </div>
+          <div class="mini-photos">
+            <div class="mini-photo"><span>Foto 1</span></div>
+            <div class="mini-photo"><span>Foto 2</span></div>
+          </div>
+        </div>
+
+        <div class="script-title">My Love, Clara</div>
+
+        <p class="body-text">
+          My love, ever since you came into my life, everything feels brighter and more
+          meaningful — your smile gives me peace, your voice brings me joy, and your
+          presence makes every moment feel complete. I carry you in my heart always,
+          and no matter where life takes us, my love for you will only grow stronger.
+        </p>
+
+        <div class="signature">— your bf/gf, Name</div>
+
+        <div class="wax-seal-small">
+          <svg viewBox="0 0 24 24">
+            <path d="M12 21s-7.5-4.9-9.5-9.5C1 8 3 5 6.5 5c2 0 3.5 1.2 4.5 2.4C12 6.2 13.5 5 15.5 5 19 5 21 8 20.5 11.5 18.5 16.1 12 21 12 21z"/>
+          </svg>
+        </div>
+      </div>
+
+      <!-- 4 KUADRAN OVERLAY (menutupi isi surat) -->
+      <div class="quadrant q-tl"></div>
+      <div class="quadrant q-tr"></div>
+      <div class="quadrant q-br"></div>
+      <div class="quadrant q-bl"></div>
+    </div>
+
+    <!-- SEGEL -->
+    <div class="seal" id="seal" title="Klik untuk membuka">
+      <svg viewBox="0 0 24 24">
+        <path d="M12 21s-7.5-4.9-9.5-9.5C1 8 3 5 6.5 5c2 0 3.5 1.2 4.5 2.4C12 6.2 13.5 5 15.5 5 19 5 21 8 20.5 11.5 18.5 16.1 12 21 12 21z"/>
+      </svg>
+    </div>
+
+    <!-- HINT -->
+    <div class="hint">✦ KLIK UNTUK MEMBUKA ✦</div>
+  </div>
+
+  <script>
+    const stage = document.getElementById('stage');
+    const seal = document.getElementById('seal');
+
+    function openEnvelope() {
+      if (stage.classList.contains('open')) return;
+
+      // Tahap 1: amplop terbuka + surat muncul (terlipat)
+      stage.classList.add('open');
+
+      // Tahap 2: setelah 1.8s, surat "terbuka" jadi full
+      setTimeout(() => {
+        stage.classList.add('grown');
+        // Tahap 3: kuadran bergeser keluar otomatis via CSS transition-delay
+      }, 1800);
+    }
+
+    seal.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openEnvelope();
+    });
+
+    document.addEventListener('click', openEnvelope);
+  </script>
+
+</body>
+</html>

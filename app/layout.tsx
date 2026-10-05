@@ -302,14 +302,18 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="id" className={`${montserrat.variable} ${playfair.variable} ${cormorant.variable} ${greatVibes.variable}`}>
+    <html
+      lang="id"
+      suppressHydrationWarning
+      className={`${montserrat.variable} ${playfair.variable} ${cormorant.variable} ${greatVibes.variable}`}
+    >
       <head>
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdStructuredData) }}
         />
       </head>
-      <body>
+      <body suppressHydrationWarning>
         <LanguageProvider>{children}</LanguageProvider>
       </body>
     </html>

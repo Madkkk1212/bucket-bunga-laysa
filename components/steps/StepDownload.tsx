@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   Download,
   RotateCcw,
@@ -15,22 +15,26 @@ import {
   Send,
   QrCode,
   Check,
+  Crown,
+  Eye,
+  Loader2,
 } from 'lucide-react';
 import { useDesign } from '@/context/DesignContext';
 import { downloadDesign } from '@/utils/downloadUtils';
 import NavigationButtons from '../designer/NavigationButtons';
 import { useLanguage } from '@/context/LanguageContext';
+import TemplateSelector from '../gift/TemplateSelector';
+import GiftObjectSelector from '../gift/GiftObjectSelector';
+import EffectSelector from '../gift/EffectSelector';
+import YouTubeInput from '../gift/YouTubeInput';
+import PhotoUploader, { ClientPhoto } from '../gift/PhotoUploader';
+import PremiumUnlockModal from '../designer/PremiumUnlockModal';
+import { GIFT_TEMPLATES } from '../gift/templates';
+import type { GiftTemplateId, GiftObjectId, GiftEffectId } from '@/types/giftConfig';
 
 interface StepDownloadProps {
   canvasRef: React.RefObject<HTMLCanvasElement | null>;
 }
-
-const MUSIC_OPTIONS = [
-  { id: 'romantic-piano', label: '🎹 Romantic Piano', desc: 'Melodi lembut & puitis' },
-  { id: 'acoustic-love', label: '🎸 Acoustic Love', desc: 'Hangat & manis' },
-  { id: 'happy-birthday', label: '🎂 Ulang Tahun Ceria', desc: 'Perayaan & kebahagiaan' },
-  { id: 'lofi-chill', label: '☕ Lofi Aesthetic', desc: 'Santai & menenangkan' },
-];
 
 export default function StepDownload({ canvasRef }: StepDownloadProps) {
   const { t, isEn } = useLanguage();
@@ -41,7 +45,15 @@ export default function StepDownload({ canvasRef }: StepDownloadProps) {
     resetToEdit2D,
     exportResolution,
     setExportResolution,
+    isPremiumUnlocked,
+    premiumTier,
+    premiumExpiresAt,
   } = useDesign();
+
+  // Active Tab: 'gift-link' | 'download-image'
+  const [activeTab, setActiveTab] = useState<'gift-link' | 'download-image'>('gift-link');
+
+  // Image Download State
   const [format, setFormat] = useState<'png' | 'jpg'>('png');
   const [status, setStatus] = useState<'idle' | 'downloading' | 'done'>('idle');
 
@@ -49,12 +61,73 @@ export default function StepDownload({ canvasRef }: StepDownloadProps) {
   const [senderName, setSenderName] = useState('');
   const [recipientName, setRecipientName] = useState('');
   const [personalMessage, setPersonalMessage] = useState(design.text?.content || '');
-  const [musicTrack, setMusicTrack] = useState('romantic-piano');
+  const [selectedTemplateId, setSelectedTemplateId] = useState<GiftTemplateId>('klasik');
+  const [selectedObjectId, setSelectedObjectId] = useState<GiftObjectId>('envelope');
+  const [selectedEffectId, setSelectedEffectId] = useState<GiftEffectId>('petals');
+  const [giftTitle, setGiftTitle] = useState('');
+  const [isTitleCustomized, setIsTitleCustomized] = useState(false);
+
+  // YouTube State
+  const [youtubeData, setYoutubeData] = useState<{ videoId: string | null; startSeconds: number }>({
+    videoId: null,
+    startSeconds: 0,
+  });
+
+  // Photos State
+  const [photos, setPhotos] = useState<ClientPhoto[]>([]);
+  const [isUnlockModalOpen, setIsUnlockModalOpen] = useState(false);
+
+  // Generating & Ticket State
   const [isCreatingGift, setIsCreatingGift] = useState(false);
   const [giftShareUrl, setGiftShareUrl] = useState<string | null>(null);
   const [giftId, setGiftId] = useState<string | null>(null);
+  const [giftExpiresAt, setGiftExpiresAt] = useState<string | null>(null);
   const [giftError, setGiftError] = useState<string | null>(null);
   const [isCopied, setIsCopied] = useState(false);
+  const [isPreviewLoading, setIsPreviewLoading] = useState(false);
+
+  // Comprehensive VIP check (context + localStorage fallback)
+  const isVipUser = useMemo(() => {
+    if (isPremiumUnlocked) return true;
+    if (typeof window !== 'undefined') {
+      const unlocked = localStorage.getItem('laysa_premium_unlocked') === 'true';
+      const code = Boolean(localStorage.getItem('laysa_access_code'));
+      const tier = Boolean(localStorage.getItem('laysa_premium_tier'));
+      if (unlocked || code || tier) return true;
+    }
+    return false;
+  }, [isPremiumUnlocked]);
+
+  // Dynamic Pricing Settings from Admin
+  const [pricingSettings, setPricingSettings] = useState<any>(null);
+
+  useEffect(() => {
+    fetch('/api/settings/pricing')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && data.pricing) {
+          setPricingSettings(data.pricing);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  // Change default object & effect when template changes
+  const handleSelectTemplate = (tmplId: GiftTemplateId) => {
+    setSelectedTemplateId(tmplId);
+    setGiftError(null);
+    const tmpl = GIFT_TEMPLATES[tmplId];
+    if (tmpl) {
+      setSelectedObjectId(tmpl.defaults.giftObjectId);
+      setSelectedEffectId(tmpl.defaults.effectId);
+      if (!isTitleCustomized) {
+        setGiftTitle(isEn ? tmpl.defaults.titleEn : tmpl.defaults.titleId);
+      }
+      if (tmpl.requiresPhoto) {
+        window.setTimeout(() => document.getElementById('gift-photo-upload-section')?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 80);
+      }
+    }
+  };
 
   const handleDownload = async () => {
     setStatus('downloading');
@@ -67,21 +140,91 @@ export default function StepDownload({ canvasRef }: StepDownloadProps) {
     setStep(1);
   };
 
+  // Preview Gift — simpan draft sementara lalu buka tab baru
+  const handlePreview = async () => {
+    setIsPreviewLoading(true);
+    try {
+      const res = await fetch('/api/gifts/preview', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          senderName: senderName.trim() || 'Seseorang yang Mengagumimu',
+          recipientName: recipientName.trim() || 'Untukmu',
+          message:
+            personalMessage.trim() ||
+            design.text?.content ||
+            'Semoga hari-harimu selalu seindah dan seharum buket bunga ini! 💐✨',
+          designData: design,
+          config: {
+            version: 2,
+            templateId: selectedTemplateId,
+            giftObjectId: selectedObjectId,
+            effectId: selectedEffectId,
+            title:
+              giftTitle.trim() ||
+              (isEn ? 'A Special Bouquet For You' : 'Buket Bunga Spesial Untukmu'),
+            youtubeVideoId: youtubeData.videoId || null,
+            youtubeStartSeconds: youtubeData.startSeconds || 0,
+          },
+          photos: photos.map((p) => ({ dataUrl: p.dataUrl, altText: p.altText })),
+        }),
+      });
+      const data = await res.json();
+      if (data.success && data.draftId) {
+        window.open(`/preview/${data.draftId}`, '_blank', 'noopener,noreferrer');
+      } else {
+        alert('Gagal membuat preview. Coba lagi.');
+      }
+    } catch {
+      alert('Terjadi kesalahan saat membuat preview.');
+    } finally {
+      setIsPreviewLoading(false);
+    }
+  };
+
+  // Submit Gift Creation (Duration is automatically handled by Admin package settings)
   const handleCreateDigitalGift = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (GIFT_TEMPLATES[selectedTemplateId]?.requiresPhoto && photos.length === 0) {
+      setGiftError(isEn ? 'Add at least one memory photo for this landing-page template.' : 'Tambahkan minimal satu foto kenangan untuk template landing page ini.');
+      document.getElementById('gift-photo-upload-section')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
     setIsCreatingGift(true);
     setGiftError(null);
 
     try {
+      const accessCode =
+        typeof window !== 'undefined'
+          ? localStorage.getItem('laysa_access_code') || ''
+          : '';
+
       const res = await fetch('/api/gifts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           senderName: senderName.trim() || 'Seseorang yang Mengagumimu',
           recipientName: recipientName.trim() || 'Untukmu',
-          message: personalMessage.trim() || design.text?.content || 'Semoga hari-harimu selalu seindah dan seharum buket bunga ini! 💐✨',
-          musicTrack,
+          message:
+            personalMessage.trim() ||
+            design.text?.content ||
+            'Semoga hari-harimu selalu seindah dan seharum buket bunga ini! 💐✨',
+          musicTrack: youtubeData.videoId ? 'youtube' : 'romantic-piano',
           designData: design,
+          accessCode,
+          isVipUser,
+          config: {
+            version: 2,
+            templateId: selectedTemplateId,
+            giftObjectId: selectedObjectId,
+            effectId: selectedEffectId,
+            title:
+              giftTitle.trim() ||
+              (isEn ? 'A Special Bouquet For You' : 'Buket Bunga Spesial Untukmu'),
+            youtubeVideoId: youtubeData.videoId || null,
+            youtubeStartSeconds: youtubeData.startSeconds || 0,
+            photoCount: photos.length,
+          },
         }),
       });
 
@@ -90,11 +233,31 @@ export default function StepDownload({ canvasRef }: StepDownloadProps) {
         const fullUrl = `${window.location.origin}${data.shareUrl}`;
         setGiftShareUrl(fullUrl);
         setGiftId(data.id);
+        setGiftExpiresAt(data.expiresAt || null);
+
+        // Upload photos if any
+        if (photos.length > 0) {
+          try {
+            await fetch(`/api/gifts/${data.id}/photos`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                photos: photos.map((p, idx) => ({
+                  dataUrl: p.dataUrl,
+                  altText: p.altText,
+                  displayOrder: idx,
+                })),
+              }),
+            });
+          } catch (uploadErr) {
+            console.warn('Failed to upload photos:', uploadErr);
+          }
+        }
       } else {
-        setGiftError(data.message || 'Gagal membuat hadiah digital.');
+        setGiftError(data.message || (isEn ? 'Failed to create digital gift.' : 'Gagal membuat kado digital.'));
       }
     } catch {
-      setGiftError('Terjadi kesalahan koneksi saat membuat link hadiah.');
+      setGiftError(isEn ? 'Connection error while creating gift link.' : 'Terjadi kesalahan koneksi saat membuat link kado.');
     } finally {
       setIsCreatingGift(false);
     }
@@ -111,390 +274,546 @@ export default function StepDownload({ canvasRef }: StepDownloadProps) {
   const filename = `bucket_bunga_laysa_${today}.${format}`;
 
   const waShareText = encodeURIComponent(
-    `Hai ${recipientName ? recipientName : 'kamu'}! 🌸 Aku baru saja merangkai buket bunga digital spesial khusus buat kamu di Studio Laysa.\n\nBuka amplop surat & lihat buketnya di link ini ya:\n${giftShareUrl}`
+    `Hai ${recipientName ? recipientName : 'kamu'}! 🌸 Aku baru saja merangkai buket bunga digital spesial khusus buat kamu di Studio Laysa.\n\nBuka kado & lihat kejutan buketnya di link ini ya:\n${giftShareUrl}`
   );
 
   return (
     <div className="step-content">
+      {/* Header */}
       <div className="step-header">
         <h2 className="step-title">{isEn ? 'Share & Save Bouquet' : 'Kirim & Simpan Buket'}</h2>
         <p className="step-desc">
           {isEn
-            ? 'Share your floral masterpiece directly via WhatsApp or download as ultra-high-resolution image.'
-            : 'Bagikan kreasi buketmu langsung ke WhatsApp atau unduh sebagai gambar beresolusi tinggi.'}
+            ? 'Create an interactive digital gift link or download crystal-clear HD bouquet image.'
+            : 'Buat tautan kado digital interaktif beranimasi atau unduh gambar buket resolusi tinggi.'}
         </p>
       </div>
 
-      {/* ─── FITUR UTAMA: JADIKAN HADIAH DIGITAL INTERAKTIF (SUPABASE) ─── */}
-      <div className="digital-gift-card">
-        <div className="digital-gift-header">
-          <div className="digital-gift-badge">
-            <Gift size={14} />
-            <span>{isEn ? 'Interactive Digital Gift' : 'Kado Digital Interaktif'}</span>
+      {/* Tabs */}
+      <div className="gift-tab-bar">
+        <button
+          type="button"
+          onClick={() => setActiveTab('gift-link')}
+          className={`gift-tab-btn ${activeTab === 'gift-link' ? 'active' : ''}`}
+        >
+          <Gift size={15} />
+          <span>{isEn ? 'Interactive Gift Link' : 'Kado Link Interaktif'}</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab('download-image')}
+          className={`gift-tab-btn ${activeTab === 'download-image' ? 'active' : ''}`}
+        >
+          <Download size={15} />
+          <span>{isEn ? 'Download HD Image' : 'Unduh Gambar HD'}</span>
+        </button>
+      </div>
+
+      {/* ─── TAB 1: KADO LINK INTERAKTIF ─── */}
+      {activeTab === 'gift-link' && (
+        <div className="digital-gift-card">
+          <div className="digital-gift-header">
+            <div className="digital-gift-badge">
+              <Gift size={13} />
+              <span>{isEn ? 'Interactive Digital Gift' : 'Kado Link Interaktif'}</span>
+            </div>
+            <h3 className="digital-gift-title">
+              {isEn ? 'Personalized Gift Experience' : 'Kado Digital Interaktif'}
+            </h3>
           </div>
-          <h3 className="digital-gift-title">{isEn ? 'Send Online Greeting Card & Bouquet' : 'Kirim Kartu & Buket Online'}</h3>
-          <p className="digital-gift-subtitle">
-            {isEn
-              ? 'Recipient will receive a special link with animated unsealing, blooming bouquet, soft acoustic music, and your private note.'
-              : 'Penerima akan menerima link spesial berisi amplop surat, animasi buket mekar, alunan musik lembut, dan pesan pribadimu.'}
-          </p>
-        </div>
 
-        {!giftShareUrl ? (
-          <form onSubmit={handleCreateDigitalGift} className="digital-gift-form">
-            <div className="gift-form-grid">
-              <div className="gift-form-field">
-                <label className="gift-field-label">{isEn ? 'Your Name' : 'Nama Kamu'}</label>
-                <input
-                  type="text"
-                  placeholder={isEn ? 'e.g. Nadia' : 'Cth: Nadia'}
-                  value={senderName}
-                  onChange={(e) => setSenderName(e.target.value)}
-                  className="gift-input"
-                  maxLength={40}
+          {!giftShareUrl ? (
+            <form onSubmit={handleCreateDigitalGift} className="digital-gift-form">
+              {/* ─── CARD 1: 🌸 TEMA, OBJEK & EFEK ─── */}
+              <div className="gift-studio-card">
+                <div className="gift-card-header">
+                  <div className="gift-step-pill">01</div>
+                  <h4 className="gift-card-title">
+                    <span>{isEn ? 'Theme, Object & Effect' : 'Tema, Objek & Animasi'}</span>
+                  </h4>
+                </div>
+
+                {/* 1. Template Selector */}
+                <TemplateSelector
+                  selectedTemplateId={selectedTemplateId}
+                  onSelect={handleSelectTemplate}
+                  allowedTemplates={isVipUser ? 'all' : ['klasik', 'taman-mekar']}
+                  onUpgradeClick={() => setIsUnlockModalOpen(true)}
+                  isEn={isEn}
+                />
+
+                <div className="gift-divider-subtle" />
+
+                {/* 2. Gift Object & Effect Selectors */}
+                <GiftObjectSelector
+                  selectedObjectId={selectedObjectId}
+                  onSelect={setSelectedObjectId}
+                  canUseAllObjects={isVipUser}
+                  onUpgradeClick={() => setIsUnlockModalOpen(true)}
+                  isEn={isEn}
+                />
+
+                <div className="gift-divider-subtle" />
+
+                <EffectSelector
+                  selectedEffectId={selectedEffectId}
+                  onSelect={setSelectedEffectId}
+                  canUseAllEffects={isVipUser}
+                  onUpgradeClick={() => setIsUnlockModalOpen(true)}
+                  isEn={isEn}
                 />
               </div>
 
-              <div className="gift-form-field">
-                <label className="gift-field-label">{isEn ? "Recipient's Name" : 'Nama Penerima'}</label>
-                <input
-                  type="text"
-                  placeholder={isEn ? 'e.g. Farhan' : 'Cth: Farhan'}
-                  value={recipientName}
-                  onChange={(e) => setRecipientName(e.target.value)}
-                  className="gift-input"
-                  maxLength={40}
+              {/* ─── CARD 2: ✍️ PENERIMA & SURAT UCAPAN ─── */}
+              <div className="gift-studio-card">
+                <div className="gift-card-header">
+                  <div className="gift-step-pill">02</div>
+                  <h4 className="gift-card-title">
+                    <span>{isEn ? 'Sender & Recipient' : 'Penerima & Surat Ucapan'}</span>
+                  </h4>
+                </div>
+
+                <div className="gift-form-grid">
+                  <div className="gift-form-field">
+                    <label className="gift-field-label">
+                      <span>{isEn ? 'Your Name' : 'Nama Pengirim'}</span>
+                      <span className="gift-field-hint">{isEn ? 'Required' : 'Wajib'}</span>
+                    </label>
+                    <input
+                      type="text"
+                      placeholder={isEn ? 'e.g. Farhan' : 'Cth: Farhan'}
+                      value={senderName}
+                      onChange={(e) => setSenderName(e.target.value)}
+                      className="gift-input"
+                      maxLength={40}
+                      required
+                    />
+                  </div>
+
+                  <div className="gift-form-field">
+                    <label className="gift-field-label">
+                      <span>{isEn ? "Recipient's Name" : 'Nama Penerima'}</span>
+                      <span className="gift-field-hint">{isEn ? 'Required' : 'Wajib'}</span>
+                    </label>
+                    <input
+                      type="text"
+                      placeholder={isEn ? 'e.g. Nadia' : 'Cth: Nadia'}
+                      value={recipientName}
+                      onChange={(e) => setRecipientName(e.target.value)}
+                      className="gift-input"
+                      maxLength={40}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="gift-form-field">
+                  <label className="gift-field-label">
+                    <span>{isEn ? 'Front Greeting' : 'Kalimat Pembuka Depan'}</span>
+                  </label>
+                  <input
+                    type="text"
+                    placeholder={isEn ? 'e.g. A Special Bouquet For You' : 'Cth: Untukmu yang selalu mekar di hatiku...'}
+                    value={giftTitle}
+                    onChange={(e) => {
+                      setGiftTitle(e.target.value);
+                      setIsTitleCustomized(true);
+                    }}
+                    className="gift-input"
+                    maxLength={60}
+                  />
+                </div>
+
+                <div className="gift-form-field">
+                  <label className="gift-field-label">
+                    <span>{isEn ? 'Greeting Letter' : 'Isi Surat & Ucapan'}</span>
+                    <span className="gift-field-hint">{personalMessage.length}/500</span>
+                  </label>
+                  <textarea
+                    rows={3}
+                    placeholder={
+                      isEn
+                        ? 'Write heartfelt wishes or love note...'
+                        : 'Tuliskan ucapan selamat, doa tulus, atau pesan manis...'
+                    }
+                    value={personalMessage}
+                    onChange={(e) => setPersonalMessage(e.target.value)}
+                    className="gift-textarea"
+                    maxLength={500}
+                  />
+                </div>
+              </div>
+
+              {/* ─── CARD 3: 🎵 SOUNDTRACK & FOTO ─── */}
+              <div className="gift-studio-card gift-media-card" id="gift-photo-upload-section">
+                <div className="gift-card-header">
+                  <div className="gift-step-pill">03</div>
+                  <h4 className="gift-card-title">
+                    <span>{isEn ? 'Music & Photos' : 'Soundtrack & Foto'}</span>
+                  </h4>
+                </div>
+
+                {/* YouTube Song Integration */}
+                <YouTubeInput
+                  videoId={youtubeData.videoId}
+                  startSeconds={youtubeData.startSeconds}
+                  onChange={setYoutubeData}
+                  canUseYouTube={true}
+                  isEn={isEn}
                 />
-              </div>
-            </div>
 
-            <div className="gift-form-field">
-              <label className="gift-field-label">
-                <span>{isEn ? 'Greeting Card Message' : 'Pesan / Ucapan untuk Penerima'}</span>
-              </label>
-              <textarea
-                rows={3}
-                placeholder={isEn ? 'Write birthday wishes, graduation congratulations, or romantic note...' : 'Tuliskan ucapan ulang tahun, selamat wisuda, atau pesan manis...'}
-                value={personalMessage}
-                onChange={(e) => setPersonalMessage(e.target.value)}
-                className="gift-textarea"
-                maxLength={500}
-              />
-            </div>
-
-            <div className="gift-form-field">
-              <label className="gift-field-label">
-                <Music size={13} className="text-stone-500" />
-                <span>{isEn ? 'Background Music Atmosphere' : 'Suasana Musik Pengiring'}</span>
-              </label>
-              <div className="gift-music-grid">
-                {MUSIC_OPTIONS.map((m) => (
-                  <button
-                    key={m.id}
-                    type="button"
-                    className={`gift-music-pill ${musicTrack === m.id ? 'active' : ''}`}
-                    onClick={() => setMusicTrack(m.id)}
-                  >
-                    <span className="gift-music-title">{m.label}</span>
-                    <span className="gift-music-desc">{m.desc}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {giftError && (
-              <div className="gift-error-alert">
-                ⚠️ {giftError}
-              </div>
-            )}
-
-            <button
-              type="submit"
-              className="btn btn-primary btn-generate-gift"
-              disabled={isCreatingGift}
-              id="btn-create-digital-gift"
-            >
-              {isCreatingGift ? (
-                <>
-                  <span className="spinner" />
-                  <span>{isEn ? 'Generating Gift Page...' : 'Menyiapkan Halaman Hadiah...'}</span>
-                </>
-              ) : (
-                <>
-                  <Send size={15} />
-                  <span>{isEn ? 'Generate Digital Gift Link' : 'Buat Link Hadiah Digital'}</span>
-                </>
-              )}
-            </button>
-          </form>
-        ) : (
-          /* ✨ LUXURY DIGITAL GIFT TICKET PASS */
-          <div className="gift-ticket-pass">
-            {/* Ribbon Header */}
-            <div className="gift-ticket-ribbon">
-              <span className="gift-ticket-seal">💌</span>
-              <span className="gift-ticket-ribbon-text">{isEn ? 'DIGITAL GIFT PASS' : 'TIKET KADO DIGITAL'}</span>
-            </div>
-
-            {/* Ticket Body */}
-            <div className="gift-ticket-body">
-              {/* Left: Info */}
-              <div className="gift-ticket-info">
-                <div className="gift-ticket-to-from">
-                  <div className="gift-ticket-to">
-                    <span className="gift-ticket-label">{isEn ? 'TO' : 'KEPADA'}</span>
-                    <span className="gift-ticket-name">{recipientName || (isEn ? 'Special Recipient' : 'Penerima Spesial')}</span>
-                  </div>
-                  <div className="gift-ticket-arrow">❤️</div>
-                  <div className="gift-ticket-from">
-                    <span className="gift-ticket-label">{isEn ? 'FROM' : 'DARI'}</span>
-                    <span className="gift-ticket-name">{senderName || (isEn ? 'Someone Who Cares' : 'Seseorang yang Peduli')}</span>
-                  </div>
-                </div>
-
-                {/* Music badge */}
-                <div className="gift-ticket-music-badge">
-                  <Music size={11} />
-                  <span>{MUSIC_OPTIONS.find(m => m.id === musicTrack)?.label || '🎹 Romantic Piano'}</span>
-                </div>
-
-                {/* Letter snippet */}
-                {personalMessage && (
-                  <div className="gift-ticket-letter-snippet">
-                    <span className="gift-ticket-quote-mark">&ldquo;</span>
-                    <p>{personalMessage.length > 90 ? `${personalMessage.slice(0, 90)}...` : personalMessage}</p>
-                    <span className="gift-ticket-quote-mark end">&rdquo;</span>
-                  </div>
+                {/* Photo Uploader */}
+                <PhotoUploader
+                  photos={photos}
+                  onChange={setPhotos}
+                  maxPhotos={isVipUser ? 6 : 1}
+                  onUpgradeClick={() => setIsUnlockModalOpen(true)}
+                  isEn={isEn}
+                />
+                {GIFT_TEMPLATES[selectedTemplateId]?.requiresPhoto && photos.length === 0 && (
+                  <p className="gift-required-photo-hint" role="status">
+                    {isEn ? 'This landing page needs at least one photo. Choose a photo and it will appear at the top of the shared gift page.' : 'Template landing page ini perlu minimal satu foto. Pilih foto, lalu foto akan muncul di bagian pembuka halaman kado.'}
+                  </p>
                 )}
               </div>
 
-              {/* Divider */}
-              <div className="gift-ticket-divider">
-                <div className="gift-ticket-hole top" />
-                <div className="gift-ticket-dashes" />
-                <div className="gift-ticket-hole bottom" />
-              </div>
-
-              {/* Right: QR Code */}
-              <div className="gift-ticket-qr-side">
-                <div className="gift-ticket-qr-label">
-                  <QrCode size={13} />
-                  <span>{isEn ? 'Scan to Open' : 'Scan untuk Buka'}</span>
+              {giftError && (
+                <div className="gift-error-alert text-xs p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 font-medium">
+                  ⚠️ {giftError}
                 </div>
-                <div className="gift-ticket-qr-wrap">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={`https://api.qrserver.com/v1/create-qr-code/?size=130x130&data=${encodeURIComponent(giftShareUrl || '')}&bgcolor=fff7f5&color=831843`}
-                    alt="QR Code Hadiah"
-                    className="gift-ticket-qr-img"
-                    width={130}
-                    height={130}
-                  />
-                </div>
-                <div className="gift-ticket-link-small">
-                  {giftShareUrl?.replace(/^https?:\/\//, '').slice(0, 28)}...
-                </div>
-              </div>
-            </div>
+              )}
 
-            {/* Action Row */}
-            <div className="gift-ticket-actions">
-              <a
-                href={`https://wa.me/?text=${waShareText}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="gift-ticket-btn-wa"
-                id="btn-share-gift-wa"
-              >
-                <MessageCircle size={15} />
-                <span>{isEn ? 'Send via WhatsApp' : 'Kirim ke WhatsApp'}</span>
-              </a>
-
-              <a
-                href={`/gift/${giftId}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="gift-ticket-btn-preview"
-                id="btn-preview-gift-page"
-              >
-                <ExternalLink size={14} />
-                <span>{isEn ? 'Preview Gift' : 'Buka Kado'}</span>
-              </a>
-
+              {/* Preview Button */}
               <button
                 type="button"
-                className={`gift-ticket-btn-copy ${isCopied ? 'copied' : ''}`}
-                onClick={handleCopyLink}
-                id="btn-copy-gift-link"
+                onClick={handlePreview}
+                disabled={isPreviewLoading || isCreatingGift}
+                className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-2xl border-2 border-dashed border-purple-300 bg-purple-50 hover:bg-purple-100 text-purple-700 font-semibold text-sm transition-all duration-200 hover:border-purple-400 disabled:opacity-50"
+                id="btn-preview-gift"
               >
-                {isCopied ? (
+                {isPreviewLoading ? (
+                  <><Loader2 size={16} className="animate-spin" /><span>{isEn ? 'Opening Preview...' : 'Membuka Preview...'}</span></>
+                ) : (
+                  <><Eye size={16} /><span>{isEn ? 'Preview Gift Experience (Opens New Tab)' : 'Lihat Preview Kado (Tab Baru)'}</span></>
+                )}
+              </button>
+
+              {/* Submit Button */}
+              <button
+                type="submit"
+                className="btn-generate-gift-luxury"
+                disabled={isCreatingGift}
+                id="btn-create-digital-gift"
+              >
+                {isCreatingGift ? (
                   <>
-                    <Check size={14} />
-                    <span>{isEn ? 'Copied!' : 'Tersalin!'}</span>
+                    <span className="spinner" />
+                    <span>{isEn ? 'Crafting Magical Gift Link...' : 'Menyiapkan Kado Link Ajaib...'}</span>
                   </>
                 ) : (
                   <>
-                    <Copy size={14} />
-                    <span>{isEn ? 'Copy Link' : 'Salin Link'}</span>
+                    <Send size={18} />
+                    <span>{isEn ? 'Generate Interactive Gift Link' : 'Buat Link Kado Digital Interaktif'}</span>
+                    <Sparkles size={16} />
                   </>
                 )}
               </button>
+            </form>
+
+
+          ) : (
+            /* ✨ LUXURY DIGITAL GIFT TICKET PASS */
+            <div className="gift-ticket-pass animate-in fade-in duration-500">
+              {/* Ribbon Header */}
+              <div className="gift-ticket-ribbon">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="gift-ticket-seal">💌</span>
+                  <span className="gift-ticket-ribbon-text truncate">
+                    {isEn ? 'DIGITAL GIFT PASS' : 'TIKET KADO DIGITAL'}
+                  </span>
+                </div>
+                <span className="gift-ticket-ribbon-tag shrink-0">LAYSA ATELIER</span>
+              </div>
+
+              {/* Main Ticket Card Content */}
+              <div className="gift-ticket-content">
+                {/* TO / FROM Block */}
+                <div className="gift-ticket-to-from-card">
+                  <div className="gift-ticket-party">
+                    <span className="gift-ticket-party-role">{isEn ? 'TO' : 'UNTUK'}</span>
+                    <span className="gift-ticket-party-name" title={recipientName}>
+                      {recipientName || (isEn ? 'Special Recipient' : 'Penerima Spesial')}
+                    </span>
+                  </div>
+
+                  <div className="gift-ticket-heart-badge">
+                    <Heart size={16} className="text-rose-500 fill-rose-500 animate-pulse" />
+                  </div>
+
+                  <div className="gift-ticket-party text-right">
+                    <span className="gift-ticket-party-role">{isEn ? 'FROM' : 'DARI'}</span>
+                    <span className="gift-ticket-party-name" title={senderName}>
+                      {senderName || (isEn ? 'Someone Who Cares' : 'Seseorang yang Peduli')}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Badges: Template & Music only */}
+                <div className="gift-ticket-chips-row">
+                  <div className="gift-ticket-chip">
+                    <Sparkles size={11} className="text-pink-600" />
+                    <span>{selectedTemplateId ? selectedTemplateId.replace('-', ' ') : 'Klasik'}</span>
+                  </div>
+
+                  <div className="gift-ticket-chip">
+                    <Music size={11} className="text-pink-600" />
+                    <span>{youtubeData.videoId ? 'YouTube Soundtrack' : (isEn ? 'Classic Melody' : 'Melodi Klasik')}</span>
+                  </div>
+                </div>
+
+                {/* Letter Greeting Note Snippet */}
+                {personalMessage && (
+                  <div className="gift-ticket-quote-box">
+                    <span className="gift-ticket-quote-sym">&ldquo;</span>
+                    <p className="gift-ticket-quote-text">{personalMessage}</p>
+                    <span className="gift-ticket-quote-sym right">&rdquo;</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Perforated Tear Line (Horizontal Boarding Pass Style) */}
+              <div className="gift-ticket-perforation">
+                <div className="gift-ticket-punch left" />
+                <div className="gift-ticket-perforated-line" />
+                <div className="gift-ticket-punch right" />
+              </div>
+
+              {/* QR Stub Section */}
+              <div className="gift-ticket-stub">
+                <div className="gift-ticket-stub-header">
+                  <QrCode size={13} className="text-pink-700" />
+                  <span>{isEn ? 'SCAN OR TAP TO OPEN' : 'SCAN ATAU KLIK UNTUK BUKA'}</span>
+                </div>
+
+                <a
+                  href={`/gift/${giftId}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="gift-ticket-qr-container"
+                  title={isEn ? 'Open gift preview' : 'Buka preview kado'}
+                >
+                  <img
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=${encodeURIComponent(giftShareUrl || '')}&bgcolor=ffffff&color=831843`}
+                    alt="QR Code Hadiah"
+                    className="gift-ticket-qr-code"
+                    width={130}
+                    height={130}
+                  />
+                  <span className="gift-ticket-qr-hint">
+                    {isEn ? 'Tap to preview gift' : 'Sentuh untuk preview kado'}
+                  </span>
+                </a>
+
+                {/* URL preview pill */}
+                <div
+                  className="gift-ticket-url-pill"
+                  onClick={handleCopyLink}
+                  title={isEn ? 'Click to copy link' : 'Klik untuk salin link'}
+                >
+                  <span className="truncate">{giftShareUrl?.replace(/^https?:\/\//, '')}</span>
+                  {isCopied ? <Check size={12} className="text-emerald-600 shrink-0" /> : <Copy size={12} className="text-stone-400 shrink-0" />}
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="gift-ticket-actions">
+                <a
+                  href={`https://wa.me/?text=${waShareText}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="gift-ticket-btn-wa"
+                  id="btn-share-gift-wa"
+                >
+                  <MessageCircle size={16} />
+                  <span>{isEn ? 'Send via WhatsApp' : 'Kirim ke WhatsApp'}</span>
+                </a>
+
+                <div className="gift-ticket-btn-group">
+                  <a
+                    href={`/gift/${giftId}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="gift-ticket-btn-open"
+                    id="btn-preview-gift-page"
+                  >
+                    <ExternalLink size={13} />
+                    <span>{isEn ? 'Open Gift' : 'Buka Kado'}</span>
+                  </a>
+
+                  <button
+                    type="button"
+                    className={`gift-ticket-btn-copy ${isCopied ? 'copied' : ''}`}
+                    onClick={handleCopyLink}
+                    id="btn-copy-gift-link"
+                  >
+                    {isCopied ? (
+                      <>
+                        <Check size={13} />
+                        <span>{isEn ? 'Copied!' : 'Tersalin!'}</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy size={13} />
+                        <span>{isEn ? 'Copy Link' : 'Salin Link'}</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {/* Reset button */}
+              <div className="p-3 text-center bg-white/40 border-t border-pink-100">
+                <button
+                  type="button"
+                  className="text-xs font-semibold text-pink-700 hover:text-pink-900 underline transition-colors"
+                  onClick={() => setGiftShareUrl(null)}
+                >
+                  {isEn ? '← Edit Details / Create Another Gift' : '← Edit Detail / Buat Kado Baru'}
+                </button>
+              </div>
             </div>
-
-            {/* Reset link */}
-            <button
-              type="button"
-              className="btn-gift-edit-link"
-              onClick={() => setGiftShareUrl(null)}
-            >
-              {isEn ? 'Change message / Create new link' : 'Ubah Pesan / Buat Link Baru'}
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* ─── RESOLUSI EKSPOR ULTRA (4K MASTER, 2K, 1080P) ─── */}
-      <div className="form-group mt-6">
-        <label className="form-label">{isEn ? 'Image Export Resolution' : 'Pilihan Resolusi Ekspor Gambar'}</label>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginBottom: '14px' }}>
-          <button
-            type="button"
-            className={`format-card ${exportResolution === '4k' ? 'selected' : ''}`}
-            onClick={() => setExportResolution('4k')}
-            style={{ padding: '10px 12px', textAlign: 'left', cursor: 'pointer' }}
-          >
-            <div className="format-info">
-              <span className="format-name" style={{ color: '#4338ca', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <span>👑 Ultra 4K</span>
-              </span>
-              <span className="format-desc">{isEn ? '3.5x Lossless Master' : '3.5x Detail Master Ultra'}</span>
-            </div>
-          </button>
-
-          <button
-            type="button"
-            className={`format-card ${exportResolution === '2k' ? 'selected' : ''}`}
-            onClick={() => setExportResolution('2k')}
-            style={{ padding: '10px 12px', textAlign: 'left', cursor: 'pointer' }}
-          >
-            <div className="format-info">
-              <span className="format-name">⚡ 2K Super HD</span>
-              <span className="format-desc">{isEn ? '2x Sharp Print' : '2x Tajam & Cetak'}</span>
-            </div>
-          </button>
-
-          <button
-            type="button"
-            className={`format-card ${exportResolution === 'hd' ? 'selected' : ''}`}
-            onClick={() => setExportResolution('hd')}
-            style={{ padding: '10px 12px', textAlign: 'left', cursor: 'pointer' }}
-          >
-            <div className="format-info">
-              <span className="format-name">📱 Native 1x</span>
-              <span className="format-desc">{isEn ? 'Fast & Lightweight' : 'Ringan & Cepat'}</span>
-            </div>
-          </button>
-        </div>
-
-        {/* ─── FORMAT UNDUHAN GAMBAR (PNG / JPG) ─── */}
-        <label className="form-label">{isEn ? 'Or Download Image File Directly' : 'Pilih Format File Gambar'}</label>
-        <div className="format-options">
-          <label className={`format-card ${format === 'png' ? 'selected' : ''}`}>
-            <input
-              id="format-png"
-              type="radio"
-              name="format"
-              value="png"
-              checked={format === 'png'}
-              onChange={() => setFormat('png')}
-            />
-            <div className="format-info">
-              <span className="format-name">PNG ({isEn ? 'Transparent' : 'Transparan'})</span>
-              <span className="format-desc">{isEn ? 'Transparent backdrop, lossless HD' : 'Latar transparan, kualitas HD jernih'}</span>
-            </div>
-          </label>
-          <label className={`format-card ${format === 'jpg' ? 'selected' : ''}`}>
-            <input
-              id="format-jpg"
-              type="radio"
-              name="format"
-              value="jpg"
-              checked={format === 'jpg'}
-              onChange={() => setFormat('jpg')}
-            />
-            <div className="format-info">
-              <span className="format-name">JPG ({isEn ? 'Studio Background' : 'Latar Bersih'})</span>
-              <span className="format-desc">{isEn ? 'Clean studio/white backdrop, lightweight' : 'Latar putih/studio bersih, ukuran file ringan'}</span>
-            </div>
-          </label>
-        </div>
-      </div>
-
-      {/* File info */}
-      <div className="file-info-card">
-        <div className="file-info-row">
-          <span className="file-info-key">{isEn ? 'File Name' : 'Nama File'}</span>
-          <span className="file-info-val">{filename}</span>
-        </div>
-        <div className="file-info-row">
-          <span className="file-info-key">{isEn ? 'Export Resolution' : 'Resolusi Ekspor'}</span>
-          <span className="file-info-val">
-            {exportResolution === '4k'
-              ? '2100 × 2100px (Ultra 4K Master)'
-              : exportResolution === '2k'
-              ? '1200 × 1200px (Super 2K HD)'
-              : '600 × 600px (1:1 Native HD)'}
-          </span>
-        </div>
-        <div className="file-info-row">
-          <span className="file-info-key">{isEn ? 'Quality' : 'Kualitas'}</span>
-          <span className="file-info-val">
-            {exportResolution === '4k'
-              ? 'Ultra High 4K (Lossless Master)'
-              : exportResolution === '2k'
-              ? 'High Definition (Sharp 2K)'
-              : 'Standard HD'}
-          </span>
-        </div>
-      </div>
-
-      {/* Download button */}
-      <button
-        id="btn-download"
-        className={`btn download-btn ${status === 'done' ? 'btn-success' : 'btn-primary'}`}
-        onClick={handleDownload}
-        disabled={status === 'downloading'}
-      >
-        {status === 'idle' && (
-          <>
-            <Download size={18} />
-            {isEn ? `Download Bouquet Design (${format.toUpperCase()})` : `Unduh Desain Buket (${format.toUpperCase()})`}
-          </>
-        )}
-        {status === 'downloading' && (
-          <>
-            <span className="spinner" />
-            {isEn ? 'Preparing HD image...' : 'Menyiapkan gambar HD...'}
-          </>
-        )}
-        {status === 'done' && (
-          <>
-            <CheckCircle size={18} />
-            {isEn ? 'Downloaded Successfully! ✓' : 'Berhasil Diunduh! ✓'}
-          </>
-        )}
-      </button>
-
-      {status === 'done' && (
-        <div className="success-banner">
-          {isEn
-            ? '🎉 Your bouquet design image has been saved to your device!'
-            : '🎉 Gambar desain buket berhasil disimpan ke perangkatmu!'}
+          )}
         </div>
       )}
 
-      {/* Actions */}
-      <div className="download-actions">
+      {/* ─── TAB 2: UNDUH GAMBAR RESOLUSI TINGGI ─── */}
+      {activeTab === 'download-image' && (
+        <div className="download-image-section bg-white p-4 rounded-2xl border border-stone-200/80 shadow-xs">
+          {/* Resolusi Ekspor */}
+          <div className="form-group mb-4">
+            <label className="gift-section-title mb-2">
+              {isEn ? 'Export Resolution' : 'Pilihan Resolusi Ekspor'}
+            </label>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px', marginBottom: '12px' }}>
+              <button
+                type="button"
+                className={`format-card ${exportResolution === '4k' ? 'selected' : ''}`}
+                onClick={() => setExportResolution('4k')}
+                style={{ padding: '8px 6px', textAlign: 'center', cursor: 'pointer', borderRadius: '10px' }}
+              >
+                <div className="format-info" style={{ textAlign: 'center' }}>
+                  <span className="format-name" style={{ color: '#be185d', fontSize: '11px', fontWeight: 700, display: 'block' }}>
+                    👑 4K Ultra
+                  </span>
+                </div>
+              </button>
+
+              <button
+                type="button"
+                className={`format-card ${exportResolution === '2k' ? 'selected' : ''}`}
+                onClick={() => setExportResolution('2k')}
+                style={{ padding: '8px 6px', textAlign: 'center', cursor: 'pointer', borderRadius: '10px' }}
+              >
+                <div className="format-info" style={{ textAlign: 'center' }}>
+                  <span className="format-name" style={{ fontSize: '11px', fontWeight: 700, display: 'block' }}>
+                    ⚡ 2K Super
+                  </span>
+                </div>
+              </button>
+
+              <button
+                type="button"
+                className={`format-card ${exportResolution === 'hd' ? 'selected' : ''}`}
+                onClick={() => setExportResolution('hd')}
+                style={{ padding: '8px 6px', textAlign: 'center', cursor: 'pointer', borderRadius: '10px' }}
+              >
+                <div className="format-info" style={{ textAlign: 'center' }}>
+                  <span className="format-name" style={{ fontSize: '11px', fontWeight: 700, display: 'block' }}>
+                    📱 1x HD
+                  </span>
+                </div>
+              </button>
+            </div>
+
+            {/* Format PNG / JPG */}
+            <label className="gift-section-title mb-2">
+              {isEn ? 'Image Format' : 'Format Gambar'}
+            </label>
+            <div className="gift-duration-options" style={{ marginTop: '0', marginBottom: '12px' }}>
+              <button
+                type="button"
+                onClick={() => setFormat('png')}
+                className={`gift-duration-btn ${format === 'png' ? 'active' : ''}`}
+              >
+                PNG ({isEn ? 'Transparent' : 'Transparan'})
+              </button>
+              <button
+                type="button"
+                onClick={() => setFormat('jpg')}
+                className={`gift-duration-btn ${format === 'jpg' ? 'active' : ''}`}
+              >
+                JPG ({isEn ? 'White BG' : 'Latar Putih'})
+              </button>
+            </div>
+          </div>
+
+          {/* File info */}
+          <div className="file-info-card" style={{ padding: '10px 12px', borderRadius: '12px', fontSize: '11.5px' }}>
+            <div className="file-info-row" style={{ padding: '3px 0' }}>
+              <span className="file-info-key">{isEn ? 'File' : 'Nama File'}</span>
+              <span className="file-info-val truncate max-w-[160px]">{filename}</span>
+            </div>
+            <div className="file-info-row" style={{ padding: '3px 0' }}>
+              <span className="file-info-key">{isEn ? 'Size' : 'Ukuran'}</span>
+              <span className="file-info-val">
+                {exportResolution === '4k'
+                  ? '2100 × 2100px (4K)'
+                  : exportResolution === '2k'
+                  ? '1200 × 1200px (2K)'
+                  : '600 × 600px (HD)'}
+              </span>
+            </div>
+          </div>
+
+          {/* Download button */}
+          <button
+            id="btn-download"
+            className={`btn download-btn ${status === 'done' ? 'btn-success' : 'btn-primary'} w-full mt-3`}
+            onClick={handleDownload}
+            disabled={status === 'downloading'}
+            style={{ padding: '11px', borderRadius: '12px', fontSize: '13px' }}
+          >
+            {status === 'idle' && (
+              <>
+                <Download size={16} />
+                <span>{isEn ? `Download Image (${format.toUpperCase()})` : `Unduh Gambar (${format.toUpperCase()})`}</span>
+              </>
+            )}
+            {status === 'downloading' && (
+              <>
+                <span className="spinner" />
+                <span>{isEn ? 'Preparing image...' : 'Menyiapkan gambar...'}</span>
+              </>
+            )}
+            {status === 'done' && (
+              <>
+                <CheckCircle size={16} />
+                <span>{isEn ? 'Downloaded! ✓' : 'Berhasil Diunduh! ✓'}</span>
+              </>
+            )}
+          </button>
+
+          {status === 'done' && (
+            <div className="success-banner mt-2.5 text-xs py-2 px-3 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200 text-center font-medium">
+              {isEn ? '🎉 Bouquet image saved successfully!' : '🎉 Gambar buket berhasil disimpan!'}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Common bottom actions */}
+      <div className="download-actions mt-8 flex flex-wrap gap-2 justify-center">
         <button
           id="btn-edit-again"
           className="btn btn-secondary flex items-center justify-center gap-1.5"
@@ -519,6 +838,12 @@ export default function StepDownload({ canvasRef }: StepDownloadProps) {
         totalSteps={5}
         onBack={() => setStep(4)}
         onNext={() => {}}
+      />
+
+      <PremiumUnlockModal
+        isOpen={isUnlockModalOpen}
+        onClose={() => setIsUnlockModalOpen(false)}
+        itemName={isEn ? 'Kado Link VIP Package' : 'Paket VIP Kado Link'}
       />
     </div>
   );

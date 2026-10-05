@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import Image from 'next/image';
 import Link from 'next/link';
 import { 
@@ -8,13 +9,15 @@ import {
   RotateCw, Share2, Search, X, Check, 
   Smartphone, ChevronRight, HelpCircle, Eye, Info,
   ZoomIn, ZoomOut, Compass, Crown,
-  BookOpen, FastForward, Trash2, Scissors, Volume2, VolumeX, ShoppingBag
+  BookOpen, Trash2, Scissors, Volume2, VolumeX, ShoppingBag, MoreHorizontal, RotateCcw,
+  Maximize2, Minimize2
 } from 'lucide-react';
-import { useDesign } from '@/context/DesignContext';
+import { getOrCreateDeviceId, useDesign } from '@/context/DesignContext';
 import { useLanguage } from '@/context/LanguageContext';
 import LanguageSwitcher from '@/components/ui/LanguageSwitcher';
 import { FLOWERS } from '@/data/flowers';
 import PremiumUnlockModal from '@/components/designer/PremiumUnlockModal';
+import GardenWorldFrame from './GardenWorldFrame';
 import { 
   GARDEN_40_FLOWERS, 
   GARDEN_CATEGORIES, 
@@ -25,6 +28,7 @@ import {
   getOrnamentByKey
 } from '@/data/gardenCatalog';
 import { encryptGardenData, decryptGardenData } from '@/lib/cryptoGarden';
+import { addStarterCityIfWorldIsEmpty, EMPTY_GARDEN_WORLD_LAYOUT, type GardenWorldLayout } from './worldLayoutTypes';
 
 // ── Helper Waktu & Tahap Pertumbuhan Harian (Daily Streak Growth) ──
 export function getTodayDateStr(): string {
@@ -82,14 +86,120 @@ export interface PlacedDecoration {
   name: string;
   x: number; // in pixels on the 410px island surface (-30 to 385)
   y: number; // in pixels on the 410px island surface (-30 to 385)
+  scale?: number;
+  rotation?: number;
 }
 
-export const DEFAULT_PLACED_DECORATIONS: PlacedDecoration[] = [
-  { id: 'deco-arch', ornamentKey: 'ornament_arch', name: 'Gapura Mawar', x: 177, y: -24 },
-  { id: 'deco-fountain', ornamentKey: 'ornament_fountain', name: 'Air Mancur', x: 177, y: 378 },
-  { id: 'deco-bench', ornamentKey: 'ornament_bench', name: 'Bangku Kayu', x: -24, y: 177 },
-  { id: 'deco-lantern', ornamentKey: 'ornament_lantern', name: 'Lentera Peri', x: 378, y: 177 },
-  { id: 'deco-cat', ornamentKey: 'ornament_cat', name: 'Si Mpus', x: 340, y: 30 },
+// Kebun baru dimulai tanpa ornamen lama. Bunga pengguna tersimpan terpisah pada state grid.
+export const DEFAULT_PLACED_DECORATIONS: PlacedDecoration[] = [];
+const GARDEN_SCENE_VERSION = 'diorama-meadow-v2';
+
+// Lapisan bawah yang padat—tanpa kanopi pohon kartun—agar bunga pengguna tetap jadi fokus.
+const GARDEN_BOX_FOREST = [
+  ...Array.from({ length: 24 }, (_, index) => {
+    const row = Math.floor(index / 6);
+    return { id: `meadow-${index}`, x: 30 + (index % 6) * 70 + (row % 2) * 12, y: 38 + row * 102, type: 'meadow', scale: 0.84 + (index % 3) * 0.08 };
+  }),
+  ...Array.from({ length: 18 }, (_, index) => {
+    const row = Math.floor(index / 6);
+    return { id: `fern-${index}`, x: 46 + (index % 6) * 67 + ((row + 1) % 2) * 16, y: 68 + row * 110, type: 'fern', scale: 0.78 + (index % 4) * 0.07 };
+  }),
+  ...Array.from({ length: 16 }, (_, index) => {
+    const row = Math.floor(index / 4);
+    return { id: `wildflower-${index}`, x: 58 + (index % 4) * 98 + (row % 2) * 18, y: 88 + row * 78, type: 'wildflower', scale: 0.76 + (index % 3) * 0.08 };
+  }),
+  ...Array.from({ length: 14 }, (_, index) => ({ id: `lavender-${index}`, x: 44 + (index % 5) * 80 + (Math.floor(index / 5) % 2) * 24, y: 118 + Math.floor(index / 5) * 104, type: 'lavender', scale: 0.72 + (index % 3) * 0.08 })),
+  ...Array.from({ length: 12 }, (_, index) => ({ id: `understory-${index}`, x: 42 + (index % 4) * 106, y: 70 + Math.floor(index / 4) * 120, type: 'shrub', scale: 0.7 + (index % 3) * 0.06 })),
+];
+
+// Pengisi lanskap hanya dekoratif: tidak mengubah 25 petak tanam atau progres kebun.
+const GARDEN_LANDSCAPE_FILLERS = [
+  // Kanopi besar menjadi lapisan belakang; pulau terasa seperti hutan, bukan papan tanam.
+  { id: 'forest-nw-a', x: 48, y: 54, type: 'tree-lilac', scale: 1.42 },
+  { id: 'forest-nw-b', x: 94, y: 72, type: 'tree-moss', scale: 1.2 },
+  { id: 'forest-north-a', x: 158, y: 36, type: 'tree-lilac', scale: 1.38 },
+  { id: 'forest-north-b', x: 218, y: 42, type: 'tree-moss', scale: 1.25 },
+  { id: 'forest-ne-a', x: 302, y: 54, type: 'tree-lilac', scale: 1.44 },
+  { id: 'forest-ne-b', x: 360, y: 82, type: 'tree-moss', scale: 1.2 },
+  { id: 'forest-west-a', x: 44, y: 148, type: 'tree-moss', scale: 1.12 },
+  { id: 'forest-west-b', x: 58, y: 238, type: 'tree-lilac', scale: 1.26 },
+  { id: 'forest-east-a', x: 364, y: 150, type: 'tree-lilac', scale: 1.22 },
+  { id: 'forest-east-b', x: 368, y: 250, type: 'tree-moss', scale: 1.3 },
+  { id: 'forest-sw-a', x: 78, y: 336, type: 'tree-lilac', scale: 1.32 },
+  { id: 'forest-sw-b', x: 140, y: 368, type: 'tree-moss', scale: 1.18 },
+  { id: 'forest-south-a', x: 212, y: 376, type: 'tree-lilac', scale: 1.42 },
+  { id: 'forest-se-a', x: 286, y: 362, type: 'tree-moss', scale: 1.25 },
+  { id: 'forest-se-b', x: 342, y: 328, type: 'tree-lilac', scale: 1.3 },
+  { id: 'meadow-a', x: 122, y: 126, type: 'flowerbed', scale: 1.08 },
+  { id: 'meadow-b', x: 202, y: 112, type: 'flowerbed', scale: 0.98 },
+  { id: 'meadow-c', x: 282, y: 146, type: 'flowerbed', scale: 1.04 },
+  { id: 'grove-a', x: 152, y: 166, type: 'tree-lilac', scale: 1.05 },
+  { id: 'grove-b', x: 248, y: 176, type: 'tree-moss', scale: 1.04 },
+  { id: 'meadow-d', x: 122, y: 224, type: 'flowerbed', scale: 1.12 },
+  { id: 'meadow-e', x: 208, y: 214, type: 'flowerbed', scale: 0.94 },
+  { id: 'meadow-f', x: 288, y: 242, type: 'flowerbed', scale: 1.12 },
+  { id: 'grove-c', x: 164, y: 278, type: 'tree-moss', scale: 1.02 },
+  { id: 'grove-d', x: 264, y: 286, type: 'tree-lilac', scale: 1.05 },
+  { id: 'meadow-g', x: 154, y: 302, type: 'flowerbed', scale: 1.02 },
+  { id: 'meadow-h', x: 244, y: 316, type: 'flowerbed', scale: 1.14 },
+  { id: 'meadow-i', x: 86, y: 186, type: 'flowerbed', scale: 0.94 },
+  { id: 'meadow-j', x: 326, y: 198, type: 'flowerbed', scale: 0.98 },
+  { id: 'meadow-k', x: 88, y: 270, type: 'flowerbed', scale: 0.9 },
+  { id: 'meadow-l', x: 326, y: 294, type: 'flowerbed', scale: 0.96 },
+  // Understory rapat: sengaja saling bertumpuk agar tidak ada bidang rumput kosong.
+  { id: 'shrub-01', x: 78, y: 112, type: 'shrub', scale: 1.02 },
+  { id: 'shrub-02', x: 124, y: 98, type: 'shrub', scale: 0.9 },
+  { id: 'shrub-03', x: 178, y: 88, type: 'shrub', scale: 1.08 },
+  { id: 'shrub-04', x: 238, y: 92, type: 'shrub', scale: 0.94 },
+  { id: 'shrub-05', x: 296, y: 106, type: 'shrub', scale: 1.05 },
+  { id: 'shrub-06', x: 342, y: 126, type: 'shrub', scale: 0.92 },
+  { id: 'shrub-07', x: 90, y: 166, type: 'shrub', scale: 1.08 },
+  { id: 'shrub-08', x: 136, y: 188, type: 'shrub', scale: 0.95 },
+  { id: 'shrub-09', x: 194, y: 158, type: 'shrub', scale: 1.12 },
+  { id: 'shrub-10', x: 252, y: 204, type: 'shrub', scale: 0.96 },
+  { id: 'shrub-11', x: 316, y: 172, type: 'shrub', scale: 1.1 },
+  { id: 'shrub-12', x: 338, y: 232, type: 'shrub', scale: 0.96 },
+  { id: 'shrub-13', x: 82, y: 238, type: 'shrub', scale: 1.04 },
+  { id: 'shrub-14', x: 122, y: 270, type: 'shrub', scale: 0.92 },
+  { id: 'shrub-15', x: 188, y: 244, type: 'shrub', scale: 1.08 },
+  { id: 'shrub-16', x: 228, y: 272, type: 'shrub', scale: 0.94 },
+  { id: 'shrub-17', x: 286, y: 286, type: 'shrub', scale: 1.12 },
+  { id: 'shrub-18', x: 330, y: 276, type: 'shrub', scale: 0.9 },
+  { id: 'shrub-19', x: 92, y: 324, type: 'shrub', scale: 1.02 },
+  { id: 'shrub-20', x: 152, y: 334, type: 'shrub', scale: 1.08 },
+  { id: 'shrub-21', x: 212, y: 342, type: 'shrub', scale: 0.96 },
+  { id: 'shrub-22', x: 264, y: 336, type: 'shrub', scale: 1.1 },
+  { id: 'shrub-23', x: 318, y: 326, type: 'shrub', scale: 0.94 },
+  { id: 'lavender-01', x: 116, y: 144, type: 'lavender', scale: 1.1 },
+  { id: 'lavender-02', x: 224, y: 134, type: 'lavender', scale: 1.05 },
+  { id: 'lavender-03', x: 300, y: 226, type: 'lavender', scale: 1.12 },
+  { id: 'lavender-04', x: 164, y: 236, type: 'lavender', scale: 1.05 },
+  { id: 'lavender-05', x: 222, y: 304, type: 'lavender', scale: 1.08 },
+  { id: 'hedge-north', x: 205, y: 12, type: 'hedge', scale: 1.05 },
+  { id: 'tree-northwest', x: 128, y: 36, type: 'tree-lilac', scale: 0.88 },
+  { id: 'tree-northeast', x: 274, y: 34, type: 'tree-lilac', scale: 0.95 },
+  { id: 'hedge-northwest', x: 82, y: 24, type: 'hedge', scale: 0.72 },
+  { id: 'hedge-northeast', x: 326, y: 24, type: 'hedge', scale: 0.72 },
+  { id: 'bloom-northeast', x: 344, y: 58, type: 'bloom', scale: 0.9 },
+  { id: 'bloom-northwest', x: 56, y: 64, type: 'bloom', scale: 0.78 },
+  { id: 'stone-east', x: 392, y: 218, type: 'stone', scale: 0.92 },
+  { id: 'tree-east', x: 375, y: 160, type: 'tree-moss', scale: 0.8 },
+  { id: 'hedge-east', x: 392, y: 124, type: 'hedge-vertical', scale: 0.68 },
+  { id: 'hedge-east-lower', x: 390, y: 312, type: 'hedge-vertical', scale: 0.68 },
+  { id: 'hedge-south', x: 205, y: 395, type: 'hedge', scale: 1.1 },
+  { id: 'hedge-southwest', x: 85, y: 389, type: 'hedge', scale: 0.7 },
+  { id: 'hedge-southeast', x: 326, y: 389, type: 'hedge', scale: 0.7 },
+  { id: 'bloom-southwest', x: 60, y: 348, type: 'bloom', scale: 0.82 },
+  { id: 'tree-southwest', x: 108, y: 364, type: 'tree-moss', scale: 0.8 },
+  { id: 'stone-west', x: 14, y: 186, type: 'stone', scale: 0.9 },
+  { id: 'hedge-west', x: 18, y: 110, type: 'hedge-vertical', scale: 0.65 },
+  { id: 'hedge-west-lower', x: 20, y: 290, type: 'hedge-vertical', scale: 0.65 },
+  { id: 'path-one', x: 120, y: 80, type: 'path', scale: 0.75 },
+  { id: 'path-two', x: 292, y: 320, type: 'path', scale: 0.75 },
+  { id: 'path-three', x: 95, y: 296, type: 'path', scale: 0.62 },
+  { id: 'path-four', x: 317, y: 120, type: 'path', scale: 0.62 },
+  { id: 'sparkle-one', x: 46, y: 218, type: 'sparkle', scale: 1 },
+  { id: 'sparkle-two', x: 364, y: 238, type: 'sparkle', scale: 0.85 },
 ];
 
 // ── Bunga Hasil Petik untuk Studio Buket ──
@@ -401,45 +511,38 @@ function GardenOrnamentVisual({
 }
 
 // ── Initial 5x5 Grid Generator (Semua Bunga Dimulai dari Bibit Mungil / Stage 1) ──
-function generateDefault5x5Grid(): GardenTile[] {
+function generateDefault5x5Grid(size = 5): GardenTile[] {
   const tiles: GardenTile[] = [];
   let id = 0;
-
-  // Starter garden: Semua bunga mulai dari bibit mungil (stage 1)
-  const starterPlanted: Record<string, string> = {
-    '1,1': 'rose_red',
-    '1,3': 'tulip_pink',
-    '2,2': 'orchid_pink',
-    '3,1': 'sunflower',
-    '3,3': 'hydrangea_blue',
-  };
-
-  for (let r = 0; r < 5; r++) {
-    for (let c = 0; c < 5; c++) {
-      const coordKey = `${r},${c}`;
-      const flowerKey = starterPlanted[coordKey];
-      const flower = flowerKey ? getFlowerByKey(flowerKey) : undefined;
-
+  const dimension = Math.max(5, Math.min(10, Math.floor(size) || 5));
+  for (let r = 0; r < dimension; r++) {
+    for (let c = 0; c < dimension; c++) {
       tiles.push({
         id: id++,
         row: r,
         col: c,
-        planted: !!flower,
-        flowerKey: flower?.key,
-        flowerName: flower?.name,
-        flowerLatin: flower?.latinName,
-        flowerCategory: flower?.category,
-        flowerImage: flower?.image,
-        flowerColor: flower?.colorHex,
-        growthStage: 1, // SEMUA MULAI DARI BIBIT MUNGIL!
+        planted: false,
+        growthStage: 1,
         waterCount: 0,
         daysWatered: 0,
         wateredToday: false,
-        plantedAt: flower ? new Date().toISOString() : undefined,
       });
     }
   }
   return tiles;
+}
+
+function resizeGardenTiles(tiles: GardenTile[], requestedSize: number): GardenTile[] {
+  const existingSize = tiles.reduce((largest, tile) => Math.max(largest, tile.row + 1, tile.col + 1), 5);
+  const size = Math.max(existingSize, 5, Math.min(10, Math.floor(requestedSize) || 5));
+  const next = generateDefault5x5Grid(size);
+  tiles.forEach((tile) => {
+    if (tile.row < size && tile.col < size) {
+      const id = tile.row * size + tile.col;
+      next[id] = { ...next[id], ...tile, id, row: tile.row, col: tile.col };
+    }
+  });
+  return next;
 }
 
 export default function IsometricGardenView() {
@@ -453,17 +556,226 @@ export default function IsometricGardenView() {
   const soundscapeRef = useRef<GardenSoundscape | null>(null);
   const [harvestedBasket, setHarvestedBasket] = useState<HarvestedFlowerItem[]>([]);
   const [isBasketDrawerOpen, setIsBasketDrawerOpen] = useState(false);
+  const [isMobileToolsOpen, setIsMobileToolsOpen] = useState(false);
 
   useEffect(() => {
     setHasMounted(true);
+  }, []);
+
+  useEffect(() => {
+    const syncFullscreenState = () => setIsGardenFullscreen(document.fullscreenElement === gardenContainerRef.current);
+    document.addEventListener('fullscreenchange', syncFullscreenState);
+    return () => document.removeEventListener('fullscreenchange', syncFullscreenState);
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/settings/pricing')
+      .then((response) => response.json())
+      .then((data) => {
+        const configuredSize = Number(data?.pricing?.gardenSize);
+        const configuredFieldSize = Number(data?.pricing?.gardenFieldSize);
+        if (!cancelled && Number.isFinite(configuredFieldSize)) {
+          setGardenFieldSize(Math.max(8, Math.min(16, Math.floor(configuredFieldSize))));
+        }
+        if (cancelled || !Number.isFinite(configuredSize)) return;
+        const nextSize = Math.max(5, Math.min(10, Math.floor(configuredSize)));
+        setGardenSize(nextSize);
+        setTiles((current) => {
+          const resized = resizeGardenTiles(current, nextSize);
+          try { localStorage.setItem('bucket_garden_grid_v5', JSON.stringify(resized)); } catch {}
+          return resized;
+        });
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
   }, []);
   
   // ── Garden State ──
   const [gardenName, setGardenName] = useState('Kebun Cinta Laysa');
   const [partnerName, setPartnerName] = useState('Pasangan Bahagia');
-  const [gardenCode, setGardenCode] = useState('LAY777');
+  const [gardenCode, setGardenCode] = useState('');
   const [streakCount, setStreakCount] = useState(14);
+  const [gardenSize, setGardenSize] = useState(5);
+  const [gardenFieldSize, setGardenFieldSize] = useState(8);
+  const [isGardenFullscreen, setIsGardenFullscreen] = useState(false);
   const [tiles, setTiles] = useState<GardenTile[]>(() => generateDefault5x5Grid());
+  const [placedDecos, setPlacedDecos] = useState<PlacedDecoration[]>(DEFAULT_PLACED_DECORATIONS);
+  const [worldLayout, setWorldLayout] = useState<GardenWorldLayout>(EMPTY_GARDEN_WORLD_LAYOUT);
+  const [worldLayoutRevision, setWorldLayoutRevision] = useState(0);
+  const [worldSaveStatus, setWorldSaveStatus] = useState<'loading' | 'saving' | 'saved' | 'device' | 'error'>('loading');
+  const [worldSaveError, setWorldSaveError] = useState('');
+  const [gardenLocalReady, setGardenLocalReady] = useState(false);
+  const [gardenLinkRevision, setGardenLinkRevision] = useState(0);
+  const [seedFeedback, setSeedFeedback] = useState<{ tone: 'success' | 'error'; message: string } | null>(null);
+  const tilesRef = useRef(tiles);
+  const placedDecosRef = useRef(placedDecos);
+  tilesRef.current = tiles;
+  placedDecosRef.current = placedDecos;
+  const worldDeviceIdRef = useRef('');
+  const worldStorageReadyRef = useRef(false);
+  const worldSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const worldSaveRequestRef = useRef(0);
+  const worldLayoutLoadedRef = useRef(false);
+
+  const persistWorldLayout = useCallback((layout: GardenWorldLayout, deviceId: string, remote = true) => {
+    const requestId = ++worldSaveRequestRef.current;
+    const storageKey = `bucket_garden_world_layout_v1:${deviceId}`;
+    try { localStorage.setItem(storageKey, JSON.stringify(layout)); } catch {}
+
+    if (!remote || !worldStorageReadyRef.current) {
+      setWorldSaveStatus('device');
+      return;
+    }
+
+    setWorldSaveStatus('saving');
+    if (worldSaveTimerRef.current) clearTimeout(worldSaveTimerRef.current);
+    worldSaveTimerRef.current = setTimeout(async () => {
+      try {
+        const response = await fetch('/api/garden/world-layout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ deviceId, layout, tiles: tilesRef.current, placedDecorations: placedDecosRef.current }),
+        });
+        const result = await response.json();
+        if (requestId !== worldSaveRequestRef.current) return;
+        if (!response.ok || !result.success) {
+          setWorldSaveStatus(result.gardenNotLinked ? 'device' : 'error');
+          setWorldSaveError(result.message || 'Gagal menyimpan tata letak kebun ke Supabase.');
+          return;
+        }
+        setWorldSaveError('');
+        setWorldSaveStatus('saved');
+      } catch {
+        if (requestId === worldSaveRequestRef.current) {
+          setWorldSaveError('Koneksi ke Supabase terputus. Data lokal tetap tersimpan.');
+          setWorldSaveStatus('error');
+        }
+      }
+    }, 650);
+  }, []);
+
+  useEffect(() => {
+    const handleGardenLinkUpdate = () => setGardenLinkRevision((revision) => revision + 1);
+    window.addEventListener('bucket-garden-link-updated', handleGardenLinkUpdate);
+    return () => window.removeEventListener('bucket-garden-link-updated', handleGardenLinkUpdate);
+  }, []);
+
+  const handleWorldLayoutChange = useCallback((layout: GardenWorldLayout) => {
+    if (!worldLayoutLoadedRef.current) return;
+    setWorldLayout(layout);
+    persistWorldLayout(layout, worldDeviceIdRef.current);
+  }, [persistWorldLayout]);
+
+  useEffect(() => {
+    if (!gardenLocalReady) return;
+    try {
+      localStorage.setItem('bucket_garden_grid_v5', JSON.stringify(tiles));
+      localStorage.setItem('bucket_garden_placed_decorations_v2', JSON.stringify(placedDecos));
+    } catch {
+      setWorldSaveError('Penyimpanan browser penuh atau diblokir; progres bunga tidak dapat disimpan di perangkat ini.');
+      setWorldSaveStatus('error');
+      return;
+    }
+    if (!worldLayoutLoadedRef.current || worldLayoutRevision < 1) return;
+    persistWorldLayout(worldLayout, worldDeviceIdRef.current, true);
+  }, [gardenLocalReady, tiles, placedDecos, worldLayout, worldLayoutRevision, persistWorldLayout]);
+
+  useEffect(() => {
+    if (!gardenLocalReady) return;
+    worldLayoutLoadedRef.current = false;
+    worldStorageReadyRef.current = false;
+    setWorldSaveStatus('loading');
+    const deviceId = getOrCreateDeviceId();
+    if (!deviceId) {
+      worldLayoutLoadedRef.current = true;
+      setWorldSaveStatus('device');
+      return;
+    }
+    worldDeviceIdRef.current = deviceId;
+    const storageKey = `bucket_garden_world_layout_v1:${deviceId}`;
+    let localLayout: GardenWorldLayout | null = null;
+    try {
+      const raw = localStorage.getItem(storageKey);
+      if (raw) localLayout = JSON.parse(raw) as GardenWorldLayout;
+    } catch {}
+
+    let cancelled = false;
+    const loadLayout = async () => {
+      try {
+        let linkWarning = '';
+        const gardenResponse = await fetch(`/api/garden?deviceId=${encodeURIComponent(deviceId)}`, { cache: 'no-store' });
+        const gardenResult = await gardenResponse.json();
+        if (gardenResult.success && gardenResult.garden?.gardenCode) {
+          const syncResponse = await fetch('/api/garden', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'sync-local', deviceId, gardenCode: gardenResult.garden.gardenCode }),
+          });
+          const syncResult = await syncResponse.json();
+          if (!syncResponse.ok || !syncResult.success) linkWarning = syncResult.message || 'Kebun belum dapat ditautkan ke Supabase.';
+        }
+
+        const response = await fetch(`/api/garden/world-layout?deviceId=${encodeURIComponent(deviceId)}`, { cache: 'no-store' });
+        const result = await response.json();
+        if (cancelled) return;
+        if (response.ok && result.success) {
+          worldStorageReadyRef.current = true;
+          setGardenCode(String(result.gardenCode || ''));
+          if (result.layout && typeof result.layout === 'object') {
+            const initialLayout = addStarterCityIfWorldIsEmpty(result.layout as GardenWorldLayout);
+            setWorldLayout(initialLayout);
+            try { localStorage.setItem(storageKey, JSON.stringify(initialLayout)); } catch {}
+          } else if (localLayout) {
+            const initialLayout = addStarterCityIfWorldIsEmpty(localLayout);
+            setWorldLayout(initialLayout);
+            try { localStorage.setItem(storageKey, JSON.stringify(initialLayout)); } catch {}
+          } else {
+            const initialLayout = addStarterCityIfWorldIsEmpty(EMPTY_GARDEN_WORLD_LAYOUT);
+            setWorldLayout(initialLayout);
+            try { localStorage.setItem(storageKey, JSON.stringify(initialLayout)); } catch {}
+          }
+          if (Array.isArray(result.tiles)) {
+            setTiles(result.tiles as GardenTile[]);
+            try { localStorage.setItem('bucket_garden_grid_v5', JSON.stringify(result.tiles)); } catch {}
+          }
+          if (Array.isArray(result.placedDecorations)) {
+            setPlacedDecos(result.placedDecorations as PlacedDecoration[]);
+            try { localStorage.setItem('bucket_garden_placed_decorations_v2', JSON.stringify(result.placedDecorations)); } catch {}
+          }
+          const hasSavedState = result.hasSavedState === true;
+          setWorldSaveStatus(hasSavedState ? 'saved' : 'saving');
+          setWorldSaveError(hasSavedState
+            ? (result.gardenLinked ? '' : linkWarning
+              ? `${linkWarning} Tata letak tersimpan terenkripsi untuk perangkat ini.`
+              : 'Tata letak tersimpan terenkripsi di Supabase untuk perangkat ini; tautkan kode kebun bila ingin berbagi scene dengan pasangan.')
+            : 'Belum ada tata letak tersimpan. Sedang membuat snapshot pertama di Supabase…');
+        } else {
+          if (localLayout) setWorldLayout(addStarterCityIfWorldIsEmpty(localLayout));
+          worldStorageReadyRef.current = false;
+          setGardenCode('');
+          setWorldSaveStatus('error');
+          setWorldSaveError(linkWarning || result.message || 'Gagal memuat data kebun dari Supabase.');
+        }
+      } catch {
+        if (cancelled) return;
+        worldStorageReadyRef.current = false;
+        if (localLayout) setWorldLayout(addStarterCityIfWorldIsEmpty(localLayout));
+        setWorldSaveStatus('error');
+        setWorldSaveError('Koneksi ke Supabase terputus. Tata letak lokal tetap dipertahankan.');
+      } finally {
+        if (!cancelled) {
+          worldLayoutLoadedRef.current = true;
+          setWorldLayoutRevision((revision) => revision + 1);
+        }
+      }
+    };
+    void loadLayout();
+    return () => {
+      cancelled = true;
+      if (worldSaveTimerRef.current) clearTimeout(worldSaveTimerRef.current);
+    };
+  }, [gardenLocalReady, gardenLinkRevision]);
 
   // ── Garden Naming State for VIP Sultan ──
   const [isNamingModalOpen, setIsNamingModalOpen] = useState(false);
@@ -525,7 +837,7 @@ export default function IsometricGardenView() {
     {
       id: 'note-1',
       author: 'Laysa Florist',
-      text: 'Selamat datang di Kebun Bunga 5x5! Setiap bunga dimulai dari bibit mungil. Siram setiap hari agar bertumbuh menjadi puspa cahaya 💕',
+      text: 'Selamat datang di Kebun Bunga! Pilih bibit dari koleksi bunga dan siram setiap hari agar tumbuh menjadi puspa cahaya 💕',
       time: 'Pagi ini'
     },
     {
@@ -549,7 +861,6 @@ export default function IsometricGardenView() {
   const [bgMode, setBgMode] = useState<'gemini' | 'sky'>('gemini');
 
   // ── Drag & Drop Free-Position Decorations (Bisa di Pinggir & di Sela-Sela Bunga) ──
-  const [placedDecos, setPlacedDecos] = useState<PlacedDecoration[]>(DEFAULT_PLACED_DECORATIONS);
   const [activeDraggingDecoId, setActiveDraggingDecoId] = useState<string | null>(null);
   const [inspectDeco, setInspectDeco] = useState<PlacedDecoration | null>(null);
 
@@ -594,7 +905,6 @@ export default function IsometricGardenView() {
   // Drag tracking
   const isOrbitDraggingRef = useRef(false);
   const lastPointerPosRef = useRef({ x: 0, y: 0 });
-  const dragDistanceRef = useRef(0);
 
   // Auto-spin animation loop
   useEffect(() => {
@@ -622,6 +932,7 @@ export default function IsometricGardenView() {
   // ── Dynamic Live Water Splash & Bounce Physics ──
   const [wateredTileAnimations, setWateredTileAnimations] = useState<Set<number>>(new Set());
   const [splashEffects, setSplashEffects] = useState<SplashEffect[]>([]);
+  const [waterFeedback, setWaterFeedback] = useState<{ tileId: number; alreadyWatered: boolean } | null>(null);
 
   const gardenContainerRef = useRef<HTMLDivElement>(null);
   const waterCanBtnRef = useRef<HTMLButtonElement>(null);
@@ -691,8 +1002,12 @@ export default function IsometricGardenView() {
 
   // ── Load & Initialize from Encrypted LocalStorage ──
   useEffect(() => {
+    setGardenLocalReady(false);
     try {
-      const savedGridRaw = localStorage.getItem('bucket_garden_5x5_grid_v3');
+      // One-time reset of the old pre-filled garden; preserves profile, basket and flower collection.
+      localStorage.removeItem('bucket_garden_5x5_grid_v3');
+      localStorage.removeItem('bucket_garden_grid_v4');
+      const savedGridRaw = localStorage.getItem('bucket_garden_grid_v5');
       const savedGardenInfo = localStorage.getItem('bucket_garden_info_v3');
       const savedDiscoveredRaw = localStorage.getItem('bucket_garden_discovered_keys');
       const todayStr = getTodayDateStr();
@@ -748,14 +1063,19 @@ export default function IsometricGardenView() {
         });
         setTiles(migratedGrid);
       } else {
-        const initial = generateDefault5x5Grid();
+        const initial = generateDefault5x5Grid(gardenSize);
         setTiles(initial);
-        localStorage.setItem('bucket_garden_5x5_grid_v3', JSON.stringify(initial));
+        localStorage.setItem('bucket_garden_grid_v5', JSON.stringify(initial));
       }
 
-      // Load Free-Position Draggable Decorations
+      // Reset ornamen kebun lama satu kali untuk lanskap diorama baru; bunga/grid tidak disentuh.
       const savedDecoRaw = localStorage.getItem('bucket_garden_placed_decorations_v2');
-      if (savedDecoRaw) {
+      const hasCurrentScene = localStorage.getItem('bucket_garden_scene_version') === GARDEN_SCENE_VERSION;
+      if (!hasCurrentScene) {
+        setPlacedDecos([]);
+        localStorage.setItem('bucket_garden_placed_decorations_v2', JSON.stringify([]));
+        localStorage.setItem('bucket_garden_scene_version', GARDEN_SCENE_VERSION);
+      } else if (savedDecoRaw) {
         try {
           const parsedDeco: PlacedDecoration[] = JSON.parse(savedDecoRaw);
           if (Array.isArray(parsedDeco) && parsedDeco.length > 0) {
@@ -783,13 +1103,14 @@ export default function IsometricGardenView() {
         if (info.streak) setStreakCount(info.streak);
       }
     } catch {
-      setTiles(generateDefault5x5Grid());
+      setTiles(generateDefault5x5Grid(gardenSize));
     }
+    setGardenLocalReady(true);
 
     return () => {
       soundscapeRef.current?.stop();
     };
-  }, []);
+  }, [gardenSize]);
 
   // Sinkronisasi suasana audio dengan jam lokal saat berubah
   useEffect(() => {
@@ -812,17 +1133,23 @@ export default function IsometricGardenView() {
 
   // ── Save Tiles to Local Storage ──
   const updateTilesAndSave = useCallback((newTiles: GardenTile[]) => {
-    setTiles(newTiles);
     try {
-      localStorage.setItem('bucket_garden_5x5_grid_v3', JSON.stringify(newTiles));
-    } catch (e) {
-      console.warn('Storage save warning:', e);
+      localStorage.setItem('bucket_garden_grid_v5', JSON.stringify(newTiles));
+    } catch {
+      const message = 'Penyimpanan perangkat penuh atau diblokir. Bibit belum dapat disimpan.';
+      setWorldSaveError(message);
+      setWorldSaveStatus('error');
+      return false;
     }
+    setTiles(newTiles);
+    return true;
   }, []);
 
   // ── TRIGGER WATERING WITH DAILY STREAK LOGIC (PER HARI, BUKAN CEPAT MEKAR) ──
   const waterTile = useCallback((tileId: number) => {
     const todayStr = getTodayDateStr();
+    const tileBeforeWatering = tiles.find(t => t.id === tileId);
+    const wasAlreadyWatered = tileBeforeWatering?.lastWateredDate === todayStr;
     let growthOccurred = false;
     let newStageReached: number | null = null;
     let targetFlowerName = 'Bunga';
@@ -873,14 +1200,16 @@ export default function IsometricGardenView() {
       });
 
       try {
-        localStorage.setItem('bucket_garden_5x5_grid_v3', JSON.stringify(updated));
+        localStorage.setItem('bucket_garden_grid_v5', JSON.stringify(updated));
       } catch {}
 
       return updated;
     });
 
-    // 1. Spring Physics Bounce & Sway
-    setWateredTileAnimations(prev => new Set(prev).add(tileId));
+    // 1. Respons game: siraman baru memantul, siraman ulang hanya memunculkan status segar.
+    if (!wasAlreadyWatered) {
+      setWateredTileAnimations(prev => new Set(prev).add(tileId));
+    }
     setTimeout(() => {
       setWateredTileAnimations(prev => {
         const next = new Set(prev);
@@ -888,10 +1217,16 @@ export default function IsometricGardenView() {
         return next;
       });
     }, 850);
+    setWaterFeedback({ tileId, alreadyWatered: wasAlreadyWatered });
+    setTimeout(() => setWaterFeedback(current => current?.tileId === tileId ? null : current), wasAlreadyWatered ? 900 : 1400);
 
     // 2. Live Water Splash & Soil Ripple
     const splashId = Date.now() + Math.random();
-    const particles = [
+    const particles = wasAlreadyWatered ? [
+      { id: 1, tx: -12, ty: -16, char: '✦' },
+      { id: 2, tx: 12, ty: -16, char: '✦' },
+      { id: 3, tx: 0, ty: -24, char: '✓' },
+    ] : [
       { id: 1, tx: -18, ty: -22, char: '💧' },
       { id: 2, tx: 18, ty: -24, char: '💧' },
       { id: 3, tx: -10, ty: -30, char: '✨' },
@@ -938,30 +1273,22 @@ export default function IsometricGardenView() {
     }
   }, [playSound, triggerToast, tiles]);
 
-  // ── Simulasi Esok Hari (Fitur Mempercepat Hari untuk Testing / Pasangan) ──
-  const handleSimulateNextDay = () => {
-    const updated = tiles.map(t => ({
-      ...t,
-      wateredToday: false,
-      lastWateredDate: '2000-01-01'
-    }));
-    updateTilesAndSave(updated);
-    setStreakCount(s => {
-      const next = s + 1;
-      try {
-        const infoRaw = localStorage.getItem('bucket_garden_info_v3');
-        const info = infoRaw ? JSON.parse(infoRaw) : {};
-        localStorage.setItem('bucket_garden_info_v3', JSON.stringify({ ...info, streak: next }));
-      } catch {}
-      return next;
-    });
-    playSound('growth');
-    triggerToast('⏩ Hari telah berganti ke esok hari! Tanah mulai kering, silakan siram kembali untuk melanjutkan perkembangan bunga 🌱💧');
-  };
-
   // ── PLANT A FLOWER (MULAI DARI BIBIT TUNAS MUNGIL) ──
   const handlePlantFlower = (flower: GardenFlowerDef) => {
-    if (targetTileId === null) return;
+    if (worldSaveStatus === 'loading') {
+      setSeedFeedback({ tone: 'error', message: 'Data kebun masih dimuat dari Supabase. Tunggu sebentar, lalu coba tanam lagi.' });
+      return;
+    }
+    if (targetTileId === null) {
+      setSeedFeedback({ tone: 'error', message: 'Belum ada petak kosong yang dipilih. Tutup katalog, lalu klik petak kosong di kebun.' });
+      return;
+    }
+    const selectedTile = tiles.find((tile) => tile.id === targetTileId);
+    if (!selectedTile || selectedTile.planted) {
+      setSeedFeedback({ tone: 'error', message: 'Petak ini sudah terisi atau tidak ditemukan. Pilih petak kosong lagi.' });
+      setTargetTileId(null);
+      return;
+    }
 
     const newTiles = tiles.map(t => {
       if (t.id === targetTileId) {
@@ -986,9 +1313,13 @@ export default function IsometricGardenView() {
       return t;
     });
 
-    updateTilesAndSave(newTiles);
-    setIsSeedModalOpen(false);
+    if (!updateTilesAndSave(newTiles)) {
+      setSeedFeedback({ tone: 'error', message: 'Bibit belum ditanam karena penyimpanan perangkat gagal. Periksa ruang penyimpanan browser lalu coba lagi.' });
+      return;
+    }
     setTargetTileId(null);
+    setSeedFeedback(null);
+    setIsSeedModalOpen(false);
     playSound('plant');
     triggerToast(`🌱 Bibit ${flower.name} ditanam! Siram setiap hari agar bertumbuh menjadi puspa cahaya.`);
   };
@@ -1014,6 +1345,8 @@ export default function IsometricGardenView() {
       name: ornament.name,
       x: coord.x,
       y: coord.y,
+      scale: 1,
+      rotation: 0,
     };
     const updated = [...placedDecos, newDeco];
     setPlacedDecos(updated);
@@ -1035,6 +1368,29 @@ export default function IsometricGardenView() {
     setInspectDeco(null);
     playSound('click');
     triggerToast('🗑️ Ornamen berhasil dilepas dari kebun.');
+  };
+
+  // ── KUSTOMISASI ORNAMEN: ukuran & putaran tersimpan bersama posisi ──
+  const updateDecorationTransform = (id: string, patch: Partial<Pick<PlacedDecoration, 'scale' | 'rotation'>>) => {
+    setPlacedDecos(current => {
+      const updated = current.map(deco => deco.id === id ? { ...deco, ...patch } : deco);
+      try {
+        localStorage.setItem('bucket_garden_placed_decorations_v2', JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
+    setInspectDeco(current => current?.id === id ? { ...current, ...patch } : current);
+    playSound('click');
+  };
+
+  const handleDecorationMove3D = (id: string, x: number, y: number) => {
+    setPlacedDecos(current => {
+      const updated = current.map(deco => deco.id === id ? { ...deco, x, y } : deco);
+      try {
+        localStorage.setItem('bucket_garden_placed_decorations_v2', JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
   };
 
   // ── DRAG & DROP DECORATIONS DI PULAU TAMAN ──
@@ -1140,32 +1496,14 @@ export default function IsometricGardenView() {
       ]);
     }
 
-    const nozzleX = clientX - 25;
-    const nozzleY = clientY + 32;
+  }, [isDraggingWaterCan]);
 
-    let hoveredTileId: number | null = null;
-    tileDomRefs.current.forEach((element, id) => {
-      if (!element) return;
-      const rect = element.getBoundingClientRect();
-      if (
-        nozzleX >= rect.left &&
-        nozzleX <= rect.right &&
-        nozzleY >= rect.top &&
-        nozzleY <= rect.bottom
-      ) {
-        hoveredTileId = id;
-      }
-    });
-
-    setActiveHoverTileId(hoveredTileId);
-
-    if (hoveredTileId !== null) {
-      const tile = tiles.find(t => t.id === hoveredTileId);
-      if (tile && tile.planted && !tile.wateredToday) {
-        waterTile(hoveredTileId);
-      }
-    }
-  }, [isDraggingWaterCan, tiles, waterTile]);
+  // Tile targeting is now raycast against the real 3D garden surface.
+  useEffect(() => {
+    if (!isDraggingWaterCan || activeHoverTileId === null) return;
+    const tile = tiles.find(candidate => candidate.id === activeHoverTileId);
+    if (tile?.planted && !tile.wateredToday) waterTile(tile.id);
+  }, [activeHoverTileId, isDraggingWaterCan, tiles, waterTile]);
 
   const handlePointerUp = useCallback(() => {
     if (!isDraggingWaterCan) return;
@@ -1200,22 +1538,58 @@ export default function IsometricGardenView() {
     };
   }, [isDraggingWaterCan, handlePointerMove, handlePointerUp]);
 
+  const openSeedPicker = (preferredTile?: GardenTile) => {
+    const currentPreferredTile = preferredTile
+      ? tiles.find((tile) => tile.id === preferredTile.id && !tile.planted)
+      : undefined;
+    const emptyTile = currentPreferredTile || tiles.find((tile) => !tile.planted);
+    setTargetTileId(emptyTile?.id ?? null);
+    setSeedFeedback(emptyTile ? null : {
+      tone: 'error',
+      message: 'Semua petak sudah terisi. Kosongkan atau petik bunga sebelum menanam lagi.',
+    });
+    // Always reopen on the flower catalog with a clean search so stale filter
+    // state cannot make the popup appear blank or show only ornaments.
+    setSeedPickerTab('flowers');
+    setSelectedCategory('Semua');
+    setSearchQuery('');
+    setIsSeedModalOpen(true);
+    playSound('click');
+  };
+
+  const closeSeedPicker = () => {
+    setIsSeedModalOpen(false);
+    setTargetTileId(null);
+    setSeedFeedback(null);
+  };
+
+  useEffect(() => {
+    if (!isSeedModalOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsSeedModalOpen(false);
+        setTargetTileId(null);
+        setSeedFeedback(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isSeedModalOpen]);
+
   // ── Tile Click Handler (MURNI UNTUK TANAM BUNGA PADA 25 PETAK TANAH) ──
   const handleTileClick = (tile: GardenTile) => {
-    // If user was dragging to rotate island, do not open modals
-    if (dragDistanceRef.current > 8) return;
-
-    setTargetTileId(tile.id);
-
     if (!tile.planted) {
-      // Petak tanah kosong: Langsung buka katalog 40 Bibit Bunga! (Bukan dekorasi)
-      setIsSeedModalOpen(true);
-      playSound('click');
-    } else {
-      // Planted plot: Open Inspection Drawer with growth progress, details, and water action
-      setInspectTile(tile);
-      playSound('click');
+      openSeedPicker(tile);
+      return;
     }
+    setTargetTileId(tile.id);
+    setInspectTile(tile);
+    playSound('click');
   };
 
   // ── Water All Plants (Daily Check) ──
@@ -1477,17 +1851,8 @@ export default function IsometricGardenView() {
               </span>
               <span className="hud-sep">•</span>
               <span className="text-emerald-300 font-bold">
-                {plantedCount}/25 {isEn ? 'Planted 🌸' : 'Ditanam 🌸'}
+                {plantedCount}/{tiles.length} {isEn ? 'Planted 🌸' : 'Ditanam 🌸'}
               </span>
-              <button
-                type="button"
-                className="ml-1 px-2 py-0.5 bg-amber-400/20 hover:bg-amber-400/35 border border-amber-300/40 rounded-full text-[10px] font-extrabold text-amber-300 flex items-center gap-1 transition"
-                onClick={handleSimulateNextDay}
-                title={isEn ? 'Simulate next day (dries soil for growth)' : 'Simulasi hari esok (tanah kering untuk perkembangan)'}
-              >
-                <FastForward size={11} />
-                <span>{isEn ? 'Tomorrow' : 'Esok Hari'}</span>
-              </button>
             </div>
           </div>
 
@@ -1537,7 +1902,7 @@ export default function IsometricGardenView() {
             {/* Ensiklopedia Bunga 40 (Flora Dex) */}
             <button
               type="button"
-              className="garden-hud-btn"
+              className="garden-hud-btn garden-desktop-secondary"
               onClick={() => { setIsHerbariumOpen(true); playSound('click'); }}
               title={isEn ? 'Encyclopedia of 40 Flowers (Flora Dex)' : 'Ensiklopedia 40 Bunga (Flora Dex)'}
             >
@@ -1548,7 +1913,7 @@ export default function IsometricGardenView() {
             {/* Diary Catatan Cinta */}
             <button
               type="button"
-              className="garden-hud-btn"
+              className="garden-hud-btn garden-desktop-secondary"
               onClick={() => setIsNotesModalOpen(true)}
               title={isEn ? 'Love Notes Diary' : 'Buku Catatan Cinta'}
             >
@@ -1559,7 +1924,7 @@ export default function IsometricGardenView() {
             {/* Undang Pasangan */}
             <button
               type="button"
-              className="garden-hud-btn"
+              className="garden-hud-btn garden-desktop-secondary"
               onClick={() => setIsCodeModalOpen(true)}
               title={isEn ? 'Invite Partner (Garden Code)' : 'Undang Pasangan (Kode Kebun)'}
             >
@@ -1568,7 +1933,44 @@ export default function IsometricGardenView() {
             </button>
 
             {/* Language Switcher */}
-            <LanguageSwitcher variant="compact" />
+            <div className="garden-language-switcher">
+              <LanguageSwitcher variant="compact" />
+            </div>
+
+            {/* Mobile overflow keeps secondary actions reachable without crowding the header. */}
+            <div className="garden-mobile-tools">
+              <button
+                type="button"
+                className={`garden-mobile-tools-trigger ${isMobileToolsOpen ? 'active' : ''}`}
+                onClick={() => setIsMobileToolsOpen((open) => !open)}
+                aria-expanded={isMobileToolsOpen}
+                aria-controls="garden-mobile-tools-menu"
+                title={isEn ? 'More garden tools' : 'Alat kebun lainnya'}
+              >
+                <MoreHorizontal size={18} />
+                <span className="sr-only">{isEn ? 'More garden tools' : 'Alat kebun lainnya'}</span>
+              </button>
+              {isMobileToolsOpen && (
+                <div id="garden-mobile-tools-menu" className="garden-mobile-tools-menu">
+                  <button type="button" onClick={() => { setIsHerbariumOpen(true); setIsMobileToolsOpen(false); playSound('click'); }}>
+                    <BookOpen size={16} />
+                    <span>{isEn ? 'Collection' : 'Koleksi'} ({discoveredKeys.size}/40)</span>
+                  </button>
+                  <button type="button" onClick={() => { setIsNotesModalOpen(true); setIsMobileToolsOpen(false); playSound('click'); }}>
+                    <Heart size={16} />
+                    <span>{isEn ? 'Love diary' : 'Diary cinta'}</span>
+                  </button>
+                  <button type="button" onClick={() => { setIsCodeModalOpen(true); setIsMobileToolsOpen(false); playSound('click'); }}>
+                    <Share2 size={16} />
+                    <span>{isEn ? 'Invite partner' : 'Undang pasangan'}</span>
+                  </button>
+                  <div className="garden-mobile-language-row">
+                    <span>{isEn ? 'Language' : 'Bahasa'}</span>
+                    <LanguageSwitcher variant="compact" />
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </header>
@@ -1591,37 +1993,80 @@ export default function IsometricGardenView() {
       )}
 
       {/* ── 4. MAIN 360° ORBITAL 3D GARDEN STAGE ── */}
-      <main 
-        className="garden-stage-viewport select-none cursor-grab active:cursor-grabbing touch-none"
-        onPointerDown={(e) => {
-          if (isDraggingWaterCan) return;
-          isOrbitDraggingRef.current = true;
-          lastPointerPosRef.current = { x: e.clientX, y: e.clientY };
-          dragDistanceRef.current = 0;
-        }}
-        onPointerMove={(e) => {
-          if (!isOrbitDraggingRef.current || isDraggingWaterCan) return;
-          const dx = e.clientX - lastPointerPosRef.current.x;
-          const dy = e.clientY - lastPointerPosRef.current.y;
-          dragDistanceRef.current += Math.abs(dx) + Math.abs(dy);
-          lastPointerPosRef.current = { x: e.clientX, y: e.clientY };
-          setYaw(prev => (prev + dx * 0.55) % 360);
-          setPitch(prev => Math.max(25, Math.min(80, prev + dy * 0.4)));
-        }}
-        onPointerUp={() => {
-          isOrbitDraggingRef.current = false;
-        }}
-        onPointerCancel={() => {
-          isOrbitDraggingRef.current = false;
-        }}
-        onWheel={(e) => {
-          setZoomScale(z => Math.max(0.7, Math.min(1.4, z - e.deltaY * 0.001)));
-        }}
-      >
+      <main className="garden-stage-viewport select-none">
+        <div className="garden-stage-toolbar" role="toolbar" aria-label="Alat utama kebun">
+          <button
+            ref={waterCanBtnRef}
+            type="button"
+            id="tool-btn-watering-can"
+            className={`garden-stage-tool water ${isDraggingWaterCan ? 'active' : ''}`}
+            onPointerDown={(event) => {
+              event.preventDefault();
+              handleStartWaterDrag(event.clientX, event.clientY);
+            }}
+            title="Sentuh dan geser ke petak untuk menyiram"
+          >
+            <Droplets size={17} />
+            <span>Penyiram <small>{wateredCount}/{tiles.length}</small></span>
+          </button>
+          <button type="button" className="garden-stage-tool water-all" onClick={handleWaterAll} title="Siram semua bunga">
+            <Sparkles size={16} /> <span>Siram semua</span>
+          </button>
+          <button
+            type="button"
+            className="garden-stage-tool plant"
+            onClick={() => openSeedPicker()}
+            title="Pilih bibit bunga untuk ditanam"
+          >
+            <Plus size={17} /> <span>Tanam bibit</span>
+          </button>
+          <button
+            type="button"
+            className="garden-stage-tool fullscreen"
+            onClick={async () => {
+              try {
+                if (document.fullscreenElement) {
+                  await document.exitFullscreen();
+                  (screen.orientation as ScreenOrientation & { unlock?: () => void }).unlock?.();
+                  return;
+                }
+                const container = gardenContainerRef.current;
+                if (!container?.requestFullscreen) {
+                  triggerToast('Mode layar penuh tidak didukung browser ini. Coba putar HP ke posisi mendatar.');
+                  return;
+                }
+                await container.requestFullscreen();
+                const orientation = screen.orientation as ScreenOrientation & { lock?: (mode: string) => Promise<void> };
+                try { await orientation.lock?.('landscape'); } catch { /* Browser atau perangkat menolak kunci orientasi. */ }
+              } catch {
+                triggerToast('Browser menolak layar penuh. Putar HP ke posisi mendatar untuk tampilan terbaik.');
+              }
+            }}
+            aria-label={isGardenFullscreen ? 'Keluar dari layar penuh' : 'Layar penuh dan mode lanskap'}
+            title={isGardenFullscreen ? 'Keluar layar penuh' : 'Layar penuh · lanskap bila didukung'}
+          >
+            {isGardenFullscreen ? <Minimize2 size={17} /> : <Maximize2 size={17} />}
+            <span>{isGardenFullscreen ? 'Keluar' : 'Layar penuh'}</span>
+          </button>
+        </div>
+        <GardenWorldFrame
+          tiles={tiles}
+          gardenSize={Math.max(gardenSize, Math.ceil(Math.sqrt(tiles.length)))}
+          fieldSize={gardenFieldSize}
+          worldLayout={worldLayout}
+          worldLayoutRevision={worldLayoutRevision}
+          worldSaveStatus={worldSaveStatus}
+          worldSaveError={worldSaveError}
+          wateredTileAnimations={wateredTileAnimations}
+          isWaterDragging={isDraggingWaterCan}
+          onTileClick={handleTileClick}
+          onTileHover={setActiveHoverTileId}
+          onWorldLayoutChange={handleWorldLayoutChange}
+        />
 
         {/* 3D ISOMETRIC ISLAND PLATFORM (100% Persis Desain Asli, Rotatable 360°) */}
         <div 
-          className="island-3d-wrapper"
+          className="island-3d-wrapper garden-legacy-scene"
           style={{
             transform: `translateZ(${Math.round(1200 * (1 - 1 / zoomScale))}px)`,
           }}
@@ -1633,10 +2078,7 @@ export default function IsometricGardenView() {
               transform: `rotateX(${pitch}deg) rotateZ(${yaw}deg)`,
             }}
           >
-            {/* Soft White Rounded Pedestal Base */}
-            <div className="island-pedestal-base" />
-
-            {/* Dirt Bottom Plate */}
+            {/* Bayangan dasar, tanpa pedestal putih yang memunculkan celah visual. */}
             <div className="dirt-cliff-bottom" />
 
             {/* 4 3D Cliff Walls for 360° Solid Diorama */}
@@ -1663,6 +2105,40 @@ export default function IsometricGardenView() {
 
             {/* Top Lush Green Grass Surface (Isometric Diamond) */}
             <div className="island-grass-surface" style={{ transform: 'translateZ(0px)' }}>
+              {/* Lanskap pengisi mengikuti pulau 360°, tetapi tidak pernah menutup area tanam. */}
+              <div className="garden-landscape-fillers garden-box-forest" aria-hidden="true">
+                {GARDEN_BOX_FOREST.map((filler) => (
+                  <span
+                    key={filler.id}
+                    className={`garden-landscape-filler filler-${filler.type}`}
+                    style={{
+                      left: `${filler.x}px`,
+                      top: `${filler.y}px`,
+                      transform: `translate(-50%, -50%) rotateZ(${-yaw}deg) rotateX(${-pitch}deg) scale(${filler.scale})`,
+                    }}
+                  />
+                ))}
+              </div>
+              <div className="garden-living-activity" aria-hidden="true">
+                {[
+                  { id: 'butterfly-a', x: 104, y: 104, kind: 'butterfly', delay: '0s' },
+                  { id: 'butterfly-b', x: 306, y: 256, kind: 'butterfly', delay: '1.8s' },
+                  { id: 'bee-a', x: 274, y: 96, kind: 'bee', delay: '0.8s' },
+                  { id: 'firefly-a', x: 74, y: 264, kind: 'firefly', delay: '1.2s' },
+                  { id: 'firefly-b', x: 336, y: 352, kind: 'firefly', delay: '2.4s' },
+                ].map((activity) => (
+                  <span
+                    key={activity.id}
+                    className={`garden-activity ${activity.kind}`}
+                    style={{
+                      left: `${activity.x}px`,
+                      top: `${activity.y}px`,
+                      animationDelay: activity.delay,
+                      transform: `translate(-50%, -50%) rotateZ(${-yaw}deg) rotateX(${-pitch}deg)`,
+                    }}
+                  />
+                ))}
+              </div>
               {/* 5x5 Isometric Grid Cells */}
               <div className="grid-5x5-isometric">
                 {tiles.map((tile) => {
@@ -1671,6 +2147,7 @@ export default function IsometricGardenView() {
                   const isSelected = targetTileId === tile.id;
                   const stage = tile.growthStage || 1;
                   const activeSplash = splashEffects.find(s => s.tileId === tile.id);
+                  const isCurrentWaterFeedback = waterFeedback?.tileId === tile.id;
 
                   // 3D dynamic depth sorting for 360 degree rotation
                   const rad = (yaw * Math.PI) / 180;
@@ -1691,7 +2168,9 @@ export default function IsometricGardenView() {
                         tile.planted ? `tile-planted growth-stage-${stage}` : 'tile-empty'
                       } ${tile.wateredToday ? 'tile-watered' : 'tile-dry'} ${
                         isHoveredByWaterCan ? 'tile-hover-water' : ''
-                      } ${isWaterBounceActive ? 'flower-being-watered' : ''}`}
+                      } ${isWaterBounceActive ? 'flower-being-watered' : ''} ${
+                        isCurrentWaterFeedback ? (waterFeedback?.alreadyWatered ? 'water-already-feedback' : 'water-fresh-feedback') : ''
+                      }`}
                       onClick={() => handleTileClick(tile)}
                       role="button"
                       tabIndex={0}
@@ -1702,9 +2181,6 @@ export default function IsometricGardenView() {
                         zIndex: tileDepth
                       }}
                     >
-                      {/* Isometric Soil Patch (Anchored at exact center) */}
-                      <div className="tile-soil-polygon" />
-
                       {/* Live Water Splash & Soil Ripple on Impact */}
                       {activeSplash && (
                         <div className="water-splash-burst" aria-hidden="true">
@@ -1722,6 +2198,12 @@ export default function IsometricGardenView() {
                             </span>
                           ))}
                         </div>
+                      )}
+
+                      {isCurrentWaterFeedback && (
+                        <span className={`water-status-pop ${waterFeedback?.alreadyWatered ? 'already' : 'fresh'}`}>
+                          {waterFeedback?.alreadyWatered ? '✓ Sudah segar' : '💧 Segar!'}
+                        </span>
                       )}
 
                       {/* Plant Content - COUNTER-ROTATES WITH YAW & PITCH TO ALWAYS FACE SCREEN FLAT */}
@@ -1779,14 +2261,11 @@ export default function IsometricGardenView() {
                           )}
                         </div>
                       ) : (
-                        <div 
-                          className="tile-empty-marker"
-                          style={{
-                            transform: `translate(-50%, -50%) rotateZ(${-yaw}deg) rotateX(${-pitch}deg)`
-                          }}
-                        >
-                          <Plus size={16} className="text-emerald-800/60" />
-                          <span className="empty-sublabel">Tanam</span>
+                        <div className="tile-empty-gardenbed" style={{ transform: `translate(-50%, -50%) rotateZ(${-yaw}deg) rotateX(${-pitch}deg)` }}>
+                          <span className={`gardenbed-foliage bed-${tile.id % 4}`} />
+                          <span className="gardenbed-flower flower-one" />
+                          <span className="gardenbed-flower flower-two" />
+                          <span className="gardenbed-plant-cta"><Plus size={13} /><span>Tanam</span></span>
                         </div>
                       )}
                     </div>
@@ -1830,7 +2309,7 @@ export default function IsometricGardenView() {
                     <div
                       className="deco-stand-upright"
                       style={{
-                        transform: `rotateZ(${-yaw}deg) rotateX(${-pitch}deg)`
+                        transform: `rotateZ(${-yaw}deg) rotateX(${-pitch}deg) rotateZ(${deco.rotation || 0}deg) scale(${deco.scale || 1})`
                       }}
                     >
                       <div className="deco-placed-item">
@@ -1845,7 +2324,7 @@ export default function IsometricGardenView() {
         </div>
 
         {/* ── 3D CAMERA FLOATING CONTROLLER HUD ── */}
-        <div className="three-orbit-controls-hud">
+        <div className="three-orbit-controls-hud garden-legacy-controls">
           {/* 360 Auto-Rotate Toggle */}
           <button
             type="button"
@@ -1930,7 +2409,7 @@ export default function IsometricGardenView() {
         </div>
 
         {/* Floating Orbital Hint */}
-        <div className="three-orbit-hint">
+        <div className="three-orbit-hint garden-legacy-hint">
           <Sparkles size={13} className="text-amber-300 animate-pulse" />
           <span>Drag / Geser layar untuk memutar pulau 360° • Bebas lihat dari atas</span>
         </div>
@@ -1969,92 +2448,15 @@ export default function IsometricGardenView() {
         </span>
       ))}
 
-      {/* ── 6. BOTTOM TOOLBAR (ERGONOMIC TOUCHSCREEN CONTROLS) ── */}
-      <footer className="garden-bottom-hud">
-        <div className="garden-bottom-hud-inner">
-          {/* Tool 1: Interactive Draggable Watering Can */}
-          <div className="tool-card tool-water-can">
-            <button
-              ref={waterCanBtnRef}
-              type="button"
-              id="tool-btn-watering-can"
-              className={`water-can-trigger-btn ${isDraggingWaterCan ? 'active-dragging' : ''}`}
-              onPointerDown={(e) => {
-                e.preventDefault();
-                handleStartWaterDrag(e.clientX, e.clientY);
-              }}
-              title="Sentuh & Geser (Drag) melintasi bunga untuk menyiram!"
-            >
-              <div className="water-can-icon-wrap">
-                <span className="water-can-icon">🚿</span>
-                <span className="water-can-badge">{wateredCount}/25</span>
-              </div>
-              <div className="tool-text-info">
-                <span className="tool-main-name">ALAT PENYIRAM</span>
-                <span className="tool-sub-hint">Tarik ke Bunga 💧</span>
-              </div>
-            </button>
-          </div>
-
-          {/* Tool 2: Siram Semua Sekaligus */}
-          <button
-            type="button"
-            className="garden-quick-btn btn-water-all"
-            onClick={handleWaterAll}
-            title="Siram seluruh bunga sekaligus"
-          >
-            <Droplets size={16} />
-            <span>SIRAM SEMUA</span>
-          </button>
-
-          {/* Tool 3: Tanam Bibit Baru */}
-          <button
-            type="button"
-            className="garden-quick-btn btn-plant-seed"
-            onClick={() => {
-              const empty = tiles.find(t => !t.planted);
-              if (empty) {
-                setTargetTileId(empty.id);
-              }
-              setSeedPickerTab('flowers');
-              if (selectedCategory === 'Dekorasi') setSelectedCategory('Semua');
-              setIsSeedModalOpen(true);
-              playSound('click');
-            }}
-            title="Buka katalog 40 varietas bibit bunga"
-          >
-            <Plus size={16} />
-            <span>PILIH BIBIT</span>
-          </button>
-
-          {/* Tool 4: Pasang Ornamen & Dekorasi (Drag & Drop) */}
-          <button
-            type="button"
-            className="garden-quick-btn btn-dekorasi-taman"
-            onClick={() => {
-              setIsDecorationModalOpen(true);
-              playSound('click');
-            }}
-            title="Buka pilihan 5 ornamen untuk dipasang dan digeser bebas di taman"
-          >
-            <Sparkles size={16} />
-            <span>+ DEKORASI</span>
-          </button>
-        </div>
-      </footer>
-
       {/* ── 7. SEED PICKER MODAL (MURNI 40 VARIETAS BUNGA) ── */}
-      {isSeedModalOpen && (
-        <div className="garden-modal-backdrop" onClick={() => {
-          setIsSeedModalOpen(false);
-          setTargetTileId(null);
-        }}>
-          <div className="garden-modal-box seed-picker-box" onClick={e => e.stopPropagation()}>
+      {isSeedModalOpen && typeof document !== 'undefined' && createPortal((
+        <div className="garden-modal-backdrop garden-seed-picker-backdrop" onClick={closeSeedPicker}>
+          <div className="garden-modal-box seed-picker-box" role="dialog" aria-modal="true" aria-labelledby="garden-seed-picker-heading" onClick={e => e.stopPropagation()}>
             <div className="garden-modal-header">
               <div className="flex flex-col">
                 <div className="flex items-center gap-2">
                   <span className="text-xl">🌱</span>
-                  <h3 className="modal-heading-text">Pilih Varietas Bibit (40 Spesies)</h3>
+                  <h3 id="garden-seed-picker-heading" className="modal-heading-text">Pilih Varietas Bibit (40 Spesies)</h3>
                 </div>
                 {targetTile && (
                   <div className="target-tile-badge-info mt-1">
@@ -2065,10 +2467,7 @@ export default function IsometricGardenView() {
               <button 
                 type="button" 
                 className="modal-close-btn"
-                onClick={() => {
-                  setIsSeedModalOpen(false);
-                  setTargetTileId(null);
-                }}
+                onClick={closeSeedPicker}
                 aria-label="Tutup"
               >
                 <X size={18} />
@@ -2078,6 +2477,24 @@ export default function IsometricGardenView() {
             <p className="modal-sub-desc">
               Pilih bunga impianmu! Bunga akan ditanam mulai dari <strong>bibit tunas mungil</strong> dan bertumbuh seiring kamu menyiramnya setiap hari 🌱💧
             </p>
+
+            {(seedFeedback || worldSaveStatus === 'loading') && (
+              <div className={`garden-seed-save-feedback feedback-${seedFeedback?.tone || 'success'}`} role="status" aria-live="polite">
+                <strong>{seedFeedback?.message || 'Memuat status dan isi kebun sebelum bibit ditanam…'}</strong>
+                <span>
+                  {worldSaveStatus === 'saving' ? 'Mengirim perubahan ke Supabase…' :
+                    worldSaveStatus === 'saved' ? 'Tata letak dan petak bunga sudah tersinkron.' :
+                    worldSaveStatus === 'device' ? 'Belum tersinkron ke Supabase; perubahan tetap ada di perangkat ini.' :
+                    worldSaveStatus === 'error' ? 'Sinkronisasi Supabase gagal.' : 'Menyiapkan penyimpanan…'}
+                </span>
+                {worldSaveError && <small>{worldSaveError}</small>}
+                {targetTileId === null && (
+                  <button type="button" onClick={() => { setIsSeedModalOpen(false); setSeedFeedback(null); }}>
+                    {tiles.some((tile) => !tile.planted) ? 'Tutup, lalu pilih petak lain' : 'Tutup katalog'}
+                  </button>
+                )}
+              </div>
+            )}
 
             {/* Category Filter Tabs */}
             <div className="seed-filter-tabs">
@@ -2111,12 +2528,9 @@ export default function IsometricGardenView() {
             {/* 40 Flower Grid List */}
             <div className="seed-grid-picker">
               {filteredFlowers.map((flower) => (
-                <div
+                <article
                   key={flower.key}
-                  className="seed-option-card"
-                  onClick={() => handlePlantFlower(flower)}
-                  role="button"
-                  tabIndex={0}
+                  className={`seed-option-card ${targetTileId === null || worldSaveStatus === 'loading' ? 'seed-option-disabled' : ''}`}
                 >
                   <div className="seed-img-wrap">
                     <Image
@@ -2136,23 +2550,21 @@ export default function IsometricGardenView() {
                       </span>
                     </div>
                     <span className="seed-latin">{flower.latinName}</span>
-                    <span className="seed-meaning">"{flower.meaning}"</span>
+                    <span className="seed-meaning">&ldquo;{flower.meaning}&rdquo;</span>
                   </div>
 
-                  <button 
+                  <button
                     type="button" 
                     className="seed-pick-btn"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handlePlantFlower(flower);
-                    }}
+                    disabled={targetTileId === null || worldSaveStatus === 'loading'}
+                    onClick={() => handlePlantFlower(flower)}
                   >
                     Tanam Bibit 🌱
                   </button>
-                </div>
+                </article>
               ))}
 
-              {filteredFlowers.length === 0 && (
+                {filteredFlowers.length === 0 && (
                 <div className="text-center py-8 text-slate-500 font-sans text-sm col-span-full">
                   Tidak ada bunga yang cocok dengan pencarian "{searchQuery}".
                 </div>
@@ -2160,7 +2572,7 @@ export default function IsometricGardenView() {
             </div>
           </div>
         </div>
-      )}
+      ), document.body)}
 
       {/* ── 8. DECORATION MODAL (PASANG ORNAMEN & BEBAS DI-DRAG KE MANA SAJA) ── */}
       {isDecorationModalOpen && (
@@ -2292,6 +2704,37 @@ export default function IsometricGardenView() {
                     </div>
                     <div className="pt-1.5 border-t border-amber-200/80 text-[11.5px] text-slate-600 leading-relaxed">
                       💡 <strong>Tips:</strong> Kamu bisa langsung menyentuh dan <strong>menggeser (drag)</strong> ornamen ini di layar ke posisi mana pun — baik di pinggir pulau maupun di sela-sela petak bunga!
+                    </div>
+                  </div>
+
+                  <div className="deco-customizer" aria-label="Kustomisasi ornamen">
+                    <div className="deco-customizer-heading">
+                      <span>Kustomisasi ornamen</span>
+                      <button
+                        type="button"
+                        onClick={() => updateDecorationTransform(inspectDeco.id, { scale: 1, rotation: 0 })}
+                        title="Kembalikan ukuran dan putaran awal"
+                      >
+                        <RotateCcw size={13} /> Reset
+                      </button>
+                    </div>
+                    <div className="deco-customizer-grid">
+                      <div className="deco-adjustment">
+                        <span>Ukuran</span>
+                        <div className="deco-adjustment-controls">
+                          <button type="button" onClick={() => updateDecorationTransform(inspectDeco.id, { scale: Math.max(0.7, Number(((inspectDeco.scale ?? 1) - 0.1).toFixed(1))) })} aria-label="Perkecil ornamen">−</button>
+                          <strong>{Math.round((inspectDeco.scale ?? 1) * 100)}%</strong>
+                          <button type="button" onClick={() => updateDecorationTransform(inspectDeco.id, { scale: Math.min(1.5, Number(((inspectDeco.scale ?? 1) + 0.1).toFixed(1))) })} aria-label="Perbesar ornamen">+</button>
+                        </div>
+                      </div>
+                      <div className="deco-adjustment">
+                        <span>Putaran</span>
+                        <div className="deco-adjustment-controls">
+                          <button type="button" onClick={() => updateDecorationTransform(inspectDeco.id, { rotation: (inspectDeco.rotation ?? 0) - 15 })} aria-label="Putar ornamen ke kiri">↶</button>
+                          <strong>{inspectDeco.rotation ?? 0}°</strong>
+                          <button type="button" onClick={() => updateDecorationTransform(inspectDeco.id, { rotation: (inspectDeco.rotation ?? 0) + 15 })} aria-label="Putar ornamen ke kanan">↷</button>
+                        </div>
+                      </div>
                     </div>
                   </div>
 
@@ -2649,17 +3092,20 @@ export default function IsometricGardenView() {
 
             <div className="code-display-card">
               <span className="code-sub-label">KODE KEBUN ANDA:</span>
-              <div className="code-badge-massive">{gardenCode}</div>
+              <div className="code-badge-massive">{gardenCode || 'Belum terhubung'}</div>
               <p className="code-desc">
-                Bagikan kode 6 digit ini ke pasangan Anda agar kalian bisa merawat dan menyiram 25 bunga ini bersama-sama dari HP masing-masing!
+                {gardenCode
+                  ? 'Bagikan kode kebun ini ke pasangan agar dekorasi 3D dan kebun tersinkron di perangkat kalian.'
+                  : 'Buat atau gabung kebun memakai kode dari Menu terlebih dahulu. Setelah terhubung, tata letak 3D akan tersimpan dan tersinkron di sini.'}
               </p>
             </div>
 
             <button
               type="button"
               className="copy-code-btn"
+              disabled={!gardenCode}
               onClick={() => {
-                if (typeof navigator !== 'undefined') {
+                if (gardenCode && typeof navigator !== 'undefined') {
                   navigator.clipboard.writeText(
                     `Yuk rawat kebun bunga 3D kita berdua di Bucket Bunga Laysa! Masukkan kode kebun: ${gardenCode} 💕`
                   );

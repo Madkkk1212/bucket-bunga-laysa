@@ -1,7 +1,103 @@
 {
+  "freeLinkDurationDays": 5,
+  "gardenSize": 5,
+  "gardenFieldSize": 8,
+  "gardenExpansionPrice": 0,
   "basePrice": 85000,
   "isPromoActive": true,
-  "promoPrice": 17000,
-  "promoLabel": "Diskon 80%",
-  "updatedAt": "2026-09-24T17:53:32.908Z"
+  "promoPrice": 25000,
+  "promoLabel": "👑 Terpopuler & Lengkap",
+  "updatedAt": "2026-10-01T12:14:40.066Z",
+  "tiers": {
+    "daily": {
+      "key": "daily",
+      "name": "Paket Harian (24 Jam)",
+      "durationLabel": "24 Jam",
+      "durationDays": 1,
+      "linkDurationDays": 1,
+      "basePrice": 10000,
+      "promoPrice": 5000,
+      "isPromoActive": true,
+      "isActive": true,
+      "isDisplayed": true,
+      "badge": "Terjangkau & Praktis",
+      "gardenAccess": false,
+      "features": [
+        "Buka seluruh 100+ koleksi bunga & pembungkus buket",
+        "Masa aktif 24 jam bebas rangkai & unduh sepuasnya",
+        "Link kado interaktif aktif 24 Jam",
+        "Bisa terhubung hingga 5 perangkat bersamaan",
+        "Unduh hasil buket jernih beresolusi HD",
+        "Akses instan tanpa ribet daftar akun"
+      ],
+      "isCustom": false
+    },
+    "weekly": {
+      "key": "weekly",
+      "name": "Paket Mingguan (7 Hari)",
+      "durationLabel": "7 Hari",
+      "durationDays": 7,
+      "linkDurationDays": 7,
+      "basePrice": 25000,
+      "promoPrice": 12000,
+      "isPromoActive": true,
+      "isActive": true,
+      "isDisplayed": true,
+      "badge": "Paling Hemat (Diskon 52%)",
+      "gardenAccess": false,
+      "features": [
+        "Buka seluruh 100+ koleksi bunga & pembungkus buket",
+        "Masa aktif 7 hari penuh (Ideal untuk kado, wisuda & ultah)",
+        "Link kado interaktif aktif 7 Hari",
+        "Bebas edit & simpan berbagai rancangan buket kapan saja",
+        "Bisa terhubung hingga 5 perangkat bersamaan",
+        "Jauh lebih hemat dibanding beli paket harian berulang kali"
+      ],
+      "isCustom": false
+    },
+    "lifetime": {
+      "key": "lifetime",
+      "name": "Paket Selamanya (VIP Sultan)",
+      "durationLabel": "Selamanya",
+      "durationDays": 0,
+      "linkDurationDays": 0,
+      "basePrice": 85000,
+      "promoPrice": 25000,
+      "isPromoActive": true,
+      "isActive": true,
+      "isDisplayed": true,
+      "badge": "👑 Terpopuler & Lengkap",
+      "gardenAccess": true,
+      "features": [
+        "Akses VIP permanen SELAMANYA (sekali bayar tanpa langganan)",
+        "Link kado interaktif SELAMANYA / Permanen (Tanpa Expired)",
+        "🌸 EKSKLUSIF: Buka Fitur Kebun Bunga Harian Streak 🔥 (Solo / Pasangan)",
+        "Ekspor Kualitas Tertinggi Ultra HD 4K & Stiker WA (Transparan)",
+        "Kartu Ucapan Kaligrafi Eksklusif & Ornamen Pita Mewah",
+        "Bisa terhubung hingga 5 perangkat bersama keluarga / pasangan",
+        "Akses gratis ke seluruh varian bunga & buket baru di masa depan"
+      ],
+      "isCustom": false
+    },
+    "pelajar": {
+      "key": "pelajar",
+      "name": "Paket Pelajar (14 Hari)",
+      "durationDays": 14,
+      "linkDurationDays": 14,
+      "basePrice": 20000,
+      "promoPrice": 9000,
+      "isPromoActive": true,
+      "isActive": true,
+      "isDisplayed": false,
+      "badge": "Diskon 55%",
+      "features": [
+        "Buka seluruh bunga",
+        "Aktif 14 Hari",
+        "Link kado 14 hari"
+      ],
+      "isCustom": true,
+      "durationLabel": "",
+      "gardenAccess": false
+    }
+  }
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { 
   CheckCircle2, MessageCircle, X, ArrowRight, ArrowLeft, ShieldCheck, 
@@ -15,11 +15,11 @@ interface PremiumUnlockModalProps {
   onClose: () => void;
   itemName?: string;
   itemType?: 'bucket' | 'bunga';
-  defaultTier?: 'daily' | 'weekly' | 'lifetime';
+  defaultTier?: string;
   onOpenGarden?: () => void;
 }
 
-type PricingTierKey = 'daily' | 'weekly' | 'lifetime';
+type PricingTierKey = 'daily' | 'weekly' | 'lifetime' | string;
 type ModalStep = 'VOUCHERS' | 'VOUCHER_DETAIL' | 'ENTER_CODE' | 'ENTER_NAME' | 'THANK_YOU';
 
 const DEFAULT_PERKS: Record<PricingTierKey, { title: string; badge?: string; features: string[] }> = {
@@ -200,14 +200,38 @@ export default function PremiumUnlockModal({
     }
   }, [isOpen]);
 
+  const currentPerks = isEn ? DEFAULT_PERKS_EN : DEFAULT_PERKS;
+
   const activeTierConfig = pricingData?.tiers?.[selectedTier] || {
+    name: selectedTier === 'daily' ? 'Paket Harian (24 Jam)' : selectedTier === 'weekly' ? 'Paket Mingguan (7 Hari)' : 'Paket Selamanya (VIP)',
     basePrice: 17000,
     finalPrice: 17000,
     hasDiscount: false,
     durationLabel: 'Selamanya',
+    features: [],
   };
 
-  const formattedPrice = `Rp ${activeTierConfig.finalPrice.toLocaleString('id-ID')}`;
+  const currentTierPerks = useMemo(() => {
+    if (currentPerks[selectedTier as any]) {
+      return currentPerks[selectedTier as any];
+    }
+    const t = pricingData?.tiers?.[selectedTier];
+    if (t) {
+      return {
+        title: `✨ ${isEn ? 'Benefits for' : 'Manfaat'} ${t.name || selectedTier}:`,
+        badge: t.discountBadge || t.badge || 'Voucher Spesial',
+        features: Array.isArray(t.features) && t.features.length > 0 ? t.features : [
+          'Buka seluruh 100+ koleksi bunga & pembungkus buket',
+          `Masa aktif studio ${t.durationLabel || `${t.durationDays} Hari`}`,
+          'Bisa terhubung hingga 5 perangkat bersamaan',
+          'Unduh hasil buket jernih beresolusi HD',
+        ],
+      };
+    }
+    return currentPerks.lifetime;
+  }, [currentPerks, selectedTier, pricingData, isEn]);
+
+  const formattedPrice = `Rp ${(activeTierConfig.finalPrice ?? activeTierConfig.basePrice ?? 17000).toLocaleString('id-ID')}`;
 
   // WhatsApp order template with bullet benefits
   let waCustomText = '';
@@ -219,10 +243,16 @@ export default function PremiumUnlockModal({
     waCustomText = isEn
       ? `Hello Admin Laysa Florist, I would like to order a 7-Day Weekly VIP Access Code (${formattedPrice}).\n\nBenefits:\n• Freely arrange & edit all flowers & wrappers (7 Days)\n• Ideal for celebrations & gifts\n• Up to 5 devices simultaneously\n\nMay I have the payment details / QRIS? Thank you!`
       : `Halo Admin Laysa Florist, saya ingin pesan Kode Akses VIP Paket Mingguan 7 Hari (${formattedPrice}).\n\nBenefit:\n• Bebas rangkai & edit semua bunga & buket (7 Hari)\n• Sangat cocok untuk kado wisuda & ultah\n• Hingga 5 perangkat bersamaan\n\nBoleh minta nomor rekening/QRIS untuk pembayarannya? Terima kasih!`;
-  } else {
+  } else if (selectedTier === 'lifetime') {
     waCustomText = isEn
       ? `Hello Admin Laysa Florist, I would like to order a Lifetime VIP Access Code (${formattedPrice}).\n\nExclusive Benefits:\n• Permanent VIP Access Forever (One-time payment)\n• EXCLUSIVE: Unlock Daily Flower Garden Streak 🔥\n• Ultra HD 4K & Transparent WA Stickers\n• Up to 5 devices simultaneously\n\nMay I have the payment details / QRIS? Thank you!`
       : `Halo Admin Laysa Florist, saya ingin pesan Kode Akses VIP Paket Selamanya (${formattedPrice}).\n\nBenefit Eksklusif:\n• Akses VIP Selamanya (Permanen Sekali Bayar)\n• EKSKLUSIF: Buka Fitur Kebun Bunga Streak 🔥\n• Ekspor Ultra HD 4K & Stiker WA Transparan\n• Hingga 5 perangkat bersamaan\n\nBoleh minta nomor rekening/QRIS untuk pembayarannya? Terima kasih!`;
+  } else {
+    const customName = activeTierConfig.name || `Paket ${selectedTier}`;
+    const customDuration = activeTierConfig.durationLabel || (activeTierConfig.durationDays ? `${activeTierConfig.durationDays} Hari` : 'Spesial');
+    waCustomText = isEn
+      ? `Hello Admin Laysa Florist, I would like to order a VIP Access Code for ${customName} (${formattedPrice}).\n\nBenefits:\n• Access all flowers & wrappers (${customDuration})\n• Up to 5 devices simultaneously\n• Crystal clear HD format\n\nMay I have the payment details / QRIS? Thank you!`
+      : `Halo Admin Laysa Florist, saya ingin pesan Kode Akses VIP ${customName} (${formattedPrice}).\n\nBenefit:\n• Bebas rangkai semua bunga & buket (${customDuration})\n• Hingga 5 perangkat bersamaan\n• Format HD jernih\n\nBoleh minta nomor rekening/QRIS untuk pembayarannya? Terima kasih!`;
   }
 
   const waUrl = `https://wa.me/${cleanWaNumber}?text=${encodeURIComponent(waCustomText)}`;
@@ -330,8 +360,6 @@ export default function PremiumUnlockModal({
 
   if (!isOpen) return null;
 
-  const currentPerks = isEn ? DEFAULT_PERKS_EN : DEFAULT_PERKS;
-
   return (
     <ModalPortal isOpen={isOpen} onClose={onClose}>
       <div className="boutique-modal-backdrop" onClick={onClose}>
@@ -384,136 +412,109 @@ export default function PremiumUnlockModal({
 
               {/* Daftar Tiket Voucher Bergaya Kupon Fisik */}
               <div className="voucher-tickets-list">
-                {/* 1. VOUCHER HARIAN (24 JAM) */}
-                <div
-                  className="voucher-ticket-item"
-                  onClick={() => handleSelectVoucher('daily')}
-                  title={isEn ? 'Click to select Daily Package (24 Hours)' : 'Klik untuk memilih Paket Harian (24 Jam)'}
-                >
-                  <div className="voucher-ticket-left">
-                    <div className="voucher-ticket-badge-row">
-                      <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-amber-100 text-amber-800">
-                        {isEn ? 'Save 50%' : (pricingData.tiers.daily.discountBadge || 'Hemat 50%')}
-                      </span>
-                    </div>
-                    <div className="voucher-ticket-discount">
-                      <span>50%</span>
-                      <span className="voucher-ticket-discount-sub">OFF</span>
-                    </div>
-                    <div className="voucher-ticket-title">
-                      {isEn ? 'Daily Package (24 Hours)' : 'Paket Harian (24 Jam)'}
-                    </div>
-                    <div className="voucher-ticket-sub">
-                      <span className="voucher-ticket-price">Rp {pricingData.tiers.daily.finalPrice.toLocaleString('id-ID')}</span>
-                      <span>•</span>
-                      <span className="voucher-ticket-strike">Rp {pricingData.tiers.daily.basePrice.toLocaleString('id-ID')}</span>
-                    </div>
-                  </div>
+                {Object.keys(pricingData.tiers || {})
+                  .filter((key) => {
+                    const t = pricingData.tiers[key];
+                    return t && t.isActive !== false && t.isDisplayed !== false;
+                  })
+                  .map((key) => {
+                    const t = pricingData.tiers[key];
+                    const isLifetime = key === 'lifetime' || Boolean(t.gardenAccess);
+                    const hasDisc = t.hasDiscount ?? (t.promoPrice < t.basePrice);
+                    const finalPrice = t.finalPrice ?? (hasDisc ? t.promoPrice : t.basePrice);
+                    const pct = t.discountPercentage ?? (hasDisc && t.basePrice > 0 ? Math.round(((t.basePrice - finalPrice) / t.basePrice) * 100) : 0);
+                    const badge = t.discountBadge || t.badge || (pct > 0 ? (isEn ? `Save ${pct}%` : `Hemat ${pct}%`) : '');
+                    
+                    let validityText = t.durationLabel;
+                    if (!validityText) {
+                      validityText = t.durationDays === 0
+                        ? (isEn ? 'Forever' : 'Selamanya')
+                        : t.durationDays === 1
+                        ? (isEn ? 'Active 24 Hours' : 'Aktif 24 Jam')
+                        : (isEn ? `Active ${t.durationDays} Days` : `Aktif ${t.durationDays} Hari`);
+                    }
 
-                  <div className="voucher-ticket-perforation" />
+                    return (
+                      <div
+                        key={key}
+                        className={`voucher-ticket-item ${isLifetime ? 'lifetime-gold' : ''}`}
+                        onClick={() => handleSelectVoucher(key)}
+                        title={isEn ? `Click to select ${t.name || key}` : `Klik untuk memilih ${t.name || key}`}
+                      >
+                        <div className="voucher-ticket-left">
+                          {badge && (
+                            <div className="voucher-ticket-badge-row">
+                              <span className={`text-[10px] font-bold px-1.5 py-0.2 rounded ${
+                                isLifetime
+                                  ? 'bg-amber-100 text-amber-900 border border-amber-300'
+                                  : key === 'weekly'
+                                  ? 'bg-indigo-100 text-indigo-800'
+                                  : 'bg-amber-100 text-amber-800'
+                              }`}>
+                                {badge}
+                              </span>
+                            </div>
+                          )}
+                          {hasDisc && pct > 0 ? (
+                            <div className={`voucher-ticket-discount ${isLifetime ? 'gold' : ''}`}>
+                              <span>{pct}%</span>
+                              <span className="voucher-ticket-discount-sub">OFF</span>
+                            </div>
+                          ) : (
+                            <div className={`voucher-ticket-discount ${isLifetime ? 'gold' : ''}`}>
+                              <span className="text-xl">VIP</span>
+                              <span className="voucher-ticket-discount-sub">PASS</span>
+                            </div>
+                          )}
+                          <div className="voucher-ticket-title" style={isLifetime ? { color: '#92400e' } : {}}>
+                            {t.name || key}
+                          </div>
+                          <div className="voucher-ticket-sub">
+                            <span className="voucher-ticket-price" style={isLifetime ? { color: '#b45309' } : {}}>
+                              Rp {finalPrice.toLocaleString('id-ID')}
+                            </span>
+                            {hasDisc && (
+                              <>
+                                <span>•</span>
+                                <span className="voucher-ticket-strike">Rp {t.basePrice.toLocaleString('id-ID')}</span>
+                              </>
+                            )}
+                          </div>
+                          {t.gardenAccess && (
+                            <div className="text-[11px] font-bold text-amber-700 mt-1 flex items-center gap-1">
+                              <span>{isEn ? '🌸 EXCLUSIVE: Flower Garden Streak 🔥' : '🌸 EKSKLUSIF: Kebun Bunga Streak 🔥'}</span>
+                            </div>
+                          )}
+                        </div>
 
-                  <div className="voucher-ticket-right">
-                    <div className="voucher-ticket-brand-icon">
-                      <Clock size={20} className="text-amber-600" />
-                    </div>
-                    <div className="voucher-ticket-brand-name">
-                      Laysa Atelier
-                    </div>
-                    <div className="voucher-ticket-validity">
-                      {isEn ? 'Active 24 Hours' : 'Aktif 24 Jam'}
-                    </div>
-                    <div className="voucher-ticket-notch-right" />
-                  </div>
-                </div>
+                        <div className="voucher-ticket-perforation" />
 
-                {/* 2. VOUCHER MINGGUAN (7 HARI) */}
-                <div
-                  className="voucher-ticket-item"
-                  onClick={() => handleSelectVoucher('weekly')}
-                  title={isEn ? 'Click to select Weekly Package (7 Days)' : 'Klik untuk memilih Paket Mingguan (7 Hari)'}
-                >
-                  <div className="voucher-ticket-left">
-                    <div className="voucher-ticket-badge-row">
-                      <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-indigo-100 text-indigo-800">
-                        {isEn ? 'Best Value 52%' : (pricingData.tiers.weekly.discountBadge || 'Paling Hemat 52%')}
-                      </span>
-                    </div>
-                    <div className="voucher-ticket-discount">
-                      <span>52%</span>
-                      <span className="voucher-ticket-discount-sub">OFF</span>
-                    </div>
-                    <div className="voucher-ticket-title">
-                      {isEn ? 'Weekly Package (7 Days)' : 'Paket Mingguan (7 Hari)'}
-                    </div>
-                    <div className="voucher-ticket-sub">
-                      <span className="voucher-ticket-price">Rp {pricingData.tiers.weekly.finalPrice.toLocaleString('id-ID')}</span>
-                      <span>•</span>
-                      <span className="voucher-ticket-strike">Rp {pricingData.tiers.weekly.basePrice.toLocaleString('id-ID')}</span>
-                    </div>
-                  </div>
-
-                  <div className="voucher-ticket-perforation" />
-
-                  <div className="voucher-ticket-right">
-                    <div className="voucher-ticket-brand-icon" style={{ background: '#eef2ff' }}>
-                      <Calendar size={20} className="text-indigo-600" />
-                    </div>
-                    <div className="voucher-ticket-brand-name">
-                      Laysa Atelier
-                    </div>
-                    <div className="voucher-ticket-validity">
-                      {isEn ? 'Active 7 Days' : 'Aktif 7 Hari'}
-                    </div>
-                    <div className="voucher-ticket-notch-right" />
-                  </div>
-                </div>
-
-                {/* 3. VOUCHER SELAMANYA (VIP SULTAN + KEBUN STREAK) */}
-                <div
-                  className="voucher-ticket-item lifetime-gold"
-                  onClick={() => handleSelectVoucher('lifetime')}
-                  title={isEn ? 'Click to select Lifetime VIP Package' : 'Klik untuk memilih Paket Selamanya VIP'}
-                >
-                  <div className="voucher-ticket-left">
-                    <div className="voucher-ticket-badge-row">
-                      <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-amber-100 text-amber-900 border border-amber-300">
-                        {isEn ? '👑 Most Popular & Garden Included' : '👑 Terpopuler & Termasuk Kebun'}
-                      </span>
-                    </div>
-                    <div className="voucher-ticket-discount gold">
-                      <span>80%</span>
-                      <span className="voucher-ticket-discount-sub">OFF</span>
-                    </div>
-                    <div className="voucher-ticket-title" style={{ color: '#92400e' }}>
-                      {isEn ? 'Lifetime Package (VIP)' : 'Paket Selamanya (VIP)'}
-                    </div>
-                    <div className="voucher-ticket-sub">
-                      <span className="voucher-ticket-price" style={{ color: '#b45309' }}>
-                        Rp {pricingData.tiers.lifetime.finalPrice.toLocaleString('id-ID')}
-                      </span>
-                      <span>•</span>
-                      <span className="voucher-ticket-strike">Rp {pricingData.tiers.lifetime.basePrice.toLocaleString('id-ID')}</span>
-                    </div>
-                    <div className="text-[11px] font-bold text-amber-700 mt-1 flex items-center gap-1">
-                      <span>{isEn ? '🌸 EXCLUSIVE: Flower Garden Streak 🔥' : '🌸 EKSKLUSIF: Kebun Bunga Streak 🔥'}</span>
-                    </div>
-                  </div>
-
-                  <div className="voucher-ticket-perforation" />
-
-                  <div className="voucher-ticket-right">
-                    <div className="voucher-ticket-brand-icon gold">
-                      <Crown size={22} className="text-amber-700" />
-                    </div>
-                    <div className="voucher-ticket-brand-name" style={{ color: '#92400e' }}>
-                      {isEn ? 'VIP Lifetime' : 'VIP Selamanya'}
-                    </div>
-                    <div className="voucher-ticket-validity" style={{ color: '#b45309', fontWeight: 700 }}>
-                      {isEn ? 'Forever' : 'Selamanya'}
-                    </div>
-                    <div className="voucher-ticket-notch-right" />
-                  </div>
-                </div>
+                        <div className="voucher-ticket-right">
+                          <div
+                            className={`voucher-ticket-brand-icon ${isLifetime ? 'gold' : ''}`}
+                            style={{
+                              background: isLifetime ? '#fef3c7' : key === 'weekly' ? '#eef2ff' : '#fffbeb',
+                            }}
+                          >
+                            {isLifetime ? (
+                              <Crown size={22} className="text-amber-700" />
+                            ) : key === 'weekly' ? (
+                              <Calendar size={20} className="text-indigo-600" />
+                            ) : (
+                              <Clock size={20} className="text-amber-600" />
+                            )}
+                          </div>
+                          <div className="voucher-ticket-brand-name" style={isLifetime ? { color: '#92400e' } : {}}>
+                            {isLifetime ? (isEn ? 'VIP Lifetime' : 'VIP Selamanya') : 'Laysa Atelier'}
+                          </div>
+                          <div className="voucher-ticket-validity" style={isLifetime ? { color: '#b45309', fontWeight: 700 } : {}}>
+                            {validityText}
+                          </div>
+                          <div className="voucher-ticket-notch-right" />
+                        </div>
+                      </div>
+                    );
+                  })}
               </div>
 
               {/* Punya Kode Alternatif */}
@@ -571,16 +572,16 @@ export default function PremiumUnlockModal({
                 </div>
                 <div className="boutique-price-right">
                   <span className="boutique-price-badge bg-rose-50 text-rose-700 border-rose-200">
-                    {isEn
-                      ? (selectedTier === 'lifetime' ? '👑 80% OFF' : selectedTier === 'weekly' ? '52% OFF' : '50% OFF')
-                      : (activeTierConfig.discountBadge || activeTierConfig.durationLabel)}
+                    {activeTierConfig.discountBadge || activeTierConfig.badge || (activeTierConfig.hasDiscount ? `${activeTierConfig.discountPercentage || 50}% OFF` : (isEn ? 'SPECIAL' : 'SPESIAL'))}
                   </span>
                   <span className="boutique-price-note">
-                    {selectedTier === 'lifetime'
+                    {selectedTier === 'lifetime' || Boolean(activeTierConfig.gardenAccess)
                       ? (isEn ? '🌸 Flower Garden Feature Included' : '🌸 Termasuk Fitur Kebun Bunga')
                       : selectedTier === 'weekly'
                       ? (isEn ? 'Full access for 7 days' : 'Akses penuh selama 7 hari')
-                      : (isEn ? 'Full access for 24 hours' : 'Akses penuh 24 jam')}
+                      : selectedTier === 'daily'
+                      ? (isEn ? 'Full access for 24 hours' : 'Akses penuh 24 jam')
+                      : (isEn ? `Full access for ${activeTierConfig.durationLabel || `${activeTierConfig.durationDays} days`}` : `Akses penuh selama ${activeTierConfig.durationLabel || `${activeTierConfig.durationDays} hari`}`)}
                   </span>
                 </div>
               </div>
@@ -589,16 +590,16 @@ export default function PremiumUnlockModal({
               <div className="boutique-perks-card">
                 <div className="boutique-perks-header">
                   <span className="boutique-perks-title">
-                    {currentPerks[selectedTier].title}
+                    {currentTierPerks.title}
                   </span>
-                  {currentPerks[selectedTier].badge && (
+                  {currentTierPerks.badge && (
                     <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200">
-                      {currentPerks[selectedTier].badge}
+                      {currentTierPerks.badge}
                     </span>
                   )}
                 </div>
                 <ul className="boutique-perks-list">
-                  {currentPerks[selectedTier].features.map((feature: string, idx: number) => {
+                  {currentTierPerks.features.map((feature: string, idx: number) => {
                     const isGardenFeature = feature.toLowerCase().includes('kebun') || feature.toLowerCase().includes('garden') || feature.toLowerCase().includes('streak');
                     return (
                       <li key={idx} className={`boutique-perk-item ${isGardenFeature ? 'highlight' : ''}`}>

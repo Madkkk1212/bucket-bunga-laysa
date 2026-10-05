@@ -4,46 +4,56 @@ import path from 'path';
 import { getSupabase } from '@/lib/supabaseClient';
 import { getAdminClient } from '@/utils/supabase/admin';
 
-export type PricingTierKey = 'daily' | 'weekly' | 'lifetime';
+export type PricingTierKey = 'daily' | 'weekly' | 'lifetime' | string;
 
 export interface TierConfig {
-  key: PricingTierKey;
+  key: string;
   name: string;
   durationLabel: string;
-  durationDays: number; // 1 = 24 jam, 7 = 7 hari, 0 = selamanya
+  durationDays: number; // 1 = 24 jam, 7 = 7 hari, 0 = selamanya (Studio VIP)
+  linkDurationDays: number | null; // Masa aktif link kado: misal 1, 7, 30, atau 0/null = selamanya
   basePrice: number;
   promoPrice: number;
   isPromoActive: boolean;
   isActive: boolean; // Bisa dinonaktifkan admin jika tidak ingin dijual
+  isDisplayed?: boolean; // Tampilkan atau sembunyikan di modal beli VIP pengunjung
   badge?: string;
   gardenAccess: boolean; // Eksklusif kebun bunga
   features: string[];
+  isCustom?: boolean;
 }
 
 export interface PricingConfig {
+  freeLinkDurationDays: number; // Masa aktif tautan kado digital untuk akun gratis (default 3 hari)
+  gardenSize: number;
+  gardenFieldSize: number;
+  gardenExpansionPrice: number;
   basePrice: number;       // Legacy / default lifetime price fallback
   isPromoActive: boolean;  // Legacy
   promoPrice: number;      // Legacy
   promoLabel: string;      // Legacy
   updatedAt?: string;
-  tiers?: Record<PricingTierKey, TierConfig>;
+  tiers: Record<string, TierConfig>;
 }
 
-export const DEFAULT_TIERS: Record<PricingTierKey, TierConfig> = {
+export const DEFAULT_TIERS: Record<string, TierConfig> = {
   daily: {
     key: 'daily',
     name: 'Paket Harian (24 Jam)',
     durationLabel: '24 Jam',
     durationDays: 1,
+    linkDurationDays: 1,
     basePrice: 10000,
     promoPrice: 5000,
     isPromoActive: true,
     isActive: true,
+    isDisplayed: true,
     badge: 'Terjangkau & Praktis',
     gardenAccess: false,
     features: [
       'Buka seluruh 100+ koleksi bunga & pembungkus buket',
       'Masa aktif 24 jam bebas rangkai & unduh sepuasnya',
+      'Link kado interaktif aktif 24 Jam',
       'Bisa terhubung hingga 5 perangkat bersamaan',
       'Unduh hasil buket jernih beresolusi HD',
       'Akses instan tanpa ribet daftar akun',
@@ -54,15 +64,18 @@ export const DEFAULT_TIERS: Record<PricingTierKey, TierConfig> = {
     name: 'Paket Mingguan (7 Hari)',
     durationLabel: '7 Hari',
     durationDays: 7,
+    linkDurationDays: 7,
     basePrice: 25000,
     promoPrice: 12000,
     isPromoActive: true,
     isActive: true,
+    isDisplayed: true,
     badge: 'Paling Hemat (Diskon 52%)',
     gardenAccess: false,
     features: [
       'Buka seluruh 100+ koleksi bunga & pembungkus buket',
       'Masa aktif 7 hari penuh (Ideal untuk kado, wisuda & ultah)',
+      'Link kado interaktif aktif 7 Hari',
       'Bebas edit & simpan berbagai rancangan buket kapan saja',
       'Bisa terhubung hingga 5 perangkat bersamaan',
       'Jauh lebih hemat dibanding beli paket harian berulang kali',
@@ -73,14 +86,17 @@ export const DEFAULT_TIERS: Record<PricingTierKey, TierConfig> = {
     name: 'Paket Selamanya (VIP Sultan)',
     durationLabel: 'Selamanya',
     durationDays: 0,
+    linkDurationDays: 0, // 0 = Selamanya / Tanpa kedaluwarsa
     basePrice: 85000,
     promoPrice: 25000,
     isPromoActive: true,
     isActive: true,
+    isDisplayed: true,
     badge: '👑 Terpopuler & Lengkap',
     gardenAccess: true,
     features: [
       'Akses VIP permanen SELAMANYA (sekali bayar tanpa langganan)',
+      'Link kado interaktif SELAMANYA / Permanen (Tanpa Expired)',
       '🌸 EKSKLUSIF: Buka Fitur Kebun Bunga Harian Streak 🔥 (Solo / Pasangan)',
       'Ekspor Kualitas Tertinggi Ultra HD 4K & Stiker WA (Transparan)',
       'Kartu Ucapan Kaligrafi Eksklusif & Ornamen Pita Mewah',
@@ -93,6 +109,10 @@ export const DEFAULT_TIERS: Record<PricingTierKey, TierConfig> = {
 const configFilePath = path.join(process.cwd(), 'data', 'pricingConfig.json');
 
 const DEFAULT_CONFIG: PricingConfig = {
+  freeLinkDurationDays: 3,
+  gardenSize: 5,
+  gardenFieldSize: 8,
+  gardenExpansionPrice: 0,
   basePrice: 85000,
   isPromoActive: true,
   promoPrice: 25000,
@@ -106,21 +126,38 @@ function readLocalConfig(): PricingConfig {
       const raw = fs.readFileSync(configFilePath, 'utf-8');
       const parsed = JSON.parse(raw);
       
-      // Merge tiers dengan DEFAULT_TIERS agar safe jika file lama belum punya format tiers
       const loadedTiers = parsed.tiers || {};
-      const mergedTiers: Record<PricingTierKey, TierConfig> = {
-        daily: { ...DEFAULT_TIERS.daily, ...(loadedTiers.daily || {}) },
-        weekly: { ...DEFAULT_TIERS.weekly, ...(loadedTiers.weekly || {}) },
-        lifetime: {
-          ...DEFAULT_TIERS.lifetime,
-          basePrice: Number(parsed.basePrice) || DEFAULT_TIERS.lifetime.basePrice,
-          promoPrice: Number(parsed.promoPrice ?? parsed.customPromoPrice) || DEFAULT_TIERS.lifetime.promoPrice,
-          isPromoActive: parsed.isPromoActive !== undefined ? Boolean(parsed.isPromoActive) : DEFAULT_TIERS.lifetime.isPromoActive,
-          ...(loadedTiers.lifetime || {}),
-        },
-      };
+      const mergedTiers: Record<string, TierConfig> = { ...DEFAULT_TIERS };
+
+      // Merge standard tiers with saved data
+      (['daily', 'weekly', 'lifetime']).forEach((k) => {
+        if (loadedTiers[k]) {
+          mergedTiers[k] = {
+            ...DEFAULT_TIERS[k],
+            ...loadedTiers[k],
+          };
+        }
+      });
+
+      // Also merge any CUSTOM tiers added by admin
+      Object.keys(loadedTiers).forEach((k) => {
+        if (!['daily', 'weekly', 'lifetime'].includes(k)) {
+          mergedTiers[k] = {
+            ...loadedTiers[k],
+            isCustom: true,
+          };
+        }
+      });
+
+      const freeLinkDurationDays = typeof parsed.freeLinkDurationDays === 'number'
+        ? Math.max(1, parsed.freeLinkDurationDays)
+        : 3;
 
       return {
+        freeLinkDurationDays,
+        gardenSize: Math.max(5, Math.min(10, Math.floor(Number(parsed.gardenSize) || 5))),
+        gardenFieldSize: Math.max(8, Math.min(16, Math.floor(Number(parsed.gardenFieldSize) || 8))),
+        gardenExpansionPrice: Math.max(0, Number(parsed.gardenExpansionPrice) || 0),
         basePrice: Number(parsed.basePrice) || mergedTiers.lifetime.basePrice,
         isPromoActive: Boolean(parsed.isPromoActive),
         promoPrice: Number(parsed.promoPrice ?? parsed.customPromoPrice) || mergedTiers.lifetime.promoPrice,
@@ -148,8 +185,8 @@ function computePricing(cfg: PricingConfig) {
   const tiers = cfg.tiers || DEFAULT_TIERS;
   const computedTiers: Record<string, any> = {};
 
-  (Object.keys(DEFAULT_TIERS) as PricingTierKey[]).forEach((key) => {
-    const tier = tiers[key] || DEFAULT_TIERS[key];
+  Object.keys(tiers).forEach((key) => {
+    const tier = tiers[key];
     const base = Math.max(0, Number(tier.basePrice) || 0);
     const promo = Math.max(0, Number(tier.promoPrice) || base);
     const isPromo = Boolean(tier.isPromoActive) && promo < base && promo > 0;
@@ -167,6 +204,9 @@ function computePricing(cfg: PricingConfig) {
       discountAmount,
       discountPercentage,
       discountBadge: tier.badge || discountBadge,
+      linkDurationDays: tier.linkDurationDays !== undefined ? tier.linkDurationDays : (key === 'daily' ? 1 : key === 'weekly' ? 7 : 0),
+      isDisplayed: tier.isDisplayed !== false,
+      isActive: tier.isActive !== false,
     };
   });
 
@@ -177,6 +217,10 @@ function computePricing(cfg: PricingConfig) {
   const finalPrice = lifetimeTier ? lifetimeTier.finalPrice : promo;
 
   return {
+    freeLinkDurationDays: cfg.freeLinkDurationDays || 3,
+    gardenSize: Math.max(5, Math.min(10, Math.floor(Number(cfg.gardenSize) || 5))),
+    gardenFieldSize: Math.max(8, Math.min(16, Math.floor(Number(cfg.gardenFieldSize) || 8))),
+    gardenExpansionPrice: Math.max(0, Number(cfg.gardenExpansionPrice) || 0),
     basePrice: base,
     promoPrice: promo,
     isPromoActive: Boolean(cfg.isPromoActive),
@@ -191,7 +235,7 @@ function computePricing(cfg: PricingConfig) {
   };
 }
 
-// 1. GET: Ambil harga saat ini (lengkap dengan tier harian, mingguan, selamanya)
+// 1. GET: Ambil harga saat ini (lengkap dengan tier harian, mingguan, selamanya, custom vouchers, dan durasi free)
 export async function GET() {
   try {
     let currentConfig = readLocalConfig();
@@ -206,16 +250,36 @@ export async function GET() {
           .maybeSingle();
 
         if (!error && data) {
-          let mergedTiers = currentConfig.tiers || DEFAULT_TIERS;
+          let mergedTiers = { ...currentConfig.tiers };
           if (data.tiers_data && typeof data.tiers_data === 'object') {
-            mergedTiers = {
-              daily: { ...DEFAULT_TIERS.daily, ...(data.tiers_data.daily || {}) },
-              weekly: { ...DEFAULT_TIERS.weekly, ...(data.tiers_data.weekly || {}) },
-              lifetime: { ...DEFAULT_TIERS.lifetime, ...(data.tiers_data.lifetime || {}) },
-            };
+            const rawTiers = data.tiers_data;
+            if (rawTiers._freeLinkDurationDays !== undefined) {
+              currentConfig.freeLinkDurationDays = Number(rawTiers._freeLinkDurationDays) || 3;
+            }
+            if (rawTiers._gardenSize !== undefined) {
+              currentConfig.gardenSize = Math.max(5, Math.min(10, Math.floor(Number(rawTiers._gardenSize) || 5)));
+            }
+            if (rawTiers._gardenFieldSize !== undefined) {
+              currentConfig.gardenFieldSize = Math.max(8, Math.min(16, Math.floor(Number(rawTiers._gardenFieldSize) || 8)));
+            }
+            if (rawTiers._gardenExpansionPrice !== undefined) {
+              currentConfig.gardenExpansionPrice = Math.max(0, Number(rawTiers._gardenExpansionPrice) || 0);
+            }
+            Object.keys(rawTiers).forEach((k) => {
+              if (!k.startsWith('_')) {
+                mergedTiers[k] = {
+                  ...(mergedTiers[k] || {}),
+                  ...rawTiers[k],
+                };
+              }
+            });
           }
 
           currentConfig = {
+          freeLinkDurationDays: currentConfig.freeLinkDurationDays,
+          gardenSize: currentConfig.gardenSize,
+          gardenFieldSize: currentConfig.gardenFieldSize,
+          gardenExpansionPrice: currentConfig.gardenExpansionPrice,
             basePrice: data.base_price ?? currentConfig.basePrice,
             isPromoActive: data.is_promo_active ?? currentConfig.isPromoActive,
             promoPrice: data.custom_promo_price ?? currentConfig.promoPrice,
@@ -236,7 +300,7 @@ export async function GET() {
   }
 }
 
-// 2. POST: Simpan harga langsung (Multi-tier + Legacy Admin Support)
+// 2. POST: Simpan harga langsung (Multi-tier + Custom Vouchers + Free Duration)
 export async function POST(req: Request) {
   try {
     const adminKey = process.env.ADMIN_SECRET_KEY;
@@ -265,38 +329,69 @@ export async function POST(req: Request) {
     const prevConfig = readLocalConfig();
     const prevTiers = prevConfig.tiers || DEFAULT_TIERS;
 
-    // Support payload baru dengan object 'tiers' atau fallback dari input single-price
-    let newTiers: Record<PricingTierKey, TierConfig> = { ...prevTiers };
+    // Support payload baru dengan object 'tiers' dinamis (bisa ada custom voucher baru atau voucher dihapus)
+    let newTiers: Record<string, TierConfig> = {};
+
     if (body.tiers && typeof body.tiers === 'object') {
-      (['daily', 'weekly', 'lifetime'] as PricingTierKey[]).forEach((key) => {
-        if (body.tiers[key]) {
-          newTiers[key] = {
-            ...prevTiers[key],
-            ...body.tiers[key],
-            basePrice: Math.max(0, Number(body.tiers[key].basePrice) || prevTiers[key].basePrice),
-            promoPrice: Math.max(0, Number(body.tiers[key].promoPrice) || prevTiers[key].promoPrice),
-            isPromoActive: Boolean(body.tiers[key].isPromoActive),
-            isActive: body.tiers[key].isActive !== undefined ? Boolean(body.tiers[key].isActive) : true,
-          };
-        }
+      Object.keys(body.tiers).forEach((key) => {
+        const item = body.tiers[key];
+        const prevItem = prevTiers[key] || {};
+        newTiers[key] = {
+          ...prevItem,
+          ...item,
+          key: key,
+          name: item.name || prevItem.name || key,
+          durationLabel: item.durationLabel || prevItem.durationLabel || '',
+          durationDays: item.durationDays !== undefined ? Number(item.durationDays) : (prevItem.durationDays ?? 0),
+          linkDurationDays: item.linkDurationDays !== undefined ? (item.linkDurationDays === null ? null : Number(item.linkDurationDays)) : (prevItem.linkDurationDays ?? 0),
+          basePrice: Math.max(0, Number(item.basePrice) || prevItem.basePrice || 10000),
+          promoPrice: Math.max(0, Number(item.promoPrice) || prevItem.promoPrice || 5000),
+          isPromoActive: Boolean(item.isPromoActive),
+          isActive: item.isActive !== undefined ? Boolean(item.isActive) : true,
+          isDisplayed: item.isDisplayed !== undefined ? Boolean(item.isDisplayed) : true,
+          badge: item.badge || prevItem.badge || '',
+          gardenAccess: item.gardenAccess !== undefined ? Boolean(item.gardenAccess) : false,
+          features: Array.isArray(item.features) ? item.features : (prevItem.features || []),
+          isCustom: item.isCustom !== undefined ? Boolean(item.isCustom) : !['daily', 'weekly', 'lifetime'].includes(key),
+        };
       });
+    } else {
+      newTiers = { ...prevTiers };
     }
 
-    // Jika admin hanya mengupdate basePrice legacy (misal dari form lama)
-    if (body.basePrice !== undefined && (!body.tiers || !body.tiers.lifetime)) {
-      newTiers.lifetime = {
-        ...newTiers.lifetime,
-        basePrice: Math.max(0, Number(body.basePrice) || newTiers.lifetime.basePrice),
-        promoPrice: Math.max(0, Number(body.promoPrice) || newTiers.lifetime.promoPrice),
-        isPromoActive: Boolean(body.isPromoActive),
-      };
-    }
+    // Pastikan 3 default tiers selalu ada jika terhapus tidak sengaja
+    (['daily', 'weekly', 'lifetime']).forEach((defKey) => {
+      if (!newTiers[defKey]) {
+        newTiers[defKey] = DEFAULT_TIERS[defKey];
+      }
+    });
+
+    const freeLinkDurationDays = body.freeLinkDurationDays !== undefined
+      ? Math.max(1, Number(body.freeLinkDurationDays) || 3)
+      : prevConfig.freeLinkDurationDays || 3;
+    const gardenSize = body.gardenSize !== undefined
+      ? Math.max(5, Math.min(10, Math.floor(Number(body.gardenSize) || 5)))
+      : prevConfig.gardenSize || 5;
+    const gardenFieldSize = body.gardenFieldSize !== undefined
+      ? Math.max(8, Math.min(16, Math.floor(Number(body.gardenFieldSize) || 8)))
+      : prevConfig.gardenFieldSize || 8;
+    const gardenExpansionPrice = body.gardenExpansionPrice !== undefined
+      ? Math.max(0, Math.floor(Number(body.gardenExpansionPrice) || 0))
+      : prevConfig.gardenExpansionPrice || 0;
+
+    const lifetimeBasePrice = newTiers.lifetime?.basePrice || 85000;
+    const lifetimePromoPrice = newTiers.lifetime?.promoPrice || 25000;
+    const lifetimePromoActive = Boolean(newTiers.lifetime?.isPromoActive);
 
     const newConfig: PricingConfig = {
-      basePrice: newTiers.lifetime.basePrice,
-      isPromoActive: newTiers.lifetime.isPromoActive,
-      promoPrice: newTiers.lifetime.promoPrice,
-      promoLabel: (body.promoLabel || newTiers.lifetime.badge || 'Promo Terbatas').trim(),
+      freeLinkDurationDays,
+      gardenSize,
+      gardenFieldSize,
+      gardenExpansionPrice,
+      basePrice: lifetimeBasePrice,
+      isPromoActive: lifetimePromoActive,
+      promoPrice: lifetimePromoPrice,
+      promoLabel: (body.promoLabel || newTiers.lifetime?.badge || 'Promo Terbatas').trim(),
       updatedAt: new Date().toISOString(),
       tiers: newTiers,
     };
@@ -317,7 +412,13 @@ export async function POST(req: Request) {
             custom_promo_price: newConfig.promoPrice,
             promo_label: newConfig.promoLabel,
             updated_at: newConfig.updatedAt,
-            tiers_data: newConfig.tiers,
+            tiers_data: {
+              ...newConfig.tiers,
+              _freeLinkDurationDays: newConfig.freeLinkDurationDays,
+              _gardenSize: newConfig.gardenSize,
+              _gardenFieldSize: newConfig.gardenFieldSize,
+              _gardenExpansionPrice: newConfig.gardenExpansionPrice,
+            },
           });
       } catch (sbErr) {
         console.error('Supabase pricing upsert warning:', sbErr);
@@ -327,7 +428,7 @@ export async function POST(req: Request) {
     const computed = computePricing(newConfig);
     return NextResponse.json({
       success: true,
-      message: 'Harga & paket VIP berhasil diperbarui!',
+      message: 'Semua pengaturan harga, masa aktif, dan voucher berhasil disimpan!',
       pricing: computed,
     });
   } catch (err: any) {

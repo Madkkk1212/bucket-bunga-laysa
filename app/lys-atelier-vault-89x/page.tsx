@@ -33,7 +33,9 @@ import {
   Gift,
   Music,
   Heart,
+  Trees,
   Calendar,
+  Clock,
 } from 'lucide-react';
 
 interface AccessCodeItem {
@@ -87,24 +89,23 @@ function parseDeviceInfo(ua?: string | null): { browser: string; os: string; ful
 }
 
 interface TierPricingItem {
-  key: 'daily' | 'weekly' | 'lifetime';
+  key: string;
   name: string;
   durationLabel: string;
   durationDays: number;
+  linkDurationDays?: number | null;
   basePrice: number;
   promoPrice: number;
   isPromoActive: boolean;
   isActive: boolean;
+  isDisplayed?: boolean;
+  isCustom?: boolean;
   badge?: string;
   gardenAccess: boolean;
   features: string[];
 }
 
-interface MultiTierPricingState {
-  daily: TierPricingItem;
-  weekly: TierPricingItem;
-  lifetime: TierPricingItem;
-}
+type MultiTierPricingState = Record<string, TierPricingItem>;
 
 interface PricingState {
   basePrice: number;
@@ -123,7 +124,7 @@ export default function LaysaCleanPortalPage() {
   const [lockoutSeconds, setLockoutSeconds] = useState<number>(0);
 
   // ── Dashboard States ──
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'tokens' | 'gifts' | 'pricing' | 'diagnostics'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'tokens' | 'gifts' | 'pricing' | 'garden' | 'diagnostics'>('dashboard');
   const [codes, setCodes] = useState<AccessCodeItem[]>([]);
   const [isLoadingCodes, setIsLoadingCodes] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -131,7 +132,8 @@ export default function LaysaCleanPortalPage() {
 
   // Form Create Code
   const [newCode, setNewCode] = useState<string>('');
-  const [newTier, setNewTier] = useState<'daily' | 'weekly' | 'lifetime'>('lifetime');
+  const [newTier, setNewTier] = useState<'daily' | 'weekly' | 'lifetime' | 'custom'>('lifetime');
+  const [newCustomDays, setNewCustomDays] = useState<number>(30);
   const [newMaxUses, setNewMaxUses] = useState<number>(1);
   const [newMaxDevices, setNewMaxDevices] = useState<number>(5);
   const [newNotes, setNewNotes] = useState<string>('');
@@ -146,22 +148,44 @@ export default function LaysaCleanPortalPage() {
   const [editDeviceLimitVal, setEditDeviceLimitVal] = useState<number>(5);
 
   // Pricing State
-  const [selectedPricingTier, setSelectedPricingTier] = useState<'daily' | 'weekly' | 'lifetime'>('lifetime');
+  const [selectedPricingTier, setSelectedPricingTier] = useState<string>('lifetime');
+  const [freeLinkDurationDays, setFreeLinkDurationDays] = useState<number>(3);
+  const [gardenSize, setGardenSize] = useState<number>(5);
+  const [gardenFieldSize, setGardenFieldSize] = useState<number>(8);
+  const [gardenSettingsMsg, setGardenSettingsMsg] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
+  const [isSavingGardenSettings, setIsSavingGardenSettings] = useState(false);
+  const [gardenExpansionPrice, setGardenExpansionPrice] = useState<number>(0);
+  const [isAddVoucherModalOpen, setIsAddVoucherModalOpen] = useState<boolean>(false);
+  const [newVoucherKey, setNewVoucherKey] = useState<string>('');
+  const [newVoucherName, setNewVoucherName] = useState<string>('');
+  const [newVoucherDurationDays, setNewVoucherDurationDays] = useState<number>(30);
+  const [newVoucherLinkDurationDays, setNewVoucherLinkDurationDays] = useState<number>(30);
+  const [newVoucherBasePrice, setNewVoucherBasePrice] = useState<number>(35000);
+  const [newVoucherPromoPrice, setNewVoucherPromoPrice] = useState<number>(19000);
+  const [newVoucherBadge, setNewVoucherBadge] = useState<string>('Hemat 45%');
+  const [newVoucherIsDisplayed, setNewVoucherIsDisplayed] = useState<boolean>(true);
+  const [newVoucherFeatures, setNewVoucherFeatures] = useState<string>(
+    'Buka seluruh 100+ koleksi bunga & pembungkus buket\nLink kado interaktif aktif 30 hari\nBisa terhubung hingga 5 perangkat bersamaan\nUnduh hasil buket jernih beresolusi Ultra HD\nBebas edit & simpan rancangan kado kapan saja'
+  );
+
   const [multiTierPricing, setMultiTierPricing] = useState<MultiTierPricingState>({
     daily: {
       key: 'daily',
       name: 'Paket Harian (24 Jam)',
       durationLabel: '24 Jam',
       durationDays: 1,
+      linkDurationDays: 1,
       basePrice: 10000,
       promoPrice: 5000,
       isPromoActive: true,
       isActive: true,
+      isDisplayed: true,
       badge: 'Hemat 50%',
       gardenAccess: false,
       features: [
         'Buka seluruh 100+ koleksi bunga & pembungkus buket',
         'Masa aktif 24 jam bebas rangkai & unduh sepuasnya',
+        'Link kado interaktif aktif 24 Jam',
         'Bisa terhubung hingga 5 perangkat bersamaan',
         'Unduh hasil buket jernih beresolusi HD',
         'Akses instan tanpa ribet daftar akun',
@@ -172,15 +196,18 @@ export default function LaysaCleanPortalPage() {
       name: 'Paket Mingguan (7 Hari)',
       durationLabel: '7 Hari',
       durationDays: 7,
+      linkDurationDays: 7,
       basePrice: 25000,
       promoPrice: 12000,
       isPromoActive: true,
       isActive: true,
+      isDisplayed: true,
       badge: 'Hemat 52%',
       gardenAccess: false,
       features: [
         'Buka seluruh 100+ koleksi bunga & pembungkus buket',
         'Masa aktif 7 hari penuh (Ideal untuk kado, wisuda & ultah)',
+        'Link kado interaktif aktif 7 Hari',
         'Bebas edit & simpan berbagai rancangan buket kapan saja',
         'Bisa terhubung hingga 5 perangkat bersamaan',
         'Jauh lebih hemat dibanding beli paket harian berulang kali',
@@ -191,14 +218,17 @@ export default function LaysaCleanPortalPage() {
       name: 'Paket Selamanya (VIP Sultan)',
       durationLabel: 'Selamanya',
       durationDays: 0,
+      linkDurationDays: 0,
       basePrice: 85000,
       promoPrice: 25000,
       isPromoActive: true,
       isActive: true,
+      isDisplayed: true,
       badge: '👑 Terpopuler & Lengkap',
       gardenAccess: true,
       features: [
         'Akses VIP permanen SELAMANYA (sekali bayar tanpa langganan)',
+        'Link kado interaktif SELAMANYA / Permanen (Tanpa Expired)',
         '🌸 EKSKLUSIF: Buka Fitur Kebun Bunga Harian Streak 🔥 (Solo / Pasangan)',
         'Ekspor Kualitas Tertinggi Ultra HD 4K & Stiker WA (Transparan)',
         'Kartu Ucapan Kaligrafi Eksklusif & Ornamen Pita Mewah',
@@ -331,6 +361,12 @@ export default function LaysaCleanPortalPage() {
       const res = await fetch('/api/settings/pricing');
       const data = await res.json();
       if (data.success && data.pricing) {
+        if (data.pricing.freeLinkDurationDays !== undefined) {
+          setFreeLinkDurationDays(data.pricing.freeLinkDurationDays);
+        }
+        setGardenSize(Math.max(5, Math.min(10, Number(data.pricing.gardenSize) || 5)));
+        setGardenFieldSize(Math.max(8, Math.min(16, Number(data.pricing.gardenFieldSize) || 8)));
+        setGardenExpansionPrice(Math.max(0, Number(data.pricing.gardenExpansionPrice) || 0));
         setPricing({
           basePrice: data.pricing.basePrice ?? 85000,
           isPromoActive: Boolean(data.pricing.isPromoActive),
@@ -338,11 +374,19 @@ export default function LaysaCleanPortalPage() {
           promoLabel: data.pricing.promoLabel || 'Promo Terbatas',
         });
         if (data.pricing.tiers) {
-          setMultiTierPricing((prev) => ({
-            daily: { ...prev.daily, ...(data.pricing.tiers.daily || {}) },
-            weekly: { ...prev.weekly, ...(data.pricing.tiers.weekly || {}) },
-            lifetime: { ...prev.lifetime, ...(data.pricing.tiers.lifetime || {}) },
-          }));
+          setMultiTierPricing((prev) => {
+            const merged: MultiTierPricingState = { ...prev };
+            Object.keys(data.pricing.tiers).forEach((k) => {
+              merged[k] = {
+                ...(merged[k] || {}),
+                ...data.pricing.tiers[k],
+                key: k,
+                isDisplayed: data.pricing.tiers[k].isDisplayed !== false,
+                isActive: data.pricing.tiers[k].isActive !== false,
+              };
+            });
+            return merged;
+          });
         }
       }
     } catch (err) {
@@ -427,7 +471,7 @@ export default function LaysaCleanPortalPage() {
     for (let i = 0; i < 6; i++) {
       rand += chars.charAt(Math.floor(Math.random() * chars.length));
     }
-    const prefix = newTier === 'daily' ? 'DAY' : newTier === 'weekly' ? 'WEEK' : 'VIP';
+    const prefix = newTier === 'daily' ? 'DAY' : newTier === 'weekly' ? 'WEEK' : newTier === 'custom' ? 'CUST' : 'VIP';
     setNewCode(`${prefix}-${rand}`);
   };
 
@@ -452,14 +496,16 @@ export default function LaysaCleanPortalPage() {
           max_uses: newMaxUses,
           max_devices: newMaxDevices,
           notes: newNotes.trim() || undefined,
-          tier: newTier,
+          tier: newTier === 'custom' ? 'lifetime' : newTier,
+          duration_days: newTier === 'custom' ? newCustomDays : newTier === 'daily' ? 1 : newTier === 'weekly' ? 7 : 0,
         }),
       });
 
       const data = await res.json();
 
       if (data.success) {
-        setFormMsg({ text: `Kode ${newCode.toUpperCase()} (${newTier}) berhasil dibuat!`, type: 'success' });
+        const tierLabel = newTier === 'custom' ? `Custom ${newCustomDays} Hari` : newTier;
+        setFormMsg({ text: `Kode ${newCode.toUpperCase()} (${tierLabel}) berhasil dibuat!`, type: 'success' });
         setNewCode('');
         setNewNotes('');
         setNewMaxUses(1);
@@ -582,7 +628,22 @@ export default function LaysaCleanPortalPage() {
   };
 
   // Perhitungan otomatis diskon persen & hemat rupiah untuk tier yang sedang dipilih di admin
-  const currentTierData = multiTierPricing[selectedPricingTier];
+  const currentTierData = multiTierPricing[selectedPricingTier] || multiTierPricing.lifetime || Object.values(multiTierPricing)[0] || {
+    key: 'lifetime',
+    name: 'Paket Selamanya',
+    durationLabel: 'Selamanya',
+    durationDays: 0,
+    linkDurationDays: 0,
+    basePrice: 85000,
+    promoPrice: 25000,
+    isPromoActive: true,
+    isActive: true,
+    isDisplayed: true,
+    badge: '👑 Terpopuler & Lengkap',
+    gardenAccess: true,
+    features: [],
+  };
+
   const discountStats = useMemo(() => {
     const base = Math.max(0, Number(currentTierData.basePrice) || 0);
     const promo = Math.max(0, Number(currentTierData.promoPrice) || 0);
@@ -639,6 +700,76 @@ export default function LaysaCleanPortalPage() {
     }));
   };
 
+  // Tambah voucher / tier baru
+  const handleAddVoucher = (e: React.FormEvent) => {
+    e.preventDefault();
+    const cleanKey = newVoucherKey.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '');
+    if (!cleanKey) {
+      alert('ID / Kode Voucher harus diisi huruf dan angka tanpa spasi (contoh: bulanan, pelajar).');
+      return;
+    }
+    if (multiTierPricing[cleanKey]) {
+      alert(`Voucher dengan ID "${cleanKey}" sudah ada dalam daftar.`);
+      return;
+    }
+    const cleanName = newVoucherName.trim() || `Paket ${cleanKey.toUpperCase()}`;
+    const baseP = Math.max(0, Number(newVoucherBasePrice) || 0);
+    const promoP = Math.max(0, Number(newVoucherPromoPrice) || 0);
+    const durD = Math.max(0, Number(newVoucherDurationDays) || 0);
+    const linkD = Math.max(0, Number(newVoucherLinkDurationDays) || 0);
+    const featureLines = newVoucherFeatures.split('\n').map((l) => l.trim()).filter(Boolean);
+
+    const newItem: TierPricingItem = {
+      key: cleanKey,
+      name: cleanName,
+      durationLabel: durD === 0 ? 'Selamanya' : `${durD} Hari`,
+      durationDays: durD,
+      linkDurationDays: linkD,
+      basePrice: baseP,
+      promoPrice: promoP,
+      isPromoActive: promoP > 0 && promoP < baseP,
+      isActive: true,
+      isDisplayed: newVoucherIsDisplayed,
+      badge: newVoucherBadge.trim() || (promoP < baseP ? `Diskon ${Math.round(((baseP - promoP) / baseP) * 100)}%` : 'Spesial'),
+      gardenAccess: false,
+      features: featureLines.length > 0 ? featureLines : [
+        'Akses koleksi bunga & wrapper premium',
+        `Masa aktif studio ${durD === 0 ? 'Selamanya' : `${durD} Hari`}`,
+        `Link kado digital aktif ${linkD === 0 ? 'Selamanya' : `${linkD} Hari`}`,
+        'Bisa terhubung hingga 5 perangkat bersamaan',
+      ],
+      isCustom: true,
+    };
+
+    setMultiTierPricing((prev) => ({
+      ...prev,
+      [cleanKey]: newItem,
+    }));
+    setSelectedPricingTier(cleanKey);
+    setIsAddVoucherModalOpen(false);
+    setNewVoucherKey('');
+    setNewVoucherName('');
+    setPricingMsg({ text: `✓ Voucher "${cleanName}" berhasil ditambahkan! Jangan lupa klik "Simpan Semua Paket Harga" untuk menyimpan ke server.`, type: 'success' });
+  };
+
+  // Hapus voucher kustom
+  const handleDeleteVoucher = (tierKey: string) => {
+    if (['daily', 'weekly', 'lifetime'].includes(tierKey)) {
+      alert('Paket standar utama (Harian, Mingguan, Selamanya) tidak dapat dihapus, tapi Anda bisa menonaktifkan atau menyembunyikannya dari pengunjung.');
+      return;
+    }
+    const name = multiTierPricing[tierKey]?.name || tierKey;
+    if (!confirm(`Hapus permanen voucher "${name}"? Perubahan akan disimpan saat Anda klik Simpan Semua Paket Harga.`)) return;
+
+    setMultiTierPricing((prev) => {
+      const copy = { ...prev };
+      delete copy[tierKey];
+      return copy;
+    });
+    setSelectedPricingTier('lifetime');
+    setPricingMsg({ text: `✓ Voucher "${name}" dihapus. Silakan klik "Simpan Semua Paket Harga" untuk memperbarui database server.`, type: 'success' });
+  };
+
   // Simpan semua paket harga ke backend
   const handleSavePricing = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -655,16 +786,19 @@ export default function LaysaCleanPortalPage() {
         credentials: 'same-origin',
         body: JSON.stringify({
           tiers: multiTierPricing,
-          basePrice: multiTierPricing.lifetime.basePrice,
-          promoPrice: multiTierPricing.lifetime.promoPrice,
-          isPromoActive: multiTierPricing.lifetime.isPromoActive,
-          promoLabel: multiTierPricing.lifetime.badge || 'Promo Terbatas',
+          freeLinkDurationDays,
+          gardenSize,
+          gardenExpansionPrice,
+          basePrice: multiTierPricing.lifetime?.basePrice || 85000,
+          promoPrice: multiTierPricing.lifetime?.promoPrice || 25000,
+          isPromoActive: multiTierPricing.lifetime?.isPromoActive ?? true,
+          promoLabel: multiTierPricing.lifetime?.badge || 'Promo Terbatas',
         }),
       });
       const data = await res.json();
 
       if (data.success) {
-        setPricingMsg({ text: '✓ Semua paket harga dan promo berhasil disimpan!', type: 'success' });
+        setPricingMsg({ text: '✓ Semua paket harga, durasi tautan, dan promo berhasil disimpan!', type: 'success' });
         fetchPricing();
       } else {
         setPricingMsg({ text: data.message || data.error || 'Gagal menyimpan harga.', type: 'error' });
@@ -673,6 +807,30 @@ export default function LaysaCleanPortalPage() {
       setPricingMsg({ text: 'Terjadi kesalahan sistem saat menghubungi server.', type: 'error' });
     } finally {
       setIsSavingPricing(false);
+    }
+  };
+
+  const handleSaveGardenSettings = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSavingGardenSettings(true);
+    setGardenSettingsMsg(null);
+    try {
+      const response = await fetch('/api/settings/pricing', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ gardenFieldSize, gardenSize, gardenExpansionPrice }),
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success) throw new Error(data.message || 'Pengaturan kebun gagal disimpan.');
+      setGardenFieldSize(Math.max(8, Math.min(16, Number(data.pricing?.gardenFieldSize) || gardenFieldSize)));
+      setGardenSize(Math.max(5, Math.min(10, Number(data.pricing?.gardenSize) || gardenSize)));
+      setGardenExpansionPrice(Math.max(0, Number(data.pricing?.gardenExpansionPrice) || 0));
+      setGardenSettingsMsg({ text: 'Ukuran bidang hijau berhasil disimpan dan akan diterapkan ke kebun.', type: 'success' });
+    } catch (error) {
+      setGardenSettingsMsg({ text: error instanceof Error ? error.message : 'Gagal menghubungi server.', type: 'error' });
+    } finally {
+      setIsSavingGardenSettings(false);
     }
   };
 
@@ -939,6 +1097,15 @@ export default function LaysaCleanPortalPage() {
 
             <button
               type="button"
+              onClick={() => setActiveTab('garden')}
+              className={`adm-nav-item ${activeTab === 'garden' ? 'active' : ''}`}
+            >
+              <Trees size={17} />
+              <span>Pengaturan Kebun</span>
+            </button>
+
+            <button
+              type="button"
               onClick={() => setActiveTab('diagnostics')}
               className={`adm-nav-item ${activeTab === 'diagnostics' ? 'active' : ''}`}
             >
@@ -1040,6 +1207,15 @@ export default function LaysaCleanPortalPage() {
               >
                 <Tag size={14} />
                 <span>Harga &amp; Promo</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveTab('garden')}
+                className={`adm-mobile-tab-btn ${activeTab === 'garden' ? 'active' : ''}`}
+              >
+                <Trees size={14} />
+                <span>Kebun</span>
               </button>
 
               <button
@@ -1296,6 +1472,15 @@ export default function LaysaCleanPortalPage() {
                     </button>
                     <button
                       type="button"
+                      onClick={() => setActiveTab('garden')}
+                      className="adm-btn-action"
+                      style={{ justifyContent: 'center', padding: '12px', borderRadius: '14px', flexDirection: 'column', gap: '6px', height: '72px' }}
+                    >
+                      <Trees size={18} />
+                      <span style={{ fontSize: '0.78rem' }}>Atur Kebun</span>
+                    </button>
+                    <button
+                      type="button"
                       onClick={() => setActiveTab('diagnostics')}
                       className="adm-btn-action"
                       style={{ justifyContent: 'center', padding: '12px', borderRadius: '14px', flexDirection: 'column', gap: '6px', height: '72px' }}
@@ -1452,9 +1637,9 @@ export default function LaysaCleanPortalPage() {
                       <select
                         value={newTier}
                         onChange={(e) => {
-                          const t = e.target.value as 'daily' | 'weekly' | 'lifetime';
+                          const t = e.target.value as 'daily' | 'weekly' | 'lifetime' | 'custom';
                           setNewTier(t);
-                          const prefix = t === 'daily' ? 'DAY' : t === 'weekly' ? 'WEEK' : 'VIP';
+                          const prefix = t === 'daily' ? 'DAY' : t === 'weekly' ? 'WEEK' : t === 'custom' ? 'CUST' : 'VIP';
                           const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
                           let rand = '';
                           for (let i = 0; i < 6; i++) {
@@ -1467,8 +1652,24 @@ export default function LaysaCleanPortalPage() {
                         <option value="daily">⏱️ Paket Harian (Berlaku 24 Jam sejak klaim)</option>
                         <option value="weekly">📅 Paket Mingguan (Berlaku 7 Hari sejak klaim)</option>
                         <option value="lifetime">👑 Paket Selamanya (Permanen + Akses Kebun Bunga Streak 🔥)</option>
+                        <option value="custom">⚙️ Kustom Durasi (Bisa isi berapa hari bebas)</option>
                       </select>
                     </div>
+
+                    {newTier === 'custom' && (
+                      <div>
+                        <label className="vault-input-label">Jumlah Hari Aktif (Custom)</label>
+                        <input
+                          type="number"
+                          min={1}
+                          max={365}
+                          value={newCustomDays}
+                          onChange={(e) => setNewCustomDays(Math.max(1, parseInt(e.target.value) || 1))}
+                          className="vault-input-field"
+                          placeholder="Cth: 14 atau 30 hari"
+                        />
+                      </div>
+                    )}
 
                     <div>
                       <label className="vault-input-label">Catatan / Pembeli</label>
@@ -1944,74 +2145,300 @@ export default function LaysaCleanPortalPage() {
                   <div>
                     <h3 className="adm-card-title">Pengaturan Harga Multi-Tier VIP</h3>
                     <p className="adm-card-sub">
-                      Atur nominal harga, status aktif, dan promo untuk paket Harian (24 Jam), Mingguan (7 Hari), dan Selamanya (Lifetime).
+                      Atur nominal harga, masa aktif tautan kado (free &amp; VIP), status tampil di web, dan tambah voucher kustom sesuka Anda.
                     </p>
                   </div>
                 </div>
 
-                {/* 3 Tier Sub-Tabs */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px', marginBottom: '16px' }}>
-                  {(['daily', 'weekly', 'lifetime'] as const).map((key) => {
+                {/* ─── KARTU PENGATURAN DURASI KADO GRATIS (FREE TIER) ─── */}
+                <div
+                  style={{
+                    background: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)',
+                    border: '1px solid #bbf7d0',
+                    borderRadius: '16px',
+                    padding: '14px 18px',
+                    marginBottom: '18px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '10px',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <div style={{ background: '#16a34a', color: '#fff', borderRadius: '10px', padding: '7px', display: 'flex' }}>
+                        <Clock size={18} />
+                      </div>
+                      <div>
+                        <h4 style={{ margin: 0, fontSize: '0.92rem', fontWeight: 800, color: '#14532d' }}>
+                          Masa Aktif Tautan Kado Gratis (Akun Free)
+                        </h4>
+                        <p style={{ margin: 0, fontSize: '0.74rem', color: '#166534' }}>
+                          Durasi tautan kado digital tetap bisa dibuka oleh penerima sebelum kedaluwarsa
+                        </p>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <input
+                        type="number"
+                        min="1"
+                        max="365"
+                        value={freeLinkDurationDays}
+                        onChange={(e) => setFreeLinkDurationDays(Math.max(1, parseInt(e.target.value) || 1))}
+                        className="vault-input-field"
+                        style={{ width: '85px', textAlign: 'center', fontWeight: 800, background: '#ffffff', borderColor: '#86efac' }}
+                      />
+                      <span style={{ fontSize: '0.85rem', fontWeight: 800, color: '#15803d' }}>Hari</span>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center' }}>
+                    <span style={{ fontSize: '0.72rem', color: '#166534', fontWeight: 600 }}>Preset cepat:</span>
+                    {[1, 2, 3, 5, 7, 14, 30].map((d) => (
+                      <button
+                        key={d}
+                        type="button"
+                        onClick={() => setFreeLinkDurationDays(d)}
+                        style={{
+                          padding: '3px 10px',
+                          borderRadius: '8px',
+                          fontSize: '0.72rem',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          border: freeLinkDurationDays === d ? '1px solid #16a34a' : '1px solid #bbf7d0',
+                          background: freeLinkDurationDays === d ? '#16a34a' : '#ffffff',
+                          color: freeLinkDurationDays === d ? '#ffffff' : '#15803d',
+                          transition: 'all 0.15s',
+                        }}
+                      >
+                        {d} Hari
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="garden-admin-size-card" style={{ background: 'linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%)', border: '1px solid #bbf7d0', borderRadius: '16px', padding: '16px 18px', marginBottom: '18px', display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) auto auto', gap: '14px', alignItems: 'center' }}>
+                  <div>
+                    <h4 style={{ margin: 0, fontSize: '0.92rem', fontWeight: 800, color: '#14532d' }}>Ukuran Kebun Bunga</h4>
+                    <p style={{ margin: '4px 0 0', fontSize: '0.74rem', color: '#166534', lineHeight: 1.5 }}>Standar 5 × 5. Ukuran aktif ini berlaku global; tarif perluasan dapat dipakai admin untuk pencatatan pembayaran manual.</p>
+                  </div>
+                  <label style={{ display: 'grid', gap: '4px', fontSize: '0.7rem', color: '#166534', fontWeight: 700 }}>
+                    Ukuran aktif (global)
+                    <select value={gardenSize} onChange={(e) => setGardenSize(Math.max(5, Math.min(10, Number(e.target.value) || 5)))} className="vault-input-field" style={{ minWidth: '108px', fontWeight: 800 }}>
+                      {[5, 6, 7, 8, 9, 10].map((size) => <option value={size} key={size}>{size} × {size}</option>)}
+                    </select>
+                  </label>
+                  <label style={{ display: 'grid', gap: '4px', fontSize: '0.7rem', color: '#166534', fontWeight: 700 }}>
+                    Tarif perluasan
+                    <input type="number" min="0" step="1000" value={gardenExpansionPrice} onChange={(e) => setGardenExpansionPrice(Math.max(0, Number(e.target.value) || 0))} className="vault-input-field" style={{ width: '140px', fontWeight: 800 }} />
+                  </label>
+                </div>
+
+                {/* Header Daftar Voucher & Tombol Tambah */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                  <div style={{ fontSize: '0.84rem', fontWeight: 800, color: 'var(--text-dark)' }}>
+                    Pilihan Paket &amp; Voucher ({Object.keys(multiTierPricing).length} Tersedia):
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsAddVoucherModalOpen(true)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '5px',
+                      padding: '6px 12px',
+                      borderRadius: '10px',
+                      fontSize: '0.76rem',
+                      fontWeight: 800,
+                      background: 'var(--primary)',
+                      color: '#ffffff',
+                      border: 'none',
+                      cursor: 'pointer',
+                      boxShadow: '0 2px 6px rgba(0,0,0,0.1)',
+                    }}
+                  >
+                    <Plus size={14} />
+                    <span>+ Tambah Voucher Baru</span>
+                  </button>
+                </div>
+
+                {/* Dynamic Tier Tabs */}
+                <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '10px', marginBottom: '16px' }}>
+                  {Object.keys(multiTierPricing).map((key) => {
                     const t = multiTierPricing[key];
                     const isSelected = selectedPricingTier === key;
+                    const finalPr = t.isPromoActive && t.promoPrice < t.basePrice ? t.promoPrice : t.basePrice;
+                    const isCustom = t.isCustom || !['daily', 'weekly', 'lifetime'].includes(key);
+
                     return (
                       <button
                         key={key}
                         type="button"
                         onClick={() => setSelectedPricingTier(key)}
                         style={{
-                          padding: '8px 4px',
-                          borderRadius: '12px',
+                          minWidth: '120px',
+                          padding: '10px 12px',
+                          borderRadius: '14px',
                           border: isSelected ? '2px solid var(--primary)' : '1px solid var(--border)',
                           background: isSelected ? 'var(--bg-blue-light)' : '#ffffff',
                           cursor: 'pointer',
                           display: 'flex',
                           flexDirection: 'column',
                           alignItems: 'center',
-                          gap: '2px',
+                          gap: '3px',
                           transition: 'all 0.2s',
+                          flexShrink: 0,
                         }}
                       >
-                        <div style={{ fontSize: '0.78rem', fontWeight: 700, color: isSelected ? 'var(--primary)' : 'var(--text-dark)', whiteSpace: 'nowrap' }}>
-                          {key === 'daily' ? '⏱️ Harian' : key === 'weekly' ? '📅 Mingguan' : '👑 Sultan'}
+                        <div style={{ fontSize: '0.8rem', fontWeight: 800, color: isSelected ? 'var(--primary)' : 'var(--text-dark)', whiteSpace: 'nowrap' }}>
+                          {key === 'daily' ? '⏱️ Harian' : key === 'weekly' ? '📅 Mingguan' : key === 'lifetime' ? '👑 Sultan' : `🎫 ${t.name || key}`}
                         </div>
-                        <div style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
-                          Rp {(t.isPromoActive ? t.promoPrice : t.basePrice).toLocaleString('id-ID')}
+                        <div style={{ fontSize: '0.74rem', fontWeight: 800, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+                          Rp {finalPr.toLocaleString('id-ID')}
                         </div>
-                        <span style={{ fontSize: '0.64rem', padding: '1px 5px', borderRadius: '4px', background: t.isActive ? '#e0f7ea' : '#fee2e2', color: t.isActive ? '#15803d' : '#b91c1c' }}>
-                          {t.isActive ? 'Aktif' : 'Off'}
-                        </span>
+                        <div style={{ display: 'flex', gap: '4px', marginTop: '2px' }}>
+                          <span style={{ fontSize: '0.62rem', fontWeight: 700, padding: '1px 5px', borderRadius: '4px', background: t.isActive ? '#e0f7ea' : '#fee2e2', color: t.isActive ? '#15803d' : '#b91c1c' }}>
+                            {t.isActive ? 'Aktif' : 'Off'}
+                          </span>
+                          <span style={{ fontSize: '0.62rem', fontWeight: 700, padding: '1px 5px', borderRadius: '4px', background: t.isDisplayed !== false ? '#eff6ff' : '#f3f4f6', color: t.isDisplayed !== false ? '#2563eb' : '#6b7280' }}>
+                            {t.isDisplayed !== false ? 'Tampil' : 'Sembunyi'}
+                          </span>
+                        </div>
                       </button>
                     );
                   })}
                 </div>
 
                 <form onSubmit={handleSavePricing}>
-                  {/* Status Aktif Toggle */}
-                  <div
-                    style={{
-                      marginBottom: '14px',
-                      background: 'var(--bg-subtle)',
-                      padding: '10px 14px',
-                      borderRadius: '12px',
-                      border: '1px solid var(--border)',
-                    }}
-                  >
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', fontSize: '0.88rem', fontWeight: 600 }}>
+                  {/* Nama Voucher Input */}
+                  <div className="vault-input-group" style={{ marginBottom: '14px' }}>
+                    <label className="vault-input-label">Nama Voucher / Paket</label>
+                    <input
+                      type="text"
+                      value={currentTierData.name || ''}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setMultiTierPricing((prev) => ({
+                          ...prev,
+                          [selectedPricingTier]: { ...prev[selectedPricingTier], name: val },
+                        }));
+                      }}
+                      className="vault-input-field"
+                      placeholder="Cth: Paket Harian (24 Jam)"
+                    />
+                  </div>
+
+                  {/* Dua Toggle: Status Aktif & Tampilkan di Modal */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '10px', marginBottom: '14px' }}>
+                    {/* Status Aktif Toggle */}
+                    <div
+                      style={{
+                        background: 'var(--bg-subtle)',
+                        padding: '10px 14px',
+                        borderRadius: '12px',
+                        border: '1px solid var(--border)',
+                      }}
+                    >
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', fontSize: '0.84rem', fontWeight: 700 }}>
+                        <input
+                          type="checkbox"
+                          checked={currentTierData.isActive}
+                          onChange={(e) => {
+                            const val = e.target.checked;
+                            setMultiTierPricing((prev) => ({
+                              ...prev,
+                              [selectedPricingTier]: { ...prev[selectedPricingTier], isActive: val },
+                            }));
+                          }}
+                          style={{ width: '18px', height: '18px', accentColor: 'var(--primary)' }}
+                        />
+                        <span>Izinkan Aktivasi / Jual</span>
+                      </label>
+                      <p style={{ margin: '3px 0 0 28px', fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                        Jika mati, kode tier ini tidak dapat diklaim oleh pengguna.
+                      </p>
+                    </div>
+
+                    {/* Tampilkan di Web Toggle */}
+                    <div
+                      style={{
+                        background: currentTierData.isDisplayed !== false ? '#eff6ff' : 'var(--bg-subtle)',
+                        padding: '10px 14px',
+                        borderRadius: '12px',
+                        border: currentTierData.isDisplayed !== false ? '1px solid #bfdbfe' : '1px solid var(--border)',
+                      }}
+                    >
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', fontSize: '0.84rem', fontWeight: 700, color: currentTierData.isDisplayed !== false ? '#1e40af' : 'var(--text-dark)' }}>
+                        <input
+                          type="checkbox"
+                          checked={currentTierData.isDisplayed !== false}
+                          onChange={(e) => {
+                            const val = e.target.checked;
+                            setMultiTierPricing((prev) => ({
+                              ...prev,
+                              [selectedPricingTier]: { ...prev[selectedPricingTier], isDisplayed: val },
+                            }));
+                          }}
+                          style={{ width: '18px', height: '18px', accentColor: 'var(--primary)' }}
+                        />
+                        <span>Tampilkan di Modal Beli Web</span>
+                      </label>
+                      <p style={{ margin: '3px 0 0 28px', fontSize: '0.7rem', color: currentTierData.isDisplayed !== false ? '#3b82f6' : 'var(--text-muted)' }}>
+                        {currentTierData.isDisplayed !== false ? 'Tiket muncul di modal beli pengunjung' : 'Disembunyikan (hanya via kode khusus / admin)'}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Pengaturan Durasi Studio & Durasi Link Kado */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '10px', marginBottom: '14px' }}>
+                    <div className="vault-input-group">
+                      <label className="vault-input-label">Masa Aktif Akses VIP Studio (Hari)</label>
                       <input
-                        type="checkbox"
-                        checked={currentTierData.isActive}
+                        type="number"
+                        min="0"
+                        value={currentTierData.durationDays}
                         onChange={(e) => {
-                          const val = e.target.checked;
+                          const val = Math.max(0, parseInt(e.target.value) || 0);
                           setMultiTierPricing((prev) => ({
                             ...prev,
-                            [selectedPricingTier]: { ...prev[selectedPricingTier], isActive: val },
+                            [selectedPricingTier]: {
+                              ...prev[selectedPricingTier],
+                              durationDays: val,
+                              durationLabel: val === 0 ? 'Selamanya' : val === 1 ? '24 Jam' : `${val} Hari`,
+                            },
                           }));
                         }}
-                        style={{ width: '18px', height: '18px', accentColor: 'var(--primary)' }}
+                        className="vault-input-field"
+                        placeholder="0 = Selamanya"
                       />
-                      <span>Jual Paket Ini ke Pengunjung Web ({currentTierData.name})</span>
-                    </label>
+                      <span style={{ fontSize: '0.7rem', color: 'var(--text-dim)' }}>
+                        0 = Selamanya (VIP Lifetime). Contoh 1 = 24 Jam, 7 = 7 Hari.
+                      </span>
+                    </div>
+
+                    <div className="vault-input-group">
+                      <label className="vault-input-label">Masa Aktif Tautan Kado Digital (Hari)</label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={currentTierData.linkDurationDays ?? 0}
+                        onChange={(e) => {
+                          const val = Math.max(0, parseInt(e.target.value) || 0);
+                          setMultiTierPricing((prev) => ({
+                            ...prev,
+                            [selectedPricingTier]: {
+                              ...prev[selectedPricingTier],
+                              linkDurationDays: val,
+                            },
+                          }));
+                        }}
+                        className="vault-input-field"
+                        placeholder="0 = Permanen / Tanpa Expired"
+                      />
+                      <span style={{ fontSize: '0.7rem', color: 'var(--text-dim)' }}>
+                        0 atau kosong = Selamanya / Permanen (Tanpa Expired).
+                      </span>
+                    </div>
                   </div>
 
                   {/* Harga Asli / Normal */}
@@ -2229,29 +2656,63 @@ export default function LaysaCleanPortalPage() {
                       }}
                     />
                     <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '4px' }}>
-                      💡 Tip: Tuliskan manfaat yang memikat pembeli seperti durasi aktif, kuota perangkat, ekspor HD, atau akses Kebun Bunga.
+                      💡 Tip: Tuliskan manfaat yang memikat pembeli seperti durasi aktif, kuota perangkat, ekspor HD, atau masa aktif link kado.
                     </div>
                   </div>
 
-                  {/* Special Callout untuk Tier Lifetime */}
-                  {selectedPricingTier === 'lifetime' && (
-                    <div
-                      style={{
-                        background: '#fef3c7',
-                        border: '1px solid #fde68a',
-                        borderRadius: '12px',
-                        padding: '12px 16px',
-                        fontSize: '0.82rem',
-                        color: '#92400e',
-                        marginBottom: '16px',
-                      }}
-                    >
-                      <div style={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <span>👑 Fitur Eksklusif Kebun Bunga Streak 🔥</span>
-                      </div>
-                      <div style={{ marginTop: '3px', opacity: 0.9 }}>
-                        Paket Selamanya ini otomatis memberikan akses ke fitur penyiraman bunga harian ala Api TikTok (solo &amp; undang teman via kode).
-                      </div>
+                  {/* Toggle Akses Kebun Bunga */}
+                  <div
+                    style={{
+                      marginBottom: '16px',
+                      background: currentTierData.gardenAccess ? '#fef3c7' : 'var(--bg-subtle)',
+                      border: currentTierData.gardenAccess ? '1px solid #fde68a' : '1px solid var(--border)',
+                      borderRadius: '12px',
+                      padding: '12px 16px',
+                    }}
+                  >
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', fontSize: '0.86rem', fontWeight: 700, color: currentTierData.gardenAccess ? '#92400e' : 'var(--text-dark)' }}>
+                      <input
+                        type="checkbox"
+                        checked={Boolean(currentTierData.gardenAccess)}
+                        onChange={(e) => {
+                          const val = e.target.checked;
+                          setMultiTierPricing((prev) => ({
+                            ...prev,
+                            [selectedPricingTier]: { ...prev[selectedPricingTier], gardenAccess: val },
+                          }));
+                        }}
+                        style={{ width: '18px', height: '18px', accentColor: '#d97706' }}
+                      />
+                      <span>🌸 Sertakan Akses Fitur Kebun Bunga Harian Streak 🔥</span>
+                    </label>
+                    <p style={{ margin: '3px 0 0 28px', fontSize: '0.72rem', color: currentTierData.gardenAccess ? '#b45309' : 'var(--text-muted)' }}>
+                      Paket ini akan otomatis membuka akses fitur menyiram kebun bunga streak ala TikTok (solo/pasangan).
+                    </p>
+                  </div>
+
+                  {/* Tombol Hapus Voucher Jika Kustom */}
+                  {(currentTierData.isCustom || !['daily', 'weekly', 'lifetime'].includes(selectedPricingTier)) && (
+                    <div style={{ marginBottom: '16px', textAlign: 'right' }}>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteVoucher(selectedPricingTier)}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          padding: '6px 14px',
+                          borderRadius: '10px',
+                          fontSize: '0.78rem',
+                          fontWeight: 700,
+                          background: '#fee2e2',
+                          color: '#b91c1c',
+                          border: '1px solid #fecaca',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        <Trash2 size={13} />
+                        <span>Hapus Voucher "{currentTierData.name || selectedPricingTier}"</span>
+                      </button>
                     </div>
                   )}
 
@@ -2298,11 +2759,12 @@ export default function LaysaCleanPortalPage() {
 
                 <div style={{ padding: '20px' }}>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                    {(['daily', 'weekly', 'lifetime'] as const).map((key) => {
+                    {Object.keys(multiTierPricing).map((key) => {
                       const t = multiTierPricing[key];
                       const isSelected = selectedPricingTier === key;
                       const hasDisc = t.isPromoActive && t.promoPrice < t.basePrice;
                       const finalPr = hasDisc ? t.promoPrice : t.basePrice;
+                      const isDisplayed = t.isDisplayed !== false;
 
                       return (
                         <div
@@ -2315,12 +2777,18 @@ export default function LaysaCleanPortalPage() {
                             padding: '14px 16px',
                             cursor: 'pointer',
                             boxShadow: isSelected ? '0 4px 14px rgba(0,0,0,0.06)' : 'none',
+                            opacity: isDisplayed ? 1 : 0.65,
                             transition: 'all 0.2s',
                           }}
                         >
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                            <div style={{ fontWeight: 700, fontSize: '0.88rem', color: isSelected ? 'var(--primary)' : 'var(--text-dark)' }}>
-                              {key === 'daily' ? '⏱️ Paket Harian (24 Jam)' : key === 'weekly' ? '📅 Paket Mingguan (7 Hari)' : '👑 Paket Selamanya (VIP Sultan)'}
+                            <div style={{ fontWeight: 800, fontSize: '0.88rem', color: isSelected ? 'var(--primary)' : 'var(--text-dark)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <span>{t.name || key}</span>
+                              {!isDisplayed && (
+                                <span style={{ fontSize: '0.64rem', padding: '1px 6px', borderRadius: '4px', background: '#fee2e2', color: '#b91c1c', fontWeight: 700 }}>
+                                  Disembunyikan
+                                </span>
+                              )}
                             </div>
                             <span
                               style={{
@@ -2346,8 +2814,12 @@ export default function LaysaCleanPortalPage() {
                               Rp {finalPr.toLocaleString('id-ID')}
                             </span>
                             <span style={{ fontSize: '0.72rem', color: 'var(--text-dim)' }}>
-                              / {t.durationLabel}
+                              / {t.durationLabel || `${t.durationDays} Hari`}
                             </span>
+                          </div>
+
+                          <div style={{ fontSize: '0.72rem', color: '#0369a1', marginTop: '4px', fontWeight: 600 }}>
+                            🔗 Link Kado Aktif: {t.linkDurationDays && t.linkDurationDays > 0 ? `${t.linkDurationDays} Hari` : 'Selamanya (Permanen)'}
                           </div>
 
                           <ul style={{ margin: '8px 0 0', padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '4px' }}>
@@ -2364,7 +2836,7 @@ export default function LaysaCleanPortalPage() {
                             )}
                           </ul>
 
-                          {key === 'lifetime' && (
+                          {t.gardenAccess && (
                             <div style={{ fontSize: '0.72rem', color: '#b45309', fontWeight: 700, marginTop: '6px', background: '#fef3c7', padding: '3px 8px', borderRadius: '6px' }}>
                               🌸 Buka Fitur Kebun Bunga Streak Harian 🔥
                             </div>
@@ -2373,6 +2845,211 @@ export default function LaysaCleanPortalPage() {
                       );
                     })}
                   </div>
+
+                  {/* ── Modal Tambah Voucher Baru ── */}
+                  {isAddVoucherModalOpen && (
+                    <div
+                      style={{
+                        position: 'fixed',
+                        inset: 0,
+                        background: 'rgba(15, 23, 42, 0.65)',
+                        backdropFilter: 'blur(4px)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        zIndex: 9999,
+                        padding: '16px',
+                      }}
+                      onClick={() => setIsAddVoucherModalOpen(false)}
+                    >
+                      <div
+                        style={{
+                          background: '#ffffff',
+                          borderRadius: '20px',
+                          width: '100%',
+                          maxWidth: '520px',
+                          maxHeight: '90vh',
+                          overflowY: 'auto',
+                          padding: '24px',
+                          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <div style={{ background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)', color: '#fff', borderRadius: '10px', padding: '8px' }}>
+                              <Tag size={18} />
+                            </div>
+                            <div>
+                              <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-dark)' }}>Tambah Voucher / Paket Baru</h3>
+                              <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-muted)' }}>Buat tier kustom dengan durasi dan harga tersendiri</p>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setIsAddVoucherModalOpen(false)}
+                            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: '1.2rem' }}
+                          >
+                            ✕
+                          </button>
+                        </div>
+
+                        <form onSubmit={handleAddVoucher} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                          <div>
+                            <label className="vault-input-label">ID / Kode Unik Paket (Huruf &amp; Angka, tanpa spasi)</label>
+                            <input
+                              type="text"
+                              required
+                              value={newVoucherKey}
+                              onChange={(e) => setNewVoucherKey(e.target.value)}
+                              placeholder="Cth: bulanan, pelajar, promo-lebaran"
+                              className="vault-input-field"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="vault-input-label">Nama Voucher / Paket</label>
+                            <input
+                              type="text"
+                              required
+                              value={newVoucherName}
+                              onChange={(e) => setNewVoucherName(e.target.value)}
+                              placeholder="Cth: Paket Bulanan (30 Hari)"
+                              className="vault-input-field"
+                            />
+                          </div>
+
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                            <div>
+                              <label className="vault-input-label">Durasi Studio VIP (Hari)</label>
+                              <input
+                                type="number"
+                                min="0"
+                                value={newVoucherDurationDays}
+                                onChange={(e) => setNewVoucherDurationDays(parseInt(e.target.value) || 0)}
+                                placeholder="30 (0 = Selamanya)"
+                                className="vault-input-field"
+                              />
+                              <span style={{ fontSize: '0.7rem', color: 'var(--text-dim)' }}>0 = Selamanya</span>
+                            </div>
+
+                            <div>
+                              <label className="vault-input-label">Masa Aktif Kado (Hari)</label>
+                              <input
+                                type="number"
+                                min="0"
+                                value={newVoucherLinkDurationDays}
+                                onChange={(e) => setNewVoucherLinkDurationDays(parseInt(e.target.value) || 0)}
+                                placeholder="30 (0 = Permanen)"
+                                className="vault-input-field"
+                              />
+                              <span style={{ fontSize: '0.7rem', color: 'var(--text-dim)' }}>0 = Tanpa Kedaluwarsa</span>
+                            </div>
+                          </div>
+
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                            <div>
+                              <label className="vault-input-label">Harga Asli (Rp)</label>
+                              <input
+                                type="number"
+                                step="1000"
+                                value={newVoucherBasePrice}
+                                onChange={(e) => setNewVoucherBasePrice(parseInt(e.target.value) || 0)}
+                                className="vault-input-field"
+                              />
+                            </div>
+                            <div>
+                              <label className="vault-input-label">Harga Promo (Rp)</label>
+                              <input
+                                type="number"
+                                step="1000"
+                                value={newVoucherPromoPrice}
+                                onChange={(e) => setNewVoucherPromoPrice(parseInt(e.target.value) || 0)}
+                                className="vault-input-field"
+                              />
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="vault-input-label">Teks Badge Promo</label>
+                            <input
+                              type="text"
+                              value={newVoucherBadge}
+                              onChange={(e) => setNewVoucherBadge(e.target.value)}
+                              placeholder="Cth: Hemat 45% atau Spesial Ramadhan"
+                              className="vault-input-field"
+                            />
+                          </div>
+
+                          <div
+                            style={{
+                              background: 'var(--bg-subtle)',
+                              padding: '10px 14px',
+                              borderRadius: '12px',
+                              border: '1px solid var(--border)',
+                            }}
+                          >
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 }}>
+                              <input
+                                type="checkbox"
+                                checked={newVoucherIsDisplayed}
+                                onChange={(e) => setNewVoucherIsDisplayed(e.target.checked)}
+                                style={{ width: '18px', height: '18px', accentColor: 'var(--primary)' }}
+                              />
+                              <span>Tampilkan Tiket Voucher Ini di Modal Beli Pengunjung (Web)</span>
+                            </label>
+                            <p style={{ margin: '4px 0 0 28px', fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                              Jika tidak dicentang, voucher tetap aktif tetapi disembunyikan (hanya bisa dibeli/diaktivasi via kode khusus dari admin).
+                            </p>
+                          </div>
+
+                          <div>
+                            <label className="vault-input-label">Poin Manfaat (1 Baris per Poin)</label>
+                            <textarea
+                              rows={4}
+                              value={newVoucherFeatures}
+                              onChange={(e) => setNewVoucherFeatures(e.target.value)}
+                              className="vault-input-field"
+                              style={{ fontSize: '0.82rem', fontFamily: 'inherit' }}
+                            />
+                          </div>
+
+                          <div style={{ display: 'flex', gap: '10px', marginTop: '6px' }}>
+                            <button
+                              type="button"
+                              onClick={() => setIsAddVoucherModalOpen(false)}
+                              style={{
+                                flex: 1,
+                                padding: '10px',
+                                borderRadius: '10px',
+                                border: '1px solid var(--border)',
+                                background: '#ffffff',
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                              }}
+                            >
+                              Batal
+                            </button>
+                            <button
+                              type="submit"
+                              style={{
+                                flex: 2,
+                                padding: '10px',
+                                borderRadius: '10px',
+                                border: 'none',
+                                background: 'var(--primary)',
+                                color: '#ffffff',
+                                fontWeight: 700,
+                                cursor: 'pointer',
+                              }}
+                            >
+                              Simpan &amp; Tambahkan
+                            </button>
+                          </div>
+                        </form>
+                      </div>
+                    </div>
+                  )}
 
                   {/* ── Generator Teks Promosi & Broadcast Penjualan ── */}
                   <div
@@ -2500,6 +3177,80 @@ export default function LaysaCleanPortalPage() {
           {/* ═══════════════════════════════════════════
               TAB 3: STATUS DATABASE
               ═══════════════════════════════════════════ */}
+          {activeTab === 'garden' && (
+            <section className="garden-admin-page">
+              <div className="garden-admin-hero">
+                <div className="garden-admin-hero-mark"><Trees size={22} /></div>
+                <div>
+                  <span className="garden-admin-eyebrow">KONTROL KEBUN 3D</span>
+                  <h2>Pengaturan Kebun</h2>
+                  <p>Atur bidang hijau, petak bunga, dan catatan tarif perluasan dari satu tempat.</p>
+                </div>
+                <div className="garden-admin-live-pill"><span /> Pengaturan global</div>
+              </div>
+
+              <div className="garden-admin-summary-grid">
+                <article className="garden-admin-summary-card">
+                  <span>Bidang hijau</span>
+                  <strong>{gardenFieldSize} × {gardenFieldSize}</strong>
+                  <small>Petak untuk peta kota dan area dekorasi</small>
+                </article>
+                <article className="garden-admin-summary-card flower">
+                  <span>Peta bunga</span>
+                  <strong>{gardenSize} × {gardenSize}</strong>
+                  <small>Grid tanam bunga terpisah dari bidang kota</small>
+                </article>
+                <article className="garden-admin-summary-card price">
+                  <span>Tarif perluasan</span>
+                  <strong>Rp {gardenExpansionPrice.toLocaleString('id-ID')}</strong>
+                  <small>Nilai referensi admin; tidak menagih otomatis</small>
+                </article>
+              </div>
+
+              <form className="garden-admin-settings-card" onSubmit={handleSaveGardenSettings}>
+                <div className="garden-admin-card-heading">
+                  <div>
+                    <h3>Ukuran &amp; perluasan</h3>
+                    <p>Ukuran bidang baru diterapkan pada scene kebun setelah halaman dimuat ulang.</p>
+                  </div>
+                  <span className="garden-admin-default-chip">Normal · 8 × 8</span>
+                </div>
+
+                <div className="garden-admin-controls-grid">
+                  <label className="garden-admin-field">
+                    <span>Ukuran bidang hijau</span>
+                    <select value={gardenFieldSize} onChange={(event) => setGardenFieldSize(Math.max(8, Math.min(16, Number(event.target.value) || 8)))}>
+                      {Array.from({ length: 9 }, (_, index) => index + 8).map((size) => (
+                        <option key={size} value={size}>{size} × {size} petak</option>
+                      ))}
+                    </select>
+                    <small>8 × 8 adalah ukuran normal. Tata kota menempati bidang hijau ini.</small>
+                  </label>
+                  <label className="garden-admin-field">
+                    <span>Ukuran peta bunga</span>
+                    <select value={gardenSize} onChange={(event) => setGardenSize(Math.max(5, Math.min(10, Number(event.target.value) || 5)))}>
+                      {[5, 6, 7, 8, 9, 10].map((size) => <option key={size} value={size}>{size} × {size} petak</option>)}
+                    </select>
+                    <small>Default bunga tetap 5 × 5; tanaman yang sudah ada akan dipertahankan jika masih muat.</small>
+                  </label>
+                  <label className="garden-admin-field">
+                    <span>Tarif perluasan (catatan)</span>
+                    <div className="garden-admin-currency-input"><span>Rp</span><input type="number" min="0" step="1000" value={gardenExpansionPrice} onChange={(event) => setGardenExpansionPrice(Math.max(0, Number(event.target.value) || 0))} /></div>
+                    <small>Belum ada pembayaran otomatis; nilai ini hanya disimpan sebagai konfigurasi admin.</small>
+                  </label>
+                </div>
+
+                {gardenSettingsMsg && <p className={`garden-admin-feedback ${gardenSettingsMsg.type}`} role="status">{gardenSettingsMsg.text}</p>}
+                <div className="garden-admin-save-row">
+                  <span>Disimpan melalui pengaturan server; Supabase memakai kolom JSON yang sudah ada.</span>
+                  <button type="submit" disabled={isSavingGardenSettings}>
+                    <Save size={16} /> {isSavingGardenSettings ? 'Menyimpan…' : 'Simpan pengaturan kebun'}
+                  </button>
+                </div>
+              </form>
+            </section>
+          )}
+
           {activeTab === 'diagnostics' && (
             <div className="adm-form-card">
               <div className="adm-form-card-header">

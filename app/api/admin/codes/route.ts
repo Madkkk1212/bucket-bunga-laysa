@@ -180,11 +180,16 @@ export async function POST(req: Request) {
     const notes = (body?.notes || '').trim();
     const rawTier = body?.tier;
     const tier: 'daily' | 'weekly' | 'lifetime' = (rawTier === 'daily' || rawTier === 'weekly') ? rawTier : 'lifetime';
-    const durationDays = tier === 'daily' ? 1 : tier === 'weekly' ? 7 : 0;
+    let durationDays = tier === 'daily' ? 1 : tier === 'weekly' ? 7 : 0;
+    if (typeof body?.duration_days === 'number' && body.duration_days >= 0) {
+      durationDays = body.duration_days;
+    } else if (typeof body?.custom_days === 'number' && body.custom_days >= 0) {
+      durationDays = body.custom_days;
+    }
     const hasGardenAccess = tier === 'lifetime';
 
     if (!rawCode || !rawCode.trim()) {
-      const prefix = tier === 'daily' ? 'DAY' : tier === 'weekly' ? 'WEEK' : 'VIP';
+      const prefix = tier === 'daily' ? 'DAY' : tier === 'weekly' ? 'WEEK' : durationDays > 0 ? 'CUST' : 'VIP';
       rawCode = generateRandomCode(prefix);
     }
 
@@ -201,6 +206,10 @@ export async function POST(req: Request) {
         notes: notes || null,
         tier,
         duration_days: durationDays,
+        link_duration_days: durationDays > 0 ? durationDays : null,
+        max_photos: 6,
+        can_use_youtube: true,
+        allowed_templates: ['klasik', 'taman-mekar', 'kupu-kupu-harapan', 'pesta-bintang', 'pernikahan', 'cerita-kita', 'film-kenangan', 'album-surat'],
         has_garden_access: hasGardenAccess,
         expires_at: null,
         created_at: new Date().toISOString(),

@@ -21,14 +21,31 @@ export async function GET(
     if (isSupabaseConfigured && dbClient) {
       const { data, error } = await dbClient
         .from('digital_gifts')
-        .select('id, sender_name, recipient_name, message, music_track, design_data, views_count, created_at')
+        .select('id, sender_name, recipient_name, message, music_track, design_data, config, expires_at, scheduled_open_at, is_reported, views_count, created_at')
         .eq('id', id)
         .maybeSingle();
 
       if (error) {
         console.error('[Supabase Fetch Gift Error]:', error.message);
       } else if (data) {
-        // Increment view count asynchronously via service role
+        // Cek apakah kado dilaporkan
+        if (data.is_reported) {
+          return NextResponse.json({
+            success: false,
+            message: 'Hadiah ini sedang dalam peninjauan.',
+          }, { status: 403 });
+        }
+
+        // Cek apakah kado sudah kedaluwarsa
+        if (data.expires_at && new Date(data.expires_at) < new Date()) {
+          return NextResponse.json({
+            success: false,
+            message: 'Link kado ini sudah tidak aktif.',
+            expired: true,
+          }, { status: 410 });
+        }
+
+        // Increment view count asinkron
         dbClient
           .from('digital_gifts')
           .update({ views_count: (data.views_count || 0) + 1 })
@@ -44,6 +61,9 @@ export async function GET(
             message: data.message,
             musicTrack: data.music_track,
             designData: data.design_data,
+            config: data.config ?? null,
+            expiresAt: data.expires_at ?? null,
+            scheduledOpenAt: data.scheduled_open_at ?? null,
             createdAt: data.created_at,
             views: (data.views_count || 0) + 1,
           },
@@ -51,16 +71,13 @@ export async function GET(
       }
     }
 
-    // Fallback to local memory store
+    // Fallback memory store (tidak ada expiry di sini)
     const { giftsMemoryStore } = await import('@/lib/giftsStorage');
     const localGift = giftsMemoryStore.get(id);
 
     if (localGift) {
       localGift.views = (localGift.views || 0) + 1;
-      return NextResponse.json({
-        success: true,
-        gift: localGift,
-      });
+      return NextResponse.json({ success: true, gift: localGift });
     }
 
     return NextResponse.json({

@@ -714,7 +714,7 @@ export default function MobileStudioView({ onBack }: MobileStudioViewProps) {
           </div>
         </div>
 
-        {/* ─── QUICK LAUNCHER TABS (4 tools) ─── */}
+        {/* ─── QUICK LAUNCHER TABS (5 steps) ─── */}
         <div className="ms-studio-launchers">
           <button
             type="button"
@@ -758,6 +758,17 @@ export default function MobileStudioView({ onBack }: MobileStudioViewProps) {
               <Palette size={19} />
             </div>
             <span className="ms-launcher-label">{t('step_4_short')}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => handleStepClick(5)}
+            className={`ms-launcher-btn ${mobileStep === 5 ? 'ms-launcher-btn-active' : ''}`}
+          >
+            <div className="ms-launcher-icon-box" style={{ background: '#ECFDF5', color: '#059669' }}>
+              <Share2 size={19} />
+            </div>
+            <span className="ms-launcher-label">{t('step_5_short')}</span>
           </button>
         </div>
 

@@ -208,6 +208,71 @@ export async function POST(req: Request) {
     const supabase = getAdminClient() || getSupabase();
     const localGardens = readLocalGardens();
 
+    // A local-only garden can predate Supabase or have been created while the
+    // database was unavailable. Promote that exact garden before syncing its scene.
+    if (action === 'sync-local') {
+      const code = (body.gardenCode || '').trim().toUpperCase();
+      if (!code) return NextResponse.json({ success: false, message: 'Kode kebun tidak valid.' }, { status: 400 });
+      if (!supabase) return NextResponse.json({ success: false, message: 'Supabase belum dikonfigurasi; kebun masih tersimpan lokal.' }, { status: 503 });
+
+      const localGarden = localGardens.find((garden) =>
+        garden.gardenCode?.toUpperCase() === code &&
+        (garden.ownerDeviceId === deviceId || garden.partnerDeviceId === deviceId),
+      );
+
+      const { data: existing, error: lookupError } = await supabase
+        .from('flower_gardens')
+        .select('garden_code, owner_device_id, partner_device_id')
+        .eq('garden_code', code)
+        .maybeSingle();
+      if (lookupError) {
+        return NextResponse.json({ success: false, message: 'Gagal memeriksa kebun di Supabase: ' + lookupError.message }, { status: 503 });
+      }
+      if (existing) {
+        const isLinked = existing.owner_device_id === deviceId || existing.partner_device_id === deviceId;
+        if (isLinked) return NextResponse.json({ success: true, gardenCode: code, storage: 'supabase', alreadySynced: true });
+        const sameGarden = localGarden && existing.owner_device_id === localGarden.ownerDeviceId;
+        if (!sameGarden || (existing.partner_device_id && existing.partner_device_id !== localGarden.partnerDeviceId)) {
+          return NextResponse.json({ success: false, message: 'Kode kebun ini sudah dipakai oleh kebun lain.' }, { status: 409 });
+        }
+        const { error: partnerSyncError } = await supabase.from('flower_gardens').update({
+          partner_name: localGarden.partnerName || null,
+          partner_device_id: localGarden.partnerDeviceId || null,
+          updated_at: new Date().toISOString(),
+        }).eq('garden_code', code).eq('owner_device_id', localGarden.ownerDeviceId);
+        if (partnerSyncError) {
+          return NextResponse.json({ success: false, message: 'Kebun ditemukan, tetapi tautan perangkat belum dapat diperbarui di Supabase.' }, { status: 503 });
+        }
+        return NextResponse.json({ success: true, gardenCode: code, storage: 'supabase', migrated: true });
+      }
+
+      if (!localGarden) {
+        return NextResponse.json({ success: false, message: 'Data kebun lokal untuk perangkat ini tidak ditemukan.' }, { status: 404 });
+      }
+
+      const { error: insertError } = await supabase.from('flower_gardens').insert({
+        garden_code: localGarden.gardenCode,
+        garden_name: localGarden.gardenName,
+        flower_type: localGarden.flowerType,
+        growth_stage: localGarden.growthStage,
+        streak_count: localGarden.streakCount,
+        owner_name: localGarden.ownerName,
+        owner_device_id: localGarden.ownerDeviceId,
+        partner_name: localGarden.partnerName || null,
+        partner_device_id: localGarden.partnerDeviceId || null,
+        last_watered_at: localGarden.lastWateredAt,
+        last_watered_by: localGarden.lastWateredBy,
+        watered_today: localGarden.wateredToday,
+        daily_notes: localGarden.dailyNotes || [],
+        created_at: localGarden.createdAt,
+        updated_at: new Date().toISOString(),
+      });
+      if (insertError) {
+        return NextResponse.json({ success: false, message: 'Kebun lokal belum berhasil disalin ke Supabase: ' + insertError.message }, { status: 503 });
+      }
+      return NextResponse.json({ success: true, gardenCode: code, storage: 'supabase', migrated: true });
+    }
+
     // ── 1. BUAT KEBUN BARU (Solo / Host) ──
     if (action === 'create') {
       const ownerName = (body.ownerName || 'Pencinta Bunga').trim();
@@ -215,6 +280,8 @@ export async function POST(req: Request) {
       const flowerType = (body.flowerType || 'rose_red').trim();
       const gardenCode = generateGardenCode();
       const nowISO = new Date().toISOString();
+      let storage: 'supabase' | 'local' = 'local';
+      let storageWarning: string | null = null;
 
       const newGarden: FlowerGarden = {
         id: `g_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
@@ -266,10 +333,16 @@ export async function POST(req: Request) {
 
           if (!error && data) {
             newGarden.id = data.id;
+            storage = 'supabase';
+          } else if (error) {
+            storageWarning = 'Kebun dibuat, tetapi belum tersimpan di Supabase: ' + error.message;
           }
         } catch (sbErr) {
           console.warn('[Garden Supabase Create Warning]:', sbErr);
+          storageWarning = 'Kebun dibuat, tetapi gagal tersimpan ke Supabase. Periksa koneksi lalu coba sinkronkan kembali.';
         }
+      } else {
+        storageWarning = 'Kebun ini hanya tersimpan di perangkat/server lokal karena Supabase belum dikonfigurasi.';
       }
 
       // Simpan ke file lokal
@@ -280,6 +353,8 @@ export async function POST(req: Request) {
         success: true,
         message: 'Kebun bunga berhasil ditanam!',
         garden: newGarden,
+        storage,
+        warning: storageWarning,
       });
     }
 

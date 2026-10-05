@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import * as THREE from 'three';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { GardenTile } from './IsometricGardenView';
 import { 
   RotateCw, 
@@ -20,11 +21,14 @@ interface ThreeGardenCanvasProps {
   onTileClick: (tile: GardenTile) => void;
   onTileHover?: (tileId: number | null) => void;
   isWaterDragging?: boolean;
+  decorations?: Array<{ id: string; ornamentKey: string; name: string; x: number; y: number; scale?: number; rotation?: number }>;
+  onDecorationClick?: (decoration: { id: string; ornamentKey: string; name: string; x: number; y: number; scale?: number; rotation?: number }) => void;
+  onDecorationMove?: (id: string, x: number, y: number) => void;
 }
 
 // Spacing between 5x5 tiles in Three.js world units
-const GRID_SPACING = 2.15;
-const TILE_Y = 0.24;
+const GRID_SPACING = 1.92;
+const TILE_Y = 0.28;
 
 // Safe cross-browser rounded rectangle
 function safeRoundRect(
@@ -55,7 +59,10 @@ export default function ThreeGardenCanvas({
   wateredTileAnimations,
   onTileClick,
   onTileHover,
-  isWaterDragging = false
+  isWaterDragging = false,
+  decorations = [],
+  onDecorationClick,
+  onDecorationMove,
 }: ThreeGardenCanvasProps) {
   const mountRef = useRef<HTMLDivElement>(null);
   
@@ -72,6 +79,10 @@ export default function ThreeGardenCanvas({
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const islandGroupRef = useRef<THREE.Group | null>(null);
   const tilesGroupRef = useRef<THREE.Group | null>(null);
+  const decorationsGroupRef = useRef<THREE.Group | null>(null);
+  const decorationRootsRef = useRef<Map<string, THREE.Group>>(new Map());
+  const activeDecorationDragRef = useRef<{ id: string; moved: boolean; startX: number; startZ: number } | null>(null);
+  const cameraFitRadiusRef = useRef(18);
   const tileMeshesMapRef = useRef<Map<number, THREE.Mesh>>(new Map());
   const tileSpritesMapRef = useRef<Map<number, THREE.Sprite>>(new Map());
   const textureCacheRef = useRef<Map<string, THREE.Texture>>(new Map());
@@ -370,6 +381,11 @@ export default function ThreeGardenCanvas({
       ctx.restore();
     }
 
+    // Keep growth badges in the inspector only; the garden itself stays uncluttered.
+    if (stage === 1) ctx.clearRect(44, 55, 168, 50);
+    else if (stage === 2) ctx.clearRect(44, 25, 168, 50);
+    else ctx.clearRect(20, 8, 216, 50);
+
     const texture = new THREE.CanvasTexture(canvas);
     texture.colorSpace = THREE.SRGBColorSpace;
     texture.minFilter = THREE.LinearFilter;
@@ -385,29 +401,29 @@ export default function ThreeGardenCanvas({
     const container = mountRef.current;
     if (!container) return;
 
-    // Guaranteed minimum viewport dimensions
-    const width = Math.max(container.clientWidth || 800, 400);
-    const height = Math.max(container.clientHeight || 540, 460);
+    const width = Math.max(container.clientWidth || 800, 1);
+    const height = Math.max(container.clientHeight || 540, 1);
 
     // 1. Scene
     const scene = new THREE.Scene();
+    scene.background = new THREE.Color('#f5f3ec');
     sceneRef.current = scene;
 
     // 2. Camera (Perspective)
     const aspect = width / height;
-    const camera = new THREE.PerspectiveCamera(40, aspect, 0.5, 100);
+    const camera = new THREE.PerspectiveCamera(36, aspect, 0.5, 100);
     cameraRef.current = camera;
 
     // 3. Renderer (High DPI, tone mapped)
     const renderer = new THREE.WebGLRenderer({
       antialias: true,
-      alpha: true,
+      alpha: false,
       powerPreference: 'high-performance'
     });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.setSize(width, height);
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.05;
+    renderer.toneMappingExposure = 1.12;
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
@@ -419,24 +435,24 @@ export default function ThreeGardenCanvas({
     rendererRef.current = renderer;
 
     // 4. Cinematic Pastel Lighting
-    const ambientLight = new THREE.AmbientLight(0xffffff, 1.1);
+    const ambientLight = new THREE.AmbientLight(0xffffff, 1.45);
     scene.add(ambientLight);
 
-    const hemisphereLight = new THREE.HemisphereLight(0xbae6fd, 0xdcfce7, 0.65);
+    const hemisphereLight = new THREE.HemisphereLight(0xe0f2fe, 0x53793a, 0.95);
     scene.add(hemisphereLight);
 
     // Warm Sun Directional Light
-    const sunLight = new THREE.DirectionalLight(0xfff7ed, 1.4);
-    sunLight.position.set(14, 22, 14);
+    const sunLight = new THREE.DirectionalLight(0xfff7e8, 2.0);
+    sunLight.position.set(-8, 18, 10);
     sunLight.castShadow = true;
-    sunLight.shadow.mapSize.width = 1024;
-    sunLight.shadow.mapSize.height = 1024;
+    sunLight.shadow.mapSize.width = 1536;
+    sunLight.shadow.mapSize.height = 1536;
     sunLight.shadow.bias = -0.001;
     scene.add(sunLight);
 
     // Subtle Fill Light from opposite side
     const fillLight = new THREE.DirectionalLight(0xe0e7ff, 0.45);
-    fillLight.position.set(-14, 12, -14);
+    fillLight.position.set(10, 10, -12);
     scene.add(fillLight);
 
     // ── 5. FLOATING DIORAMA ISLAND ASSEMBLY ──
@@ -444,62 +460,219 @@ export default function ThreeGardenCanvas({
     islandGroupRef.current = islandGroup;
     scene.add(islandGroup);
 
-    // A. Top Lush Green Grass Surface (Cylinder)
-    const grassGeo = new THREE.CylinderGeometry(7.0, 7.0, 0.48, 54);
-    const grassMat = new THREE.MeshStandardMaterial({
-      color: 0x68bf2b,
-      roughness: 0.65,
-      metalness: 0.05
-    });
-    const grassMesh = new THREE.Mesh(grassGeo, grassMat);
-    grassMesh.position.y = 0;
-    grassMesh.receiveShadow = true;
-    islandGroup.add(grassMesh);
+    const decorationsGroup = new THREE.Group();
+    decorationsGroupRef.current = decorationsGroup;
+    islandGroup.add(decorationsGroup);
 
-    // B. Grass Rim Accent Ring
-    const rimGeo = new THREE.TorusGeometry(7.02, 0.08, 16, 64);
-    const rimMat = new THREE.MeshStandardMaterial({
-      color: 0x8be045,
-      roughness: 0.5
-    });
-    const rimMesh = new THREE.Mesh(rimGeo, rimMat);
-    rimMesh.rotation.x = Math.PI / 2;
-    rimMesh.position.y = 0.24;
-    islandGroup.add(rimMesh);
+    // A single square slab closes every side and keeps the soil connected through a full orbit.
+    const dirtBody = new THREE.Mesh(
+      new RoundedBoxGeometry(11, 1.2, 11, 5, 0.22),
+      new THREE.MeshStandardMaterial({ color: 0x62401f, roughness: 0.96 })
+    );
+    dirtBody.position.y = -0.52;
+    dirtBody.castShadow = true;
+    dirtBody.receiveShadow = true;
+    islandGroup.add(dirtBody);
 
-    // C. Underground Tiered Brown Dirt Cliff (3D Depth)
-    const cliffGeo = new THREE.CylinderGeometry(6.8, 5.0, 2.5, 54);
-    const cliffMat = new THREE.MeshStandardMaterial({
-      color: 0x543116,
-      roughness: 0.9,
-      metalness: 0.02
-    });
-    const cliffMesh = new THREE.Mesh(cliffGeo, cliffMat);
-    cliffMesh.position.y = -1.45;
-    cliffMesh.castShadow = true;
-    cliffMesh.receiveShadow = true;
-    islandGroup.add(cliffMesh);
+    const grassCap = new THREE.Mesh(
+      new RoundedBoxGeometry(10.96, 0.24, 10.96, 5, 0.16),
+      new THREE.MeshStandardMaterial({ color: 0x75c83f, roughness: 0.9 })
+    );
+    grassCap.position.y = 0.13;
+    grassCap.receiveShadow = true;
+    islandGroup.add(grassCap);
 
-    // D. Rocky Bottom Tip
-    const rockGeo = new THREE.CylinderGeometry(5.0, 3.8, 1.1, 48);
-    const rockMat = new THREE.MeshStandardMaterial({
-      color: 0x3d210b,
-      roughness: 0.95
-    });
-    const rockMesh = new THREE.Mesh(rockGeo, rockMat);
-    rockMesh.position.y = -3.05;
-    islandGroup.add(rockMesh);
+    const grassRim = new THREE.Mesh(
+      new RoundedBoxGeometry(10.99, 0.07, 10.99, 5, 0.16),
+      new THREE.MeshStandardMaterial({ color: 0xa4e46b, roughness: 0.75 })
+    );
+    grassRim.position.y = 0.255;
+    islandGroup.add(grassRim);
 
-    // E. Floating Clean White Pedestal
-    const pedestalGeo = new THREE.CylinderGeometry(4.8, 4.4, 0.35, 48);
-    const pedestalMat = new THREE.MeshStandardMaterial({
-      color: 0xf8fafc,
-      roughness: 0.4
+    const soilPebbles = new THREE.InstancedMesh(
+      new THREE.DodecahedronGeometry(0.16, 0),
+      new THREE.MeshStandardMaterial({ roughness: 0.98, vertexColors: true }),
+      240
+    );
+    const pebbleDummy = new THREE.Object3D();
+    let pebbleIndex = 0;
+    for (let along = -5.05; along <= 5.05; along += 0.42) {
+      for (const height of [-0.18, -0.63]) {
+        for (const edge of [-1, 1]) {
+          pebbleDummy.position.set(along, height, edge * 5.49);
+          pebbleDummy.scale.set(0.78 + Math.random() * 0.55, 0.65 + Math.random() * 0.45, 0.55 + Math.random() * 0.35);
+          pebbleDummy.rotation.set(Math.random() * 0.4, Math.random() * Math.PI, Math.random() * 0.4);
+          pebbleDummy.updateMatrix();
+          soilPebbles.setMatrixAt(pebbleIndex, pebbleDummy.matrix);
+          soilPebbles.setColorAt(pebbleIndex, new THREE.Color([0x80542d, 0x714622, 0x94663b, 0x5f3b20][pebbleIndex % 4]));
+          pebbleIndex++;
+          pebbleDummy.position.set(edge * 5.49, height, along);
+          pebbleDummy.updateMatrix();
+          soilPebbles.setMatrixAt(pebbleIndex, pebbleDummy.matrix);
+          soilPebbles.setColorAt(pebbleIndex, new THREE.Color([0x80542d, 0x714622, 0x94663b, 0x5f3b20][pebbleIndex % 4]));
+          pebbleIndex++;
+        }
+      }
+    }
+    soilPebbles.count = Math.min(pebbleIndex, 240);
+    soilPebbles.instanceMatrix.needsUpdate = true;
+    if (soilPebbles.instanceColor) soilPebbles.instanceColor.needsUpdate = true;
+    islandGroup.add(soilPebbles);
+
+    // A tightly overlapping carpet of low foliage covers the entire top surface.
+    const random = (() => {
+      let seed = 48271;
+      return () => {
+        seed = (seed * 48271) % 2147483647;
+        return (seed - 1) / 2147483646;
+      };
+    })();
+    const inRoundedTop = (x: number, z: number) => !(Math.abs(x) > 5.05 && Math.abs(z) > 5.05);
+    const coverGeometry = new THREE.DodecahedronGeometry(0.24, 0);
+    const groundCover = new THREE.InstancedMesh(
+      coverGeometry,
+      new THREE.MeshStandardMaterial({ roughness: 0.86, vertexColors: true }),
+      1700
+    );
+    const coverDummy = new THREE.Object3D();
+    let coverIndex = 0;
+    for (let x = -5.08; x <= 5.08 && coverIndex < 1700; x += 0.26) {
+      for (let z = -5.08; z <= 5.08 && coverIndex < 1700; z += 0.26) {
+        const px = x + (random() - 0.5) * 0.07;
+        const pz = z + (random() - 0.5) * 0.07;
+        if (!inRoundedTop(px, pz)) continue;
+        coverDummy.position.set(px, TILE_Y - 0.055, pz);
+        coverDummy.rotation.set((random() - 0.5) * 0.16, random() * Math.PI, (random() - 0.5) * 0.16);
+        coverDummy.scale.set(0.9 + random() * 0.4, 0.48 + random() * 0.22, 0.9 + random() * 0.4);
+        coverDummy.updateMatrix();
+        groundCover.setMatrixAt(coverIndex, coverDummy.matrix);
+        groundCover.setColorAt(coverIndex, new THREE.Color([0x4f9a35, 0x5eaa38, 0x6bbd3c, 0x3f8734, 0x79c943][Math.floor(random() * 5)]));
+        coverIndex++;
+      }
+    }
+    groundCover.count = coverIndex;
+    groundCover.instanceMatrix.needsUpdate = true;
+    if (groundCover.instanceColor) groundCover.instanceColor.needsUpdate = true;
+    groundCover.castShadow = true;
+    groundCover.receiveShadow = true;
+    islandGroup.add(groundCover);
+
+    // Short wildflowers fill the spaces between the user's plantable positions.
+    const fillerFlowerLocations: Array<{ x: number; z: number; color: number }> = [];
+    for (let x = -4.8; x <= 4.8; x += 0.42) {
+      for (let z = -4.8; z <= 4.8; z += 0.42) {
+        const px = x + (random() - 0.5) * 0.18;
+        const pz = z + (random() - 0.5) * 0.18;
+        if (!inRoundedTop(px, pz) || random() > 0.38) continue;
+        let nearPlant = false;
+        for (let row = -2; row <= 2; row++) {
+          for (let col = -2; col <= 2; col++) {
+            if (Math.hypot(px - col * GRID_SPACING, pz - row * GRID_SPACING) < 0.58) nearPlant = true;
+          }
+        }
+        if (!nearPlant) fillerFlowerLocations.push({ x: px, z: pz, color: [0xb789e8, 0xe79bc5, 0xf1d67d, 0xf3e4fa][Math.floor(random() * 4)] });
+      }
+    }
+    const stemGeometry = new THREE.CylinderGeometry(0.014, 0.025, 0.45, 5);
+    const stems = new THREE.InstancedMesh(stemGeometry, new THREE.MeshStandardMaterial({ color: 0x377d3b, roughness: 0.8 }), fillerFlowerLocations.length);
+    const petalGeometry = new THREE.SphereGeometry(0.09, 7, 5);
+    const petals = new THREE.InstancedMesh(petalGeometry, new THREE.MeshStandardMaterial({ roughness: 0.72, vertexColors: true }), fillerFlowerLocations.length * 5);
+    const flowerCenters = new THREE.InstancedMesh(new THREE.SphereGeometry(0.045, 7, 5), new THREE.MeshStandardMaterial({ color: 0xffe891, roughness: 0.65 }), fillerFlowerLocations.length);
+    const flowerDummy = new THREE.Object3D();
+    fillerFlowerLocations.forEach((flower, index) => {
+      const bloomY = TILE_Y + 0.36 + random() * 0.08;
+      flowerDummy.position.set(flower.x, TILE_Y + 0.16, flower.z);
+      flowerDummy.rotation.set((random() - 0.5) * 0.18, 0, (random() - 0.5) * 0.18);
+      flowerDummy.scale.setScalar(1);
+      flowerDummy.updateMatrix();
+      stems.setMatrixAt(index, flowerDummy.matrix);
+      const petalColor = new THREE.Color(flower.color);
+      for (let petal = 0; petal < 5; petal++) {
+        const angle = (petal / 5) * Math.PI * 2;
+        flowerDummy.position.set(flower.x + Math.cos(angle) * 0.075, bloomY, flower.z + Math.sin(angle) * 0.075);
+        flowerDummy.scale.set(0.76, 0.6, 0.78);
+        flowerDummy.rotation.set(0, -angle, 0.12);
+        flowerDummy.updateMatrix();
+        petals.setMatrixAt(index * 5 + petal, flowerDummy.matrix);
+        petals.setColorAt(index * 5 + petal, petalColor);
+      }
+      flowerDummy.position.set(flower.x, bloomY + 0.012, flower.z);
+      flowerDummy.scale.setScalar(0.7);
+      flowerDummy.rotation.set(0, 0, 0);
+      flowerDummy.updateMatrix();
+      flowerCenters.setMatrixAt(index, flowerDummy.matrix);
     });
-    const pedestalMesh = new THREE.Mesh(pedestalGeo, pedestalMat);
-    pedestalMesh.position.y = -3.75;
-    pedestalMesh.castShadow = true;
-    islandGroup.add(pedestalMesh);
+    stems.instanceMatrix.needsUpdate = true;
+    petals.instanceMatrix.needsUpdate = true;
+    flowerCenters.instanceMatrix.needsUpdate = true;
+    if (petals.instanceColor) petals.instanceColor.needsUpdate = true;
+    islandGroup.add(stems, petals, flowerCenters);
+
+    // Compact, branching crowns form a full perimeter so the box remains lush from every side.
+    const treePoints: Array<[number, number]> = [
+      [-4.05, -4.0], [-1.55, -4.1], [1.55, -4.1], [4.05, -4.0],
+      [-4.12, -1.55], [4.12, -1.55], [-4.12, 1.55], [4.12, 1.55],
+      [-4.05, 4.0], [-1.55, 4.1], [1.55, 4.1], [4.05, 4.0],
+    ];
+    const trunks = new THREE.InstancedMesh(
+      new THREE.CylinderGeometry(0.075, 0.14, 1, 7),
+      new THREE.MeshStandardMaterial({ color: 0x705033, roughness: 0.92 }),
+      treePoints.length
+    );
+    const canopies = new THREE.InstancedMesh(
+      new THREE.IcosahedronGeometry(0.46, 1),
+      new THREE.MeshStandardMaterial({ roughness: 0.9, vertexColors: true }),
+      treePoints.length * 6
+    );
+    const blossoms = new THREE.InstancedMesh(
+      new THREE.SphereGeometry(0.075, 6, 5),
+      new THREE.MeshStandardMaterial({ roughness: 0.7, vertexColors: true }),
+      treePoints.length * 24
+    );
+    const treeDummy = new THREE.Object3D();
+    let canopyIndex = 0;
+    let blossomIndex = 0;
+    treePoints.forEach(([x, z], treeIndex) => {
+      const height = 0.9 + random() * 0.42;
+      treeDummy.position.set(x, TILE_Y + height / 2, z);
+      treeDummy.scale.set(0.9 + random() * 0.25, height, 0.9 + random() * 0.25);
+      treeDummy.rotation.set(0, random() * Math.PI, 0);
+      treeDummy.updateMatrix();
+      trunks.setMatrixAt(treeIndex, treeDummy.matrix);
+      const crownColor = treeIndex % 3 === 0 ? 0x8063a6 : treeIndex % 3 === 1 ? 0x6b9140 : 0x9d83ba;
+      for (let cluster = 0; cluster < 6; cluster++) {
+        const angle = (cluster / 6) * Math.PI * 2;
+        const crownY = TILE_Y + height + (cluster % 2) * 0.18;
+        const crownX = x + Math.cos(angle) * (cluster % 2 ? 0.34 : 0.18);
+        const crownZ = z + Math.sin(angle) * (cluster % 2 ? 0.34 : 0.18);
+        treeDummy.position.set(crownX, crownY, crownZ);
+        treeDummy.scale.set(0.78 + random() * 0.34, 0.82 + random() * 0.4, 0.76 + random() * 0.4);
+        treeDummy.rotation.set(random() * 0.3, random() * Math.PI, random() * 0.3);
+        treeDummy.updateMatrix();
+        canopies.setMatrixAt(canopyIndex, treeDummy.matrix);
+        canopies.setColorAt(canopyIndex, new THREE.Color(crownColor).offsetHSL((random() - 0.5) * 0.03, 0, (random() - 0.5) * 0.1));
+        for (let dot = 0; dot < 4; dot++) {
+          const dotAngle = random() * Math.PI * 2;
+          treeDummy.position.set(crownX + Math.cos(dotAngle) * (0.18 + random() * 0.12), crownY + (random() - 0.5) * 0.28, crownZ + Math.sin(dotAngle) * (0.18 + random() * 0.12));
+          treeDummy.scale.setScalar(0.65 + random() * 0.4);
+          treeDummy.rotation.set(0, 0, 0);
+          treeDummy.updateMatrix();
+          blossoms.setMatrixAt(blossomIndex, treeDummy.matrix);
+          blossoms.setColorAt(blossomIndex, new THREE.Color([0xd8c3f3, 0xe9d3fc, 0xf0c8e6, 0xa8c9e8][Math.floor(random() * 4)]));
+          blossomIndex++;
+        }
+        canopyIndex++;
+      }
+    });
+    trunks.instanceMatrix.needsUpdate = true;
+    canopies.instanceMatrix.needsUpdate = true;
+    blossoms.instanceMatrix.needsUpdate = true;
+    if (canopies.instanceColor) canopies.instanceColor.needsUpdate = true;
+    if (blossoms.instanceColor) blossoms.instanceColor.needsUpdate = true;
+    trunks.castShadow = true;
+    canopies.castShadow = true;
+    blossoms.castShadow = true;
+    islandGroup.add(trunks, canopies, blossoms);
 
     // ── 6. 5x5 TILES GROUP ──
     const tilesGroup = new THREE.Group();
@@ -509,9 +682,12 @@ export default function ThreeGardenCanvas({
     // Camera Positioning Function
     const updateCameraPos = () => {
       const { radius, yaw, pitch } = orbitState.current;
-      const x = radius * Math.sin(pitch) * Math.sin(yaw);
-      const y = radius * Math.cos(pitch);
-      const z = radius * Math.sin(pitch) * Math.cos(yaw);
+      const horizontalFit = 7.9 / (Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * camera.aspect);
+      cameraFitRadiusRef.current = Math.max(15.5, horizontalFit);
+      const fittedRadius = Math.max(radius, cameraFitRadiusRef.current * 0.92);
+      const x = fittedRadius * Math.sin(pitch) * Math.sin(yaw);
+      const y = fittedRadius * Math.cos(pitch);
+      const z = fittedRadius * Math.sin(pitch) * Math.cos(yaw);
       camera.position.set(x, y, z);
       camera.lookAt(0, -0.4, 0);
     };
@@ -569,8 +745,8 @@ export default function ThreeGardenCanvas({
     // ── Resize Handler ──
     const handleResize = () => {
       if (!container || !renderer || !camera) return;
-      const w = Math.max(container.clientWidth || 800, 400);
-      const h = Math.max(container.clientHeight || 540, 460);
+      const w = Math.max(container.clientWidth || 800, 1);
+      const h = Math.max(container.clientHeight || 540, 1);
       camera.aspect = w / h;
       camera.updateProjectionMatrix();
       renderer.setSize(w, h);
@@ -603,8 +779,8 @@ export default function ThreeGardenCanvas({
     tileMeshesMapRef.current.clear();
     tileSpritesMapRef.current.clear();
 
-    const soilGeo = new THREE.CylinderGeometry(0.88, 0.88, 0.04, 32);
-    const ringGeo = new THREE.TorusGeometry(0.92, 0.04, 16, 32);
+    const hitAreaGeo = new THREE.PlaneGeometry(GRID_SPACING * 0.98, GRID_SPACING * 0.98);
+    const ringGeo = new THREE.RingGeometry(0.82, 0.87, 48);
 
     tiles.forEach((tile) => {
       const colX = (tile.col - 2) * GRID_SPACING;
@@ -612,30 +788,29 @@ export default function ThreeGardenCanvas({
 
       const isSelected = targetTileId === tile.id;
       const isHovered = activeHoverTileId === tile.id;
-      const isWatered = Boolean(tile.wateredToday);
+      // Invisible plot hit-area keeps planting and watering available beneath the dense plants.
+      const hitArea = new THREE.Mesh(hitAreaGeo, new THREE.MeshBasicMaterial({
+        transparent: true,
+        opacity: 0,
+        colorWrite: false,
+        depthWrite: false,
+        side: THREE.DoubleSide,
+      }));
+      hitArea.rotation.x = -Math.PI / 2;
+      hitArea.position.set(colX, TILE_Y + 0.012, rowZ);
+      hitArea.userData = { tileId: tile.id, tile };
+      tilesGroup.add(hitArea);
+      tileMeshesMapRef.current.set(tile.id, hitArea);
 
-      // Soil disk mesh
-      const soilMat = new THREE.MeshStandardMaterial({
-        color: isWatered ? 0x221207 : 0x3d220f,
-        roughness: isWatered ? 0.35 : 0.85,
-        metalness: isWatered ? 0.15 : 0.02
-      });
-      const soilMesh = new THREE.Mesh(soilGeo, soilMat);
-      soilMesh.position.set(colX, TILE_Y, rowZ);
-      soilMesh.receiveShadow = true;
-      soilMesh.userData = { tileId: tile.id, tile };
-      tilesGroup.add(soilMesh);
-      tileMeshesMapRef.current.set(tile.id, soilMesh);
-
-      // Glowing / Dashed Border Ring
-      let ringColor = 0xa3e635;
-      let ringOpacity = 0.45;
+      // Only show a fine locator when a plot is selected or targeted by the watering can.
+      let ringColor = 0x38bdf8;
+      let ringOpacity = 0;
       if (isSelected) {
-        ringColor = 0xfbbf24;
-        ringOpacity = 1.0;
+        ringColor = 0xffdf87;
+        ringOpacity = 0.82;
       } else if (isHovered) {
-        ringColor = 0x38bdf8;
-        ringOpacity = 0.95;
+        ringColor = 0x7dd3fc;
+        ringOpacity = 0.75;
       }
 
       const ringMat = new THREE.MeshBasicMaterial({
@@ -645,8 +820,8 @@ export default function ThreeGardenCanvas({
       });
       const ringMesh = new THREE.Mesh(ringGeo, ringMat);
       ringMesh.rotation.x = Math.PI / 2;
-      ringMesh.position.set(colX, TILE_Y + 0.025, rowZ);
-      tilesGroup.add(ringMesh);
+      ringMesh.position.set(colX, TILE_Y + 0.018, rowZ);
+      if (ringOpacity > 0) tilesGroup.add(ringMesh);
 
       // If PLANTED: Render 3D Camera-Facing Plant Billboard Sprite
       if (tile.planted) {
@@ -662,7 +837,7 @@ export default function ThreeGardenCanvas({
         sprite.center.set(0.5, 0.0);
 
         const stage = tile.growthStage || 1;
-        const scaleW = stage === 1 ? 1.6 : stage === 2 ? 1.85 : stage === 4 ? 2.4 : 2.15;
+        const scaleW = stage === 1 ? 1.25 : stage === 2 ? 1.55 : stage === 4 ? 2.05 : 1.8;
         const scaleH = scaleW;
         sprite.scale.set(scaleW, scaleH, 1);
 
@@ -672,39 +847,86 @@ export default function ThreeGardenCanvas({
         tilesGroup.add(sprite);
         tileSpritesMapRef.current.set(tile.id, sprite);
 
-      } else {
-        // EMPTY TILE: Floating subtle "+" marker
-        const emptyCanvas = document.createElement('canvas');
-        emptyCanvas.width = 128;
-        emptyCanvas.height = 128;
-        const eCtx = emptyCanvas.getContext('2d');
-        if (eCtx) {
-          eCtx.clearRect(0, 0, 128, 128);
-          eCtx.fillStyle = 'rgba(255, 255, 255, 0.35)';
-          eCtx.beginPath();
-          eCtx.arc(64, 64, 46, 0, Math.PI * 2);
-          eCtx.fill();
-
-          eCtx.fillStyle = '#ffffff';
-          eCtx.font = 'bold 54px Fredoka, sans-serif';
-          eCtx.textAlign = 'center';
-          eCtx.textBaseline = 'middle';
-          eCtx.fillText('+', 64, 66);
-        }
-        const emptyTex = new THREE.CanvasTexture(emptyCanvas);
-        const emptyMat = new THREE.SpriteMaterial({
-          map: emptyTex,
-          transparent: true,
-          opacity: isHovered ? 0.95 : 0.55
-        });
-        const emptySprite = new THREE.Sprite(emptyMat);
-        emptySprite.center.set(0.5, 0.5);
-        emptySprite.scale.set(0.9, 0.9, 1);
-        emptySprite.position.set(colX, TILE_Y + 0.45, rowZ);
-        tilesGroup.add(emptySprite);
       }
     });
   }, [tiles, targetTileId, activeHoverTileId, generateSpriteTexture]);
+
+  // Render user decorations as real meshes too, so the old decoration controls still affect the scene.
+  useEffect(() => {
+    const parent = decorationsGroupRef.current;
+    if (!parent) return;
+    parent.clear();
+    decorationRootsRef.current.clear();
+
+    const addPart = (root: THREE.Group, geometry: THREE.BufferGeometry, color: number, position: [number, number, number], scale: [number, number, number] = [1, 1, 1], roughness = 0.82) => {
+      const mesh = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({ color, roughness, metalness: 0.02 }));
+      mesh.position.set(...position);
+      mesh.scale.set(...scale);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      root.add(mesh);
+      return mesh;
+    };
+
+    decorations.forEach((decoration) => {
+      const root = new THREE.Group();
+      root.position.set((decoration.x / 410 - 0.5) * 10.96, TILE_Y - 0.04, (decoration.y / 410 - 0.5) * 10.96);
+      root.scale.setScalar(decoration.scale ?? 0.82);
+      root.rotation.y = THREE.MathUtils.degToRad(decoration.rotation ?? 0);
+
+      if (decoration.ornamentKey === 'ornament_fountain') {
+        addPart(root, new THREE.CylinderGeometry(0.38, 0.5, 0.24, 12), 0xf3f2eb, [0, 0.24, 0]);
+        addPart(root, new THREE.CylinderGeometry(0.08, 0.13, 0.42, 10), 0xe7e4d8, [0, 0.55, 0]);
+        addPart(root, new THREE.CylinderGeometry(0.29, 0.29, 0.035, 20), 0x62c5e9, [0, 0.38, 0]);
+        addPart(root, new THREE.SphereGeometry(0.08, 10, 8), 0x74d4fa, [0, 0.83, 0.02], [0.72, 1.5, 0.72]);
+      } else if (decoration.ornamentKey === 'ornament_bench') {
+        for (let plank = 0; plank < 3; plank++) {
+          addPart(root, new THREE.BoxGeometry(0.82, 0.09, 0.12), 0x8a512b, [0, 0.47, -0.12 + plank * 0.12]);
+        }
+        addPart(root, new THREE.BoxGeometry(0.82, 0.4, 0.09), 0x9a5c32, [0, 0.73, -0.2]);
+        for (const x of [-0.31, 0.31]) {
+          addPart(root, new THREE.BoxGeometry(0.07, 0.46, 0.07), 0x55351f, [x, 0.24, 0.01]);
+          addPart(root, new THREE.BoxGeometry(0.07, 0.4, 0.07), 0x55351f, [x, 0.75, -0.2]);
+        }
+      } else if (decoration.ornamentKey === 'ornament_lantern') {
+        addPart(root, new THREE.CylinderGeometry(0.035, 0.07, 1.05, 8), 0x493522, [0, 0.52, 0]);
+        addPart(root, new THREE.BoxGeometry(0.26, 0.3, 0.26), 0xffd982, [0, 1.13, 0], [1, 1, 1], 0.3);
+        addPart(root, new THREE.ConeGeometry(0.22, 0.17, 8), 0x583821, [0, 1.37, 0]);
+        addPart(root, new THREE.SphereGeometry(0.31, 8, 8), 0xffd36c, [0, 1.12, 0], [1, 1, 1], 0.25);
+      } else if (decoration.ornamentKey === 'ornament_cat') {
+        addPart(root, new THREE.SphereGeometry(0.31, 10, 8), 0xf8f8f5, [0, 0.27, 0], [1.35, 0.72, 0.86]);
+        addPart(root, new THREE.SphereGeometry(0.21, 10, 8), 0xffffff, [0.2, 0.5, 0.02]);
+        addPart(root, new THREE.ConeGeometry(0.085, 0.2, 6), 0xf8f8f5, [0.08, 0.69, -0.12], [1, 1, 0.7]);
+        addPart(root, new THREE.ConeGeometry(0.085, 0.2, 6), 0xf8f8f5, [0.32, 0.69, -0.12], [1, 1, 0.7]);
+        addPart(root, new THREE.SphereGeometry(0.035, 8, 6), 0x4c3b35, [0.13, 0.53, 0.2]);
+        addPart(root, new THREE.SphereGeometry(0.035, 8, 6), 0x4c3b35, [0.28, 0.53, 0.2]);
+      } else if (decoration.ornamentKey === 'ornament_arch') {
+        for (const x of [-0.68, 0.68]) {
+          addPart(root, new THREE.CylinderGeometry(0.07, 0.1, 1.48, 8), 0x744524, [x, 0.74, 0]);
+        }
+        addPart(root, new THREE.TorusGeometry(0.68, 0.09, 8, 24, Math.PI), 0x80502f, [0, 1.43, 0]);
+        for (let bloom = 0; bloom < 9; bloom++) {
+          const angle = (bloom / 8) * Math.PI;
+          addPart(root, new THREE.SphereGeometry(0.095, 7, 6), bloom % 2 ? 0xdb75ac : 0xf1a6d2, [Math.cos(angle) * 0.68, 1.43 + Math.sin(angle) * 0.68, 0.04]);
+        }
+      }
+
+      root.traverse((child) => {
+        if (child instanceof THREE.Mesh) child.userData.decorationId = decoration.id;
+      });
+      parent.add(root);
+      decorationRootsRef.current.set(decoration.id, root);
+    });
+
+    return () => {
+      parent.traverse((child) => {
+        if (!(child instanceof THREE.Mesh)) return;
+        child.geometry.dispose();
+        const materials = Array.isArray(child.material) ? child.material : [child.material];
+        materials.forEach(material => material.dispose());
+      });
+    };
+  }, [decorations]);
 
   // Handle Trigger Water Splash Animation on Active Watered Tiles
   useEffect(() => {
@@ -751,19 +973,76 @@ export default function ThreeGardenCanvas({
 
   // ── TOUCH & MOUSE INTERACTION CONTROLLERS (ORBIT 360 + RAYCAST TAP) ──
   const handlePointerDown = (e: React.PointerEvent) => {
+    e.stopPropagation();
     if (isWaterDragging) return;
+
+    const container = mountRef.current;
+    const camera = cameraRef.current;
+    if (container && camera && decorationsGroupRef.current) {
+      const rect = container.getBoundingClientRect();
+      const pointer = new THREE.Vector2(
+        ((e.clientX - rect.left) / rect.width) * 2 - 1,
+        -((e.clientY - rect.top) / rect.height) * 2 + 1
+      );
+      const raycaster = new THREE.Raycaster();
+      raycaster.setFromCamera(pointer, camera);
+      const decorationHits = raycaster.intersectObject(decorationsGroupRef.current, true);
+      const decorationId = decorationHits[0]?.object.userData.decorationId as string | undefined;
+      const root = decorationId ? decorationRootsRef.current.get(decorationId) : null;
+      if (decorationId && root) {
+        activeDecorationDragRef.current = {
+          id: decorationId,
+          moved: false,
+          startX: root.position.x,
+          startZ: root.position.z,
+        };
+        orbitState.current.isDragging = false;
+        orbitState.current.prevPointerX = e.clientX;
+        orbitState.current.prevPointerY = e.clientY;
+        e.currentTarget.setPointerCapture(e.pointerId);
+        return;
+      }
+    }
 
     orbitState.current.isDragging = true;
     orbitState.current.prevPointerX = e.clientX;
     orbitState.current.prevPointerY = e.clientY;
     orbitState.current.dragDistance = 0;
     orbitState.current.pointerDownTime = performance.now();
+    e.currentTarget.setPointerCapture(e.pointerId);
   };
 
   const handlePointerMove = (e: React.PointerEvent) => {
+    e.stopPropagation();
     const state = orbitState.current;
     const container = mountRef.current;
     if (!container) return;
+
+    const decorationDrag = activeDecorationDragRef.current;
+    if (decorationDrag && cameraRef.current && decorationsGroupRef.current && islandGroupRef.current) {
+      const rect = container.getBoundingClientRect();
+      const pointer = new THREE.Vector2(
+        ((e.clientX - rect.left) / rect.width) * 2 - 1,
+        -((e.clientY - rect.top) / rect.height) * 2 + 1
+      );
+      const raycaster = new THREE.Raycaster();
+      raycaster.setFromCamera(pointer, cameraRef.current);
+      const worldPlane = new THREE.Plane(
+        new THREE.Vector3(0, 1, 0),
+        -(islandGroupRef.current.position.y + TILE_Y - 0.04)
+      );
+      const worldPoint = raycaster.ray.intersectPlane(worldPlane, new THREE.Vector3());
+      const root = decorationRootsRef.current.get(decorationDrag.id);
+      if (worldPoint && root) {
+        const localPoint = decorationsGroupRef.current.worldToLocal(worldPoint);
+        root.position.x = THREE.MathUtils.clamp(localPoint.x, -5.15, 5.15);
+        root.position.z = THREE.MathUtils.clamp(localPoint.z, -5.15, 5.15);
+        if (Math.hypot(root.position.x - decorationDrag.startX, root.position.z - decorationDrag.startZ) > 0.12) {
+          decorationDrag.moved = true;
+        }
+      }
+      return;
+    }
 
     if (state.isDragging) {
       const dx = e.clientX - state.prevPointerX;
@@ -798,10 +1077,28 @@ export default function ThreeGardenCanvas({
     }
   };
 
-  const handlePointerUp = () => {
+  const handlePointerUp = (e: React.PointerEvent) => {
     const state = orbitState.current;
     const container = mountRef.current;
     state.isDragging = false;
+
+    const decorationDrag = activeDecorationDragRef.current;
+    if (decorationDrag) {
+      const root = decorationRootsRef.current.get(decorationDrag.id);
+      const decoration = decorations.find(item => item.id === decorationDrag.id);
+      activeDecorationDragRef.current = null;
+      if (root && decorationDrag.moved) {
+        onDecorationMove?.(
+          decorationDrag.id,
+          Math.round((root.position.x / 10.96 + 0.5) * 410),
+          Math.round((root.position.z / 10.96 + 0.5) * 410)
+        );
+      } else if (decoration) {
+        onDecorationClick?.(decoration);
+      }
+      if (e.currentTarget.hasPointerCapture(e.pointerId)) e.currentTarget.releasePointerCapture(e.pointerId);
+      return;
+    }
 
     // Check if this was a TAP/CLICK (dragDistance < 8px)
     if (state.dragDistance < 8 && container && cameraRef.current) {
@@ -826,14 +1123,41 @@ export default function ThreeGardenCanvas({
         }
       }
     }
+    if (e.currentTarget.hasPointerCapture(e.pointerId)) e.currentTarget.releasePointerCapture(e.pointerId);
   };
+
+  // The watering tool starts pointer capture outside the canvas, so keep resolving its target globally.
+  useEffect(() => {
+    if (!isWaterDragging || !onTileHover) return;
+    const updateWaterTarget = (event: PointerEvent) => {
+      const container = mountRef.current;
+      const camera = cameraRef.current;
+      if (!container || !camera) return;
+      const rect = container.getBoundingClientRect();
+      if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) {
+        onTileHover(null);
+        return;
+      }
+      const pointer = new THREE.Vector2(
+        ((event.clientX - rect.left) / rect.width) * 2 - 1,
+        -((event.clientY - rect.top) / rect.height) * 2 + 1
+      );
+      const raycaster = new THREE.Raycaster();
+      raycaster.setFromCamera(pointer, camera);
+      const hit = raycaster.intersectObjects(Array.from(tileMeshesMapRef.current.values()), false)[0];
+      onTileHover(hit?.object.userData.tileId ?? null);
+    };
+    window.addEventListener('pointermove', updateWaterTarget, { passive: true });
+    return () => window.removeEventListener('pointermove', updateWaterTarget);
+  }, [isWaterDragging, onTileHover]);
 
   // Zoom with Mouse Wheel
   const handleWheel = (e: React.WheelEvent) => {
+    e.stopPropagation();
     e.preventDefault();
     const state = orbitState.current;
     const delta = e.deltaY * 0.015;
-    state.targetRadius = Math.max(state.minRadius, Math.min(state.maxRadius, state.targetRadius + delta));
+    state.targetRadius = Math.max(cameraFitRadiusRef.current * 0.88, Math.min(state.maxRadius, state.targetRadius + delta));
   };
 
   // Preset Views & Reset Camera
@@ -860,7 +1184,7 @@ export default function ThreeGardenCanvas({
 
   const handleZoomIn = () => {
     const state = orbitState.current;
-    state.targetRadius = Math.max(state.minRadius, state.targetRadius - 2.5);
+    state.targetRadius = Math.max(cameraFitRadiusRef.current * 0.88, state.targetRadius - 2.5);
   };
 
   const handleZoomOut = () => {
@@ -877,7 +1201,8 @@ export default function ThreeGardenCanvas({
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
-        onPointerCancel={() => { orbitState.current.isDragging = false; }}
+        onPointerCancel={() => { orbitState.current.isDragging = false; activeDecorationDragRef.current = null; }}
+        onPointerLeave={() => { if (!isWaterDragging) onTileHover?.(null); }}
         onWheel={handleWheel}
         aria-label="3D Orbital Garden Island Canvas"
       />

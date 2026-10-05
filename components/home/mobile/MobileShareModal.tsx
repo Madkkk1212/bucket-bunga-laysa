@@ -38,7 +38,7 @@ const MUSIC_OPTIONS = [
 ];
 
 export default function MobileShareModal({ isOpen, onClose, canvasRef }: Props) {
-  const { design } = useDesign();
+  const { design, isPremiumUnlocked } = useDesign();
   const { language } = useLanguage();
   const isEn = language === 'en';
 
@@ -78,6 +78,16 @@ export default function MobileShareModal({ isOpen, onClose, canvasRef }: Props) 
     setGiftError(null);
 
     try {
+      const accessCode = typeof window !== 'undefined' ? localStorage.getItem('laysa_access_code') || '' : '';
+      const isVipUser = Boolean(
+        isPremiumUnlocked ||
+        (typeof window !== 'undefined' && (
+          localStorage.getItem('laysa_premium_unlocked') === 'true' ||
+          localStorage.getItem('laysa_access_code') ||
+          localStorage.getItem('laysa_premium_tier')
+        ))
+      );
+
       const res = await fetch('/api/gifts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -87,6 +97,8 @@ export default function MobileShareModal({ isOpen, onClose, canvasRef }: Props) 
           message: personalMessage.trim() || cardMessage,
           musicTrack,
           designData: design,
+          accessCode,
+          isVipUser,
         }),
       });
 

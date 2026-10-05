@@ -1,0 +1,3 @@
+2026/10/01-23:55:51.161 cbc Reusing MANIFEST D:\web\bucket\bucket\scratch\edge_dev_profile\Default\IndexedDB\http_localhost_3000.indexeddb.leveldb/MANIFEST-000001
+2026/10/01-23:55:51.161 cbc Recovering log #3
+2026/10/01-23:55:51.162 cbc Reusing old log D:\web\bucket\bucket\scratch\edge_dev_profile\Default\IndexedDB\http_localhost_3000.indexeddb.leveldb/000003.log 

@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<title>Girlfriend's Day</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html {
+    scroll-behavior: smooth;
+    scroll-snap-type: y mandatory;
+  }
+
+  body {
+    font-family: Georgia, serif;
+    background: #e8b4bc;
+    overflow-x: hidden;
+    overscroll-behavior-y: none;
+  }
+
+  /* ===== SECTION UMUM ===== */
+  section {
+    height: 100vh;
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 40px 20px;
+    overflow: hidden;
+  }
+
+  /* ===== ANIMASI ===== */
+  .fade-item {
+    opacity: 0;
+    transform: translateY(40px);
+    transition: opacity 0.9s ease, transform 0.9s ease;
+  }
+
+  section.active .fade-item {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* delay bertingkat biar munculnya bergantian */
+  section.active .fade-item:nth-child(1) { transition-delay: 0.1s; }
+  section.active .fade-item:nth-child(2) { transition-delay: 0.25s; }
+  section.active .fade-item:nth-child(3) { transition-delay: 0.4s; }
+  section.active .fade-item:nth-child(4) { transition-delay: 0.55s; }
+  section.active .fade-item:nth-child(5) { transition-delay: 0.7s; }
+
+  /* ===== SECTION 1 ===== */
+  .section-1 .card {
+    display: flex;
+    width: 700px;
+    max-width: 95%;
+    background: #8b1e2d;
+    border-radius: 18px;
+    padding: 18px;
+    gap: 18px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    border: 3px solid #a52a3a;
+  }
+
+  .photo-placeholder {
+    flex: 1;
+    min-height: 380px;
+    background: #d9d9d9;
+    border-radius: 12px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: #777;
+    font-style: italic;
+    border: 2px dashed #aaa;
+  }
+
+  .letter {
+    flex: 1;
+    background: #fdf8f3;
+    border-radius: 12px;
+    padding: 25px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    color: #333;
+  }
+
+  .letter h2 { margin-bottom: 12px; font-style: italic; }
+  .letter p { margin: 6px 0; line-height: 1.5; font-size: 14px; }
+
+  /* ===== SECTION 2 ===== */
+  .section-2 {
+    background: #f3d7dc;
+    flex-direction: column;
+  }
+
+  .section-2 h1 {
+    font-family: 'Brush Script MT', cursive;
+    font-size: 48px;
+    color: #5a1020;
+    margin-bottom: 30px;
+    text-align: center;
+  }
+
+  .gallery {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .gallery .frame {
+    width: 220px;
+    height: 300px;
+    background: #8b1e2d;
+    padding: 8px;
+    border-radius: 6px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .gallery .frame .inner {
+    width: 100%;
+    height: 100%;
+    background: #d9d9d9;
+    border-radius: 4px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: #777;
+    font-style: italic;
+  }
+</style>
+</head>
+<body>
+
+  <!-- ================= SECTION 1 ================= -->
+  <section class="section-1">
+    <div class="card fade-item">
+      <div class="photo-placeholder fade-item">Foto di sini</div>
+      <div class="letter fade-item">
+        <h2>Dear Love,</h2>
+        <p>If I could write everything you mean to me, this page would never end. So instead, I'll tell you this:</p>
+        <p>Thank you for being my safe place, my biggest smile, and my favorite person to spend every ordinary day with.</p>
+        <p>Happy Girlfriend's Day. You deserve to feel loved today and every day after.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= SECTION 2 ================= -->
+  <section class="section-2">
+    <h1 class="fade-item">You too divine to be Mine</h1>
+    <div class="gallery">
+      <div class="frame fade-item"><div class="inner">Foto 01</div></div>
+      <div class="frame fade-item"><div class="inner">Foto 02</div></div>
+      <div class="frame fade-item"><div class="inner">Foto 03</div></div>
+    </div>
+  </section>
+
+  <script>
+    const sections = document.querySelectorAll('section');
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('active');
+        } else {
+          entry.target.classList.remove('active'); // reset biar animasi ulang tiap balik
+        }
+      });
+    }, {
+      threshold: 0.5 // aktif kalau 50% section sudah kelihatan
+    });
+
+    sections.forEach(sec => observer.observe(sec));
+  </script>
+
+</body>
+</html>

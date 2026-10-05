@@ -133,6 +133,8 @@ export default function FlowerGardenModal({
       const data = await res.json();
       if (data.success && data.garden) {
         setGarden(data.garden);
+        setActionError(data.warning || '');
+        window.dispatchEvent(new Event('bucket-garden-link-updated'));
         try {
           const trimmedGarden = gardenName.trim();
           const existing = localStorage.getItem('bucket_garden_info_v3');
@@ -186,6 +188,7 @@ export default function FlowerGardenModal({
       const data = await res.json();
       if (data.success) {
         await fetchGarden();
+        window.dispatchEvent(new Event('bucket-garden-link-updated'));
         setSuccessToast(isEn ? '💕 Joined garden successfully!' : '💕 Berhasil bergabung ke kebun!');
         setTimeout(() => setSuccessToast(''), 3000);
       } else {

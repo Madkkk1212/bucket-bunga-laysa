@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Only Love</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Dancing+Script:wght@600&family=Cinzel:wght@500;700&display=swap" rel="stylesheet">
+
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    min-height: 100vh;
+    min-height: 100dvh;
+    background: radial-gradient(circle at 50% 50%, #3a2020 0%, #1a0a0a 100%);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 40px 20px;
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    overflow: hidden;
+  }
+
+  /* ============================================
+     STAGE
+  ============================================ */
+  .book-stage {
+    position: relative;
+    width: min(920px, 96vw);
+    aspect-ratio: 16 / 9;
+    perspective: 2500px;
+    perspective-origin: 50% 50%;
+  }
+
+  /* ============================================
+     BUKU
+  ============================================ */
+  .book {
+    position: absolute;
+    inset: 0;
+    background: #f3e8d5;
+    border-radius: 6px;
+    box-shadow:
+      0 30px 60px rgba(0,0,0,0.75),
+      0 0 0 1px rgba(120,80,60,0.15);
+    overflow: hidden;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    transform-style: preserve-3d;
+  }
+
+  .book::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+      repeating-linear-gradient(0deg,
+        transparent 0px,
+        transparent 27px,
+        rgba(120,80,60,0.08) 27px,
+        rgba(120,80,60,0.08) 28px);
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  /* ============================================
+     SPIRAL BINDING
+  ============================================ */
+  .spine {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 22px;
+    height: 100%;
+    background: linear-gradient(90deg,
+      rgba(0,0,0,0.15) 0%,
+      rgba(0,0,0,0.3) 50%,
+      rgba(0,0,0,0.15) 100%);
+    z-index: 10;
+  }
+  .spine::before {
+    content: "";
+    position: absolute;
+    top: 20px;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 8px;
+    background-image:
+      radial-gradient(circle 4px at 50% 0, transparent 3px, #b8935a 3.5px, #b8935a 4px, transparent 4.5px);
+    background-size: 8px 26px;
+    background-repeat: repeat-y;
+  }
+
+  /* ============================================
+     HALAMAN KIRI — 4 FOTO PLACEHOLDER
+     Semua elemen awalnya tersembunyi, muncul setelah buku terbuka
+  ============================================ */
+  .left-page {
+    position: relative;
+    padding: 30px 24px 30px 30px;
+    z-index: 2;
+    overflow: hidden;
+  }
+
+  /* Base state untuk semua elemen foto */
+  .left-page .fade-in {
+    opacity: 0;
+    transform: translateY(30px) rotate(var(--rot, 0deg)) scale(0.9);
+    transition:
+      opacity 1s ease,
+      transform 1.2s cubic-bezier(0.34, 1.4, 0.64, 1);
+  }
+
+  .big-photo {
+    position: absolute;
+    top: 30px;
+    left: 30px;
+    width: calc(100% - 54px);
+    height: calc(100% - 60px);
+    background: #d9d9d9;
+    border-radius: 3px;
+    box-shadow: 4px 6px 20px rgba(0,0,0,0.3);
+    border: 6px solid #fff;
+    z-index: 3;
+    --rot: 0deg;
+  }
+
+  .ribbon-top {
+    position: absolute;
+    top: -8px;
+    right: 20px;
+    width: 90px;
+    height: 40px;
+    background: linear-gradient(180deg, #d97a95, #c25c7c);
+    clip-path: polygon(0 0, 100% 0, 100% 70%, 50% 100%, 0 70%);
+    z-index: 8;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+    --rot: 0deg;
+  }
+  .ribbon-top::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -18px;
+    width: 18px;
+    height: 30px;
+    background: #c25c7c;
+    clip-path: polygon(100% 0, 0 30%, 100% 60%, 100% 100%, 0 100%, 0 0);
+  }
+
+  .quote-photo {
+    position: absolute;
+    top: 34px;
+    right: 24px;
+    width: 42%;
+    background: #fff;
+    padding: 8px;
+    box-shadow: 5px 8px 22px rgba(0,0,0,0.35);
+    z-index: 5;
+    --rot: 3deg;
+    transform: rotate(3deg);
+  }
+  .quote-photo .photo {
+    width: 100%;
+    aspect-ratio: 3 / 4;
+    background: #d9d9d9;
+    border: 1px solid #e0d3c0;
+  }
+
+  .mini-photo-1, .mini-photo-2 {
+    position: absolute;
+    background: #fff;
+    padding: 5px;
+    box-shadow: 4px 6px 16px rgba(0,0,0,0.3);
+    z-index: 6;
+  }
+  .mini-photo-1 {
+    bottom: 40px;
+    left: 30px;
+    width: 32%;
+    --rot: -4deg;
+    transform: rotate(-4deg);
+  }
+  .mini-photo-2 {
+    bottom: 30px;
+    left: 40%;
+    width: 28%;
+    --rot: 3deg;
+    transform: rotate(3deg);
+  }
+  .mini-photo-1 .inner,
+  .mini-photo-2 .inner {
+    width: 100%;
+    aspect-ratio: 3 / 4;
+    background: #d9d9d9;
+    border: 1px solid #e0d3c0;
+  }
+
+  /* ============================================
+     HALAMAN KANAN — SURAT
+  ============================================ */
+  .right-page {
+    position: relative;
+    padding: 40px 40px 30px 30px;
+    z-index: 2;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Animasi judul */
+  .title-script {
+    font-family: 'Great Vibes', cursive;
+    font-size: clamp(38px, 5vw, 56px);
+    color: #7a1a2a;
+    text-align: center;
+    line-height: 0.9;
+    margin-bottom: 4px;
+    position: relative;
+    opacity: 0;
+    transform: scale(0.7);
+    transition:
+      opacity 1s ease,
+      transform 1.2s cubic-bezier(0.34, 1.4, 0.64, 1);
+  }
+  .title-script::after {
+    content: "🕊";
+    position: absolute;
+    top: 0;
+    right: 20px;
+    font-size: 18px;
+    transform: rotate(-15deg);
+  }
+  .title-script::before {
+    content: "❤";
+    position: absolute;
+    top: 4px;
+    right: 44px;
+    font-size: 12px;
+    color: #c25c7c;
+  }
+
+  .subtitle {
+    text-align: center;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 12px;
+    letter-spacing: 1px;
+    color: #a06a6a;
+    margin-bottom: 20px;
+    opacity: 0;
+    transition: opacity 0.9s ease;
+  }
+
+  /* Setiap paragraf muncul terpisah */
+  .letter-body {
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .letter-body > * {
+    opacity: 0;
+    transform: translateX(20px);
+    transition:
+      opacity 0.9s ease,
+      transform 0.9s cubic-bezier(0.34, 1.3, 0.64, 1);
+  }
+
+  .letter-body .greeting {
+    font-family: 'Dancing Script', cursive;
+    font-size: clamp(16px, 2vw, 20px);
+    color: #7a1a2a;
+    margin-bottom: 12px;
+  }
+
+  .letter-body p {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: clamp(12px, 1.5vw, 14px);
+    line-height: 1.6;
+    color: #4a2a2a;
+    margin-bottom: 10px;
+    text-align: left;
+  }
+
+  .closing {
+    font-family: 'Great Vibes', cursive;
+    font-size: clamp(20px, 2.6vw, 28px);
+    color: #7a1a2a;
+    text-align: right;
+    margin-top: 8px;
+  }
+  .closing::after {
+    content: " ❤";
+    font-size: 0.7em;
+    color: #c25c7c;
+  }
+
+  /* ============================================
+     COVER BUKU
+  ============================================ */
+  .cover {
+    position: absolute;
+    inset: 0;
+    z-index: 50;
+    transform-origin: left center;
+    transform: rotateY(0deg);
+    transition: transform 1.8s cubic-bezier(0.65, 0, 0.35, 1);
+    transform-style: preserve-3d;
+    backface-visibility: hidden;
+    cursor: pointer;
+    border-radius: 6px;
+    overflow: hidden;
+  }
+
+  .cover-front {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(circle at 50% 40%, #8b1e2d 0%, #5e0812 100%);
+    border-radius: 6px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 40px;
+    box-shadow:
+      inset 0 0 0 14px #7a1220,
+      inset 0 0 0 16px rgba(212,175,110,0.55),
+      0 30px 60px rgba(0,0,0,0.7);
+    backface-visibility: hidden;
+    overflow: hidden;
+  }
+
+  .cover-front::before {
+    content: "";
+    position: absolute;
+    inset: 26px;
+    border: 1px dashed rgba(212,175,110,0.4);
+    border-radius: 4px;
+    pointer-events: none;
+  }
+  .cover-front::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+      repeating-linear-gradient(45deg,
+        rgba(212,175,110,0.04) 0px,
+        rgba(212,175,110,0.04) 1px,
+        transparent 1px,
+        transparent 8px);
+    border-radius: 6px;
+    pointer-events: none;
+  }
+
+  .cover-heart {
+    position: relative;
+    width: 90px;
+    height: 90px;
+    margin-bottom: 30px;
+    z-index: 2;
+  }
+  .cover-heart svg {
+    width: 100%;
+    height: 100%;
+    fill: #d4af6e;
+    filter: drop-shadow(0 4px 10px rgba(0,0,0,0.5));
+    animation: heartPulse 2.4s ease-in-out infinite;
+  }
+  @keyframes heartPulse {
+    0%, 100% { transform: scale(1); }
+    50%      { transform: scale(1.08); }
+  }
+
+  .cover-title {
+    font-family: 'Great Vibes', cursive;
+    font-size: clamp(38px, 5.5vw, 64px);
+    color: #d4af6e;
+    text-align: center;
+    line-height: 1;
+    text-shadow: 0 4px 12px rgba(0,0,0,0.55);
+    margin-bottom: 12px;
+    z-index: 2;
+  }
+
+  .cover-subtitle {
+    font-family: 'Cinzel', serif;
+    font-size: 12px;
+    letter-spacing: 6px;
+    color: rgba(212,175,110,0.85);
+    text-align: center;
+    text-transform: uppercase;
+    z-index: 2;
+    margin-bottom: 30px;
+  }
+
+  .cover-line {
+    width: 80px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, #d4af6e, transparent);
+    margin-bottom: 20px;
+    z-index: 2;
+  }
+
+  .cover-hint {
+    font-family: 'Cinzel', serif;
+    font-size: 10px;
+    letter-spacing: 4px;
+    color: rgba(212,175,110,0.7);
+    text-align: center;
+    z-index: 2;
+    animation: pulseHint 2.2s ease-in-out infinite;
+  }
+  @keyframes pulseHint {
+    0%, 100% { opacity: 0.45; }
+    50%      { opacity: 1; }
+  }
+
+  .cover-back {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, #f0e4cf 0%, #e8dcc4 100%);
+    border-radius: 6px;
+    transform: rotateY(180deg);
+    backface-visibility: hidden;
+    box-shadow: inset 0 0 0 1px rgba(120,80,60,0.15);
+  }
+
+  /* ============================================
+     STATE TERBUKA
+  ============================================ */
+  .book-stage.open .cover {
+    transform: rotateY(-180deg);
+  }
+
+  /* ============================================
+     EFEK MASUK SETELAH BUKU TERBUKA
+     Delay bertingkat biar smooth & bergantian
+  ============================================ */
+
+  /* Foto-foto di halaman kiri — muncul setelah cover terbuka */
+  .book-stage.open .big-photo {
+    opacity: 1;
+    transform: translateY(0) rotate(var(--rot)) scale(1);
+    transition-delay: 0.6s;
+  }
+
+  .book-stage.open .ribbon-top {
+    opacity: 1;
+    transform: translateY(0) rotate(var(--rot)) scale(1);
+    transition-delay: 0.9s;
+  }
+
+  .book-stage.open .quote-photo {
+    opacity: 1;
+    transform: translateY(0) rotate(var(--rot)) scale(1);
+    transition-delay: 1.2s;
+  }
+
+  .book-stage.open .mini-photo-1 {
+    opacity: 1;
+    transform: translateY(0) rotate(var(--rot)) scale(1);
+    transition-delay: 1.5s;
+  }
+
+  .book-stage.open .mini-photo-2 {
+    opacity: 1;
+    transform: translateY(0) rotate(var(--rot)) scale(1);
+    transition-delay: 1.8s;
+  }
+
+  /* Judul di halaman kanan */
+  .book-stage.open .title-script {
+    opacity: 1;
+    transform: scale(1);
+    transition-delay: 1s;
+  }
+
+  .book-stage.open .subtitle {
+    opacity: 1;
+    transition-delay: 1.3s;
+  }
+
+  /* Isi surat muncul baris per baris */
+  .book-stage.open .letter-body > * {
+    opacity: 1;
+    transform: translateX(0);
+  }
+
+  .book-stage.open .letter-body > *:nth-child(1) { transition-delay: 1.6s; }
+  .book-stage.open .letter-body > *:nth-child(2) { transition-delay: 1.8s; }
+  .book-stage.open .letter-body > *:nth-child(3) { transition-delay: 2.0s; }
+  .book-stage.open .letter-body > *:nth-child(4) { transition-delay: 2.2s; }
+  .book-stage.open .letter-body > *:nth-child(5) { transition-delay: 2.4s; }
+  .book-stage.open .letter-body > *:nth-child(6) { transition-delay: 2.6s; }
+
+  /* ============================================
+     RESPONSIVE
+  ============================================ */
+  @media (max-width: 720px) {
+    .book { grid-template-columns: 1fr; }
+    .left-page { min-height: 420px; }
+    .right-page { padding: 30px 24px; }
+    .title-script::after, .title-script::before { display: none; }
+    .spine {
+      left: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 100%;
+      height: 22px;
+      background: linear-gradient(180deg,
+        rgba(0,0,0,0.15) 0%,
+        rgba(0,0,0,0.3) 50%,
+        rgba(0,0,0,0.15) 100%);
+    }
+    .spine::before {
+      top: 50%;
+      left: 20px;
+      right: 20px;
+      bottom: auto;
+      transform: translateY(-50%);
+      width: auto;
+      height: 8px;
+      background-image:
+        radial-gradient(circle 4px at 0 50%, transparent 3px, #b8935a 3.5px, #b8935a 4px, transparent 4.5px);
+      background-size: 26px 8px;
+      background-repeat: repeat-x;
+    }
+    .cover-heart { width: 60px; height: 60px; margin-bottom: 20px; }
+    .cover-title { font-size: 40px; }
+    .cover-subtitle { font-size: 10px; letter-spacing: 4px; }
+  }
+</style>
+</head>
+<body>
+
+  <div class="book-stage" id="bookStage">
+
+    <!-- ============================================ -->
+    <!-- BUKU (isi)                                   -->
+    <!-- ============================================ -->
+    <div class="book">
+
+      <div class="spine"></div>
+
+      <!-- HALAMAN KIRI — 4 FOTO (dengan animasi) -->
+      <div class="left-page">
+
+        <div class="big-photo fade-in"></div>
+        <div class="ribbon-top fade-in"></div>
+
+        <div class="quote-photo fade-in">
+          <div class="photo"></div>
+        </div>
+        <div class="mini-photo-1 fade-in"><div class="inner"></div></div>
+        <div class="mini-photo-2 fade-in"><div class="inner"></div></div>
+
+      </div>
+
+      <!-- HALAMAN KANAN — SURAT -->
+      <div class="right-page">
+
+        <div class="title-script">My only love</div>
+        <div class="subtitle">❦</div>
+
+        <div class="letter-body">
+          <div class="greeting">To my love!</div>
+
+          <p>
+            If I could love you for one more day, I would love you for one
+            more day. If I could look at you one more time, I would look at
+            you one more time.
+          </p>
+
+          <p>
+            If you asked me to be your guide for a lifetime, then find you
+            here to show me the way that I'll be loved for a lifetime.
+          </p>
+
+          <p>
+            I just want to thank you for always carrying all of my worries
+            even though you were hurt. Even though you were hurt, I want
+            you for you to be like anyone else, I only wish for you to see
+            yourself as a better version of yourself.
+          </p>
+
+          <p>
+            And finally, happy birthday to my love! I wish you lots of joy
+            and happiness, to grow into the man, and I hope that someday
+            I'll be able to celebrate your birthday together with you.
+          </p>
+
+          <div class="closing">Love you</div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- ============================================ -->
+    <!-- COVER BUKU                                   -->
+    <!-- ============================================ -->
+    <div class="cover" id="cover">
+      <div class="cover-front">
+        <div class="cover-heart">
+          <svg viewBox="0 0 24 24">
+            <path d="M12 21s-7.5-4.9-9.5-9.5C1 8 3 5 6.5 5c2 0 3.5 1.2 4.5 2.4C12 6.2 13.5 5 15.5 5 19 5 21 8 20.5 11.5 18.5 16.1 12 21 12 21z"/>
+          </svg>
+        </div>
+        <div class="cover-title">My Only Love</div>
+        <div class="cover-subtitle">A Love Letter</div>
+        <div class="cover-line"></div>
+        <div class="cover-hint">✦ KLIK UNTUK MEMBUKA ✦</div>
+      </div>
+      <div class="cover-back"></div>
+    </div>
+
+  </div>
+
+  <script>
+    const stage = document.getElementById('bookStage');
+    const cover = document.getElementById('cover');
+
+    function openBook() {
+      if (stage.classList.contains('open')) return;
+      stage.classList.add('open');
+    }
+
+    cover.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openBook();
+    });
+
+    document.addEventListener('click', openBook);
+  </script>
+
+</body>
+</html>

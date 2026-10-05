@@ -76,8 +76,8 @@ export async function POST(req: Request) {
 
         let codeData: any = null;
         if (rawCodeData) {
-          let tier: 'daily' | 'weekly' | 'lifetime' = 'lifetime';
-          if (rawCodeData.tier === 'daily' || rawCodeData.tier === 'weekly' || rawCodeData.tier === 'lifetime') {
+          let tier: string = rawCodeData.tier || 'lifetime';
+          if (rawCodeData.tier) {
             tier = rawCodeData.tier;
           } else if (rawCodeData.notes?.includes('[TIER:daily]') || cleanCode.startsWith('DAY-')) {
             tier = 'daily';
@@ -459,9 +459,12 @@ export async function POST(req: Request) {
                   updatePayload.used_by_name = cleanName;
                   updatePayload.claimed_at = nowISO;
 
-                  // Hitung tanggal kedaluwarsa jika paket harian atau mingguan
+                  // Hitung tanggal kedaluwarsa jika paket harian, mingguan, atau custom duration
                   const tier = codeData.tier || 'lifetime';
-                  if (tier === 'daily') {
+                  if (typeof codeData.duration_days === 'number' && codeData.duration_days > 0) {
+                    calculatedExpiry = new Date(Date.now() + codeData.duration_days * 24 * 60 * 60 * 1000).toISOString();
+                    updatePayload.expires_at = calculatedExpiry;
+                  } else if (tier === 'daily') {
                     calculatedExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
                     updatePayload.expires_at = calculatedExpiry;
                   } else if (tier === 'weekly') {
