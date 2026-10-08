@@ -20,7 +20,6 @@ import {
 interface ConsoleLeftDockProps {
   currentStep: number;
   onStepClick: (step: number) => void;
-  onOpenGarden: () => void;
   onBackToDashboard?: () => void;
 }
 
@@ -35,7 +34,6 @@ const STEP_ITEMS = [
 export default function ConsoleLeftDock({
   currentStep,
   onStepClick,
-  onOpenGarden,
   onBackToDashboard,
 }: ConsoleLeftDockProps) {
   const [isMuted, setIsMuted] = useState(false);
@@ -112,20 +110,6 @@ export default function ConsoleLeftDock({
 
       {/* Utility Actions */}
       <div className="console-dock-utils">
-        {/* Garden Streak */}
-        <button
-          type="button"
-          onClick={() => {
-            consoleAudio.play('chime');
-            onOpenGarden();
-          }}
-          className="console-dock-util-btn streak-glow"
-          title="Kebun Bunga Harian (Api Streak 🔥)"
-        >
-          <Flame size={17} className="text-amber-400" />
-          <span className="console-dock-util-label">Kebun</span>
-        </button>
-
         {/* Audio Mute/Unmute */}
         <button
           type="button"

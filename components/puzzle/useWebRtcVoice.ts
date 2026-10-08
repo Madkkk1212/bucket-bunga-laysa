@@ -19,24 +19,35 @@ export interface WebRtcVoiceState {
   isSpeaking: boolean;
   remoteVolume: number; // 0 to 100 for remote visualizer
   isRemoteSpeaking: boolean;
+  remoteSpeakerName: string | null;
   roomCode: string;
+  playerList: string[];
+  sendMessage: (data: any) => void;
 }
 
-export function useWebRtcVoice(initialRoomCode: string, isMultiplayerActive: boolean) {
+export function useWebRtcVoice(
+  initialRoomCode: string,
+  isMultiplayerActive: boolean,
+  playerName: string = 'Pemain',
+  onDataMessage?: (data: any) => void
+) {
   const [roomCode, setRoomCode] = useState(initialRoomCode);
   const [isMicOn, setIsMicOn] = useState(false);
   const [pingMs, setPingMs] = useState<number | null>(null);
   const [connectedPlayers, setConnectedPlayers] = useState(1);
+  const [playerList, setPlayerList] = useState<string[]>([playerName]);
   const [localVolume, setLocalVolume] = useState(0);
   const [voiceBands, setVoiceBands] = useState<[number, number, number, number]>([0, 0, 0, 0]);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [remoteVolume, setRemoteVolume] = useState(0);
 
   // Refs
+  const playerNameRef = useRef(playerName);
+  const onDataMessageRef = useRef(onDataMessage);
   const isMicOnRef = useRef(false);
   const peerRef = useRef<any>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
-  const remoteAudioRef = useRef<HTMLAudioElement | null>(null);
+  const audioElementsRef = useRef<HTMLAudioElement[]>([]);
   const activeCallsRef = useRef<any[]>([]);
   const activeDataConsRef = useRef<any[]>([]);
   const pingIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -44,6 +55,14 @@ export function useWebRtcVoice(initialRoomCode: string, isMultiplayerActive: boo
   const localAnalyserRef = useRef<AnalyserNode | null>(null);
   const remoteAnalyserRef = useRef<AnalyserNode | null>(null);
   const animFrameRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    playerNameRef.current = playerName;
+  }, [playerName]);
+
+  useEffect(() => {
+    onDataMessageRef.current = onDataMessage;
+  }, [onDataMessage]);
 
   // Keep isMicOnRef synced for 60fps requestAnimationFrame loop
   useEffect(() => {
@@ -152,13 +171,23 @@ export function useWebRtcVoice(initialRoomCode: string, isMultiplayerActive: boo
   const measureBaseNetworkPing = useCallback(async () => {
     try {
       const start = performance.now();
-      // Fast HEAD fetch to local or cloud ping
       await fetch('/api/health?t=' + Date.now(), { method: 'HEAD', cache: 'no-store' }).catch(() => {});
       const elapsed = Math.round(performance.now() - start);
       setPingMs((prev) => (prev ? Math.round(prev * 0.7 + elapsed * 0.3) : Math.min(65, Math.max(18, elapsed))));
     } catch {
       setPingMs((prev) => prev || 32);
     }
+  }, []);
+
+  // Broadcast data packet to all peers in room
+  const sendMessage = useCallback((data: any) => {
+    activeDataConsRef.current.forEach((conn) => {
+      if (conn.open) {
+        try {
+          conn.send(data);
+        } catch {}
+      }
+    });
   }, []);
 
   // Initialize WebRTC Peer connection
@@ -169,21 +198,11 @@ export function useWebRtcVoice(initialRoomCode: string, isMultiplayerActive: boo
         peerRef.current = null;
       }
       setConnectedPlayers(1);
+      setPlayerList([playerNameRef.current]);
       return;
     }
 
     let isMounted = true;
-
-    // Create remote audio receiver element if not exists
-    if (!remoteAudioRef.current) {
-      const audio = document.createElement('audio');
-      audio.autoplay = true;
-      (audio as any).playsInline = true;
-      audio.style.display = 'none';
-      document.body.appendChild(audio);
-      remoteAudioRef.current = audio;
-    }
-
     const cleanCode = roomCode.trim().toUpperCase().replace(/[^A-Z0-9]/g, '') || '2026';
     const hostId = `lysroom-${cleanCode}-host`;
     const peerConfig = {
@@ -200,24 +219,36 @@ export function useWebRtcVoice(initialRoomCode: string, isMultiplayerActive: boo
       if (!activeCallsRef.current.includes(mediaCall)) {
         activeCallsRef.current.push(mediaCall);
       }
-      setConnectedPlayers((p) => Math.max(p, 2));
+      setConnectedPlayers((p) => Math.max(p, activeCallsRef.current.length + 1));
 
       mediaCall.on('stream', (remoteStream: MediaStream) => {
-        if (remoteAudioRef.current) {
-          remoteAudioRef.current.srcObject = remoteStream;
-          remoteAudioRef.current.play().catch(() => {});
-        }
+        // Individual audio element per caller for crystal-clear 2-way audio
+        const audio = document.createElement('audio');
+        audio.autoplay = true;
+        (audio as any).playsInline = true;
+        audio.style.display = 'none';
+        audio.srcObject = remoteStream;
+        document.body.appendChild(audio);
+        audioElementsRef.current.push(audio);
+        (mediaCall as any)._audioEl = audio;
+        audio.play().catch(() => {});
+
         startVolumeMeter(remoteStream, false);
       });
 
       mediaCall.on('close', () => {
-        activeCallsRef.current = activeCallsRef.current.filter((c) => c !== mediaCall);
-        if (activeCallsRef.current.length === 0 && activeDataConsRef.current.length === 0) {
-          setConnectedPlayers(1);
+        if ((mediaCall as any)._audioEl) {
+          (mediaCall as any)._audioEl.remove();
+          audioElementsRef.current = audioElementsRef.current.filter((a) => a !== (mediaCall as any)._audioEl);
         }
+        activeCallsRef.current = activeCallsRef.current.filter((c) => c !== mediaCall);
+        setConnectedPlayers(Math.max(1, activeDataConsRef.current.length + 1));
       });
 
       mediaCall.on('error', () => {
+        if ((mediaCall as any)._audioEl) {
+          (mediaCall as any)._audioEl.remove();
+        }
         activeCallsRef.current = activeCallsRef.current.filter((c) => c !== mediaCall);
       });
     }
@@ -226,10 +257,11 @@ export function useWebRtcVoice(initialRoomCode: string, isMultiplayerActive: boo
       if (!activeDataConsRef.current.includes(conn)) {
         activeDataConsRef.current.push(conn);
       }
-      setConnectedPlayers((p) => Math.max(p, 2));
+      setConnectedPlayers((p) => Math.max(p, activeDataConsRef.current.length + 1));
 
       conn.on('open', () => {
         conn.send({ type: '__ping__', ts: Date.now() });
+        conn.send({ type: '__player_join__', name: playerNameRef.current });
       });
 
       conn.on('data', (data: any) => {
@@ -238,17 +270,38 @@ export function useWebRtcVoice(initialRoomCode: string, isMultiplayerActive: boo
           conn.send({ type: '__pong__', ts: data.ts });
         } else if (data.type === '__pong__') {
           const rtt = Math.max(5, Math.round(Date.now() - data.ts));
-          // Latency is half of Round-Trip Time
           const latency = Math.round(rtt / 2);
           setPingMs(latency);
+        } else if (data.type === '__player_join__') {
+          (conn as any)._playerName = data.name;
+          const names = [
+            playerNameRef.current,
+            ...activeDataConsRef.current.map((c) => (c as any)._playerName).filter(Boolean),
+          ];
+          const uniqueNames = Array.from(new Set(names));
+          setPlayerList(uniqueNames);
+          conn.send({ type: '__player_welcome__', name: playerNameRef.current, players: uniqueNames });
+          onDataMessageRef.current?.(data);
+        } else if (data.type === '__player_welcome__') {
+          (conn as any)._playerName = data.name;
+          if (Array.isArray(data.players)) {
+            setPlayerList(Array.from(new Set([playerNameRef.current, ...data.players])));
+          }
+          onDataMessageRef.current?.(data);
+        } else {
+          // Game-level messages: pieces placed, sync game state, etc.
+          onDataMessageRef.current?.(data);
         }
       });
 
       conn.on('close', () => {
         activeDataConsRef.current = activeDataConsRef.current.filter((c) => c !== conn);
-        if (activeDataConsRef.current.length === 0 && activeCallsRef.current.length === 0) {
-          setConnectedPlayers(1);
-        }
+        const names = [
+          playerNameRef.current,
+          ...activeDataConsRef.current.map((c) => (c as any)._playerName).filter(Boolean),
+        ];
+        setPlayerList(Array.from(new Set(names)));
+        setConnectedPlayers(Math.max(1, activeDataConsRef.current.length + 1));
       });
     }
 
@@ -461,9 +514,11 @@ export function useWebRtcVoice(initialRoomCode: string, isMultiplayerActive: boo
       if (localStreamRef.current) {
         localStreamRef.current.getTracks().forEach((t) => t.stop());
       }
-      if (remoteAudioRef.current) {
-        remoteAudioRef.current.remove();
-      }
+      audioElementsRef.current.forEach((el) => {
+        try {
+          el.remove();
+        } catch {}
+      });
       if (animFrameRef.current) {
         cancelAnimationFrame(animFrameRef.current);
       }
@@ -472,6 +527,9 @@ export function useWebRtcVoice(initialRoomCode: string, isMultiplayerActive: boo
       }
     };
   }, []);
+
+  const remoteSpeakerName =
+    remoteVolume > 15 ? playerList.find((p) => p !== playerName) || 'Teman' : null;
 
   return {
     isMicOn,
@@ -484,6 +542,9 @@ export function useWebRtcVoice(initialRoomCode: string, isMultiplayerActive: boo
     isSpeaking,
     remoteVolume,
     isRemoteSpeaking: remoteVolume > 15,
+    remoteSpeakerName,
     roomCode,
+    playerList,
+    sendMessage,
   };
 }

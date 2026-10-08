@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   LayoutGrid,
@@ -28,7 +29,6 @@ import PreviewCanvas from '@/components/designer/PreviewCanvas';
 import FlowerCountModal from '@/components/designer/FlowerCountModal';
 import PremiumUnlockModal from '@/components/designer/PremiumUnlockModal';
 import VipCardModal from '@/components/designer/VipCardModal';
-import FlowerGardenModal from '@/components/garden/FlowerGardenModal';
 import MobileFlowerPickerModal from './MobileFlowerPickerModal';
 import MobileBucketPickerModal from './MobileBucketPickerModal';
 import MobileCardEditorModal from './MobileCardEditorModal';
@@ -123,7 +123,6 @@ export default function MobileDashboard({ onOpenStudio }: MobileDashboardProps =
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [isUnlockVipOpen, setIsUnlockVipOpen] = useState(false);
   const [isVipCardOpen, setIsVipCardOpen] = useState(false);
-  const [isGardenModalOpen, setIsGardenModalOpen] = useState(false);
 
   // Notification card visibility
   const [isNotifBannerVisible, setIsNotifBannerVisible] = useState(true);
@@ -416,20 +415,21 @@ export default function MobileDashboard({ onOpenStudio }: MobileDashboardProps =
           </div>
         </section>
 
-        {/* ─── FITUR SPESIAL: KEBUN BUNGA HARIAN STREAK ─── */}
+        {/* ─── FITUR SPESIAL: MINI GAMES ─── */}
         <section className="mb-section" style={{ marginTop: '-4px' }}>
-          <div
-            onClick={() => setIsGardenModalOpen(true)}
+          <Link
+            href="/minigames"
             style={{
-              background: 'linear-gradient(135deg, #FFF7ED 0%, #FFEDD5 100%)',
-              border: '1.5px solid #FDBA74',
+              background: 'linear-gradient(135deg, #EEF2FF 0%, #E0E7FF 100%)',
+              border: '1.5px solid #C7D2FE',
               borderRadius: '20px',
               padding: '14px 16px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
               cursor: 'pointer',
-              boxShadow: '0 4px 12px rgba(234, 88, 12, 0.08)',
+              textDecoration: 'none',
+              boxShadow: '0 4px 12px rgba(99, 102, 241, 0.08)',
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -438,32 +438,32 @@ export default function MobileDashboard({ onOpenStudio }: MobileDashboardProps =
                   width: '42px',
                   height: '42px',
                   borderRadius: '14px',
-                  background: '#EA580C',
+                  background: '#6366F1',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   fontSize: '20px',
-                  boxShadow: '0 4px 10px rgba(234, 88, 12, 0.25)',
+                  boxShadow: '0 4px 10px rgba(99, 102, 241, 0.25)',
                 }}
               >
-                🌱
+                🎮
               </div>
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <h4 style={{ margin: 0, fontSize: '13px', fontWeight: 800, color: '#9A3412' }}>
-                    {isEn ? 'Daily Flower Garden' : 'Kebun Bunga Harian'}
+                  <h4 style={{ margin: 0, fontSize: '13px', fontWeight: 800, color: '#312E81' }}>
+                    Mini Games
                   </h4>
-                  <span style={{ fontSize: '10px', fontWeight: 800, background: '#FED7AA', color: '#C2410C', padding: '1px 6px', borderRadius: '9999px' }}>
-                    🔥 Streak
+                  <span style={{ fontSize: '10px', fontWeight: 800, background: '#C7D2FE', color: '#3730A3', padding: '1px 6px', borderRadius: '9999px' }}>
+                    Gratis!
                   </span>
                 </div>
-                <p style={{ margin: '3px 0 0', fontSize: '11px', color: '#C2410C' }}>
-                  {isEn ? 'Water flowers daily & tend together with friends/partner' : 'Siram bunga tiap hari & rawat bersama teman / pasangan'}
+                <p style={{ margin: '3px 0 0', fontSize: '11px', color: '#4338CA' }}>
+                  {isEn ? 'Play interactive flower jigsaw puzzles & more' : 'Mainkan puzzle susun bunga & games interaktif'}
                 </p>
               </div>
             </div>
-            <ArrowRight size={16} style={{ color: '#EA580C', flexShrink: 0 }} />
-          </div>
+            <ArrowRight size={16} style={{ color: '#6366F1', flexShrink: 0 }} />
+          </Link>
         </section>
 
         {/* ─── 4. NOTIFIKASI SECTION ─── */}
@@ -676,7 +676,6 @@ export default function MobileDashboard({ onOpenStudio }: MobileDashboardProps =
         isOpen={isQuickMenuOpen}
         onClose={() => setIsQuickMenuOpen(false)}
         onOpenUnlockVip={() => setIsUnlockVipOpen(true)}
-        onOpenGarden={() => setIsGardenModalOpen(true)}
       />
 
       <MobileNotificationsModal
@@ -694,12 +693,6 @@ export default function MobileDashboard({ onOpenStudio }: MobileDashboardProps =
       <PremiumUnlockModal
         isOpen={isUnlockVipOpen}
         onClose={() => setIsUnlockVipOpen(false)}
-      />
-
-      <FlowerGardenModal
-        isOpen={isGardenModalOpen}
-        onClose={() => setIsGardenModalOpen(false)}
-        onOpenVipModal={() => setIsUnlockVipOpen(true)}
       />
 
       {isPremiumUnlocked && (

@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import PremiumUnlockModal from '../designer/PremiumUnlockModal';
 import { useWebRtcVoice } from './useWebRtcVoice';
+import PhotoAdjustModal from './PhotoAdjustModal';
 
 // ═══════════════════════════════════════════════════
 // CONFIG & TYPES
@@ -106,15 +107,30 @@ export default function PuzzleGame({
   const [tlInfo, setTlInfo] = useState('');
 
   // Multiplayer & Voice Chat state
+  const [playerName, setPlayerName] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('pj_player_name') || `Pemain-${Math.floor(100 + Math.random() * 900)}`;
+    }
+    return 'Pemain 1';
+  });
   const [playMode, setPlayMode] = useState<'solo' | 'duo' | 'party'>('solo');
   const [playerLimit, setPlayerLimit] = useState<number>(2);
   const [roomCode, setRoomCode] = useState<string>('LYS-2026');
   const [inputJoinCode, setInputJoinCode] = useState<string>('');
   const [isCopied, setIsCopied] = useState<boolean>(false);
   const [micGuideModalOpen, setMicGuideModalOpen] = useState<boolean>(false);
+  const [adjustModalOpen, setAdjustModalOpen] = useState<boolean>(false);
+  const [rawPhotoSrc, setRawPhotoSrc] = useState<string | null>(null);
+  const [isConvertingImage, setIsConvertingImage] = useState<boolean>(false);
+
+  // Incoming data message handler reference
+  const gameDataHandlerRef = useRef<(data: any) => void>(() => {});
+  const handleIncomingData = useCallback((data: any) => {
+    gameDataHandlerRef.current?.(data);
+  }, []);
 
   // WebRTC Voice Chat Engine & Real-time Ping Latency
-  const voice = useWebRtcVoice(roomCode, playMode !== 'solo');
+  const voice = useWebRtcVoice(roomCode, playMode !== 'solo', playerName, handleIncomingData);
 
   // Auto-detect Room invite link (?room=LYS-XXXX)
   useEffect(() => {
@@ -122,10 +138,10 @@ export default function PuzzleGame({
       const p = new URLSearchParams(window.location.search);
       const r = p.get('room');
       if (r) {
-        setRoomCode(r);
+        setRoomCode(r.toUpperCase());
         setPlayMode('duo');
         setPlayerLimit(2);
-        setToastMsg(`Bergabung ke Room ${r}!`);
+        setToastMsg(`Bergabung ke Room ${r.toUpperCase()}!`);
         setTimeout(() => setToastMsg(null), 3500);
       }
     }
@@ -306,19 +322,74 @@ export default function PuzzleGame({
     fileInputRef.current?.click();
   };
 
-  const onFileChange = (ev: React.ChangeEvent<HTMLInputElement>) => {
+  const onFileChange = async (ev: React.ChangeEvent<HTMLInputElement>) => {
     const f = ev.target.files?.[0];
     if (!f) return;
-    const r = new FileReader();
-    r.onload = () => {
-      const im = new Image();
-      im.onload = () => {
-        setCustomImageEl(im);
-      };
-      im.src = r.result as string;
-    };
-    r.readAsDataURL(f);
+
+    // Reset input so selecting the same file triggers onChange
     ev.target.value = '';
+
+    const name = f.name.toLowerCase();
+    const allowedExtensions = ['.heic', '.heif', '.jpg', '.jpeg', '.png', '.jp2', '.j2k', '.jpf', '.jpx', '.jpm'];
+    const hasAllowedExt = allowedExtensions.some((ext) => name.endsWith(ext));
+    const allowedMimes = [
+      'image/jpeg',
+      'image/pjpeg',
+      'image/png',
+      'image/heic',
+      'image/heif',
+      'image/jp2',
+      'image/jpx',
+      'image/jpm',
+    ];
+    const hasAllowedMime = allowedMimes.includes(f.type.toLowerCase());
+
+    // Selebihnya tidak bisa memasukkan foto
+    if (!hasAllowedExt && !hasAllowedMime) {
+      showToast('❌ Format tidak didukung! Hanya diperbolehkan HEIC, JPG, JPEG, PNG, dan JPEG2.');
+      return;
+    }
+
+    const isHeic =
+      name.endsWith('.heic') ||
+      name.endsWith('.heif') ||
+      f.type.toLowerCase().includes('heic') ||
+      f.type.toLowerCase().includes('heif');
+
+    if (isHeic) {
+      setIsConvertingImage(true);
+      showToast('🔄 Mengonversi foto HEIC...');
+      try {
+        const heic2anyModule = await import('heic2any');
+        const heic2any = heic2anyModule.default || heic2anyModule;
+        const converted = await heic2any({
+          blob: f,
+          toType: 'image/jpeg',
+          quality: 0.92,
+        });
+        const finalBlob = Array.isArray(converted) ? converted[0] : converted;
+        const objectUrl = URL.createObjectURL(finalBlob);
+        setRawPhotoSrc(objectUrl);
+        setAdjustModalOpen(true);
+      } catch (err) {
+        console.error('HEIC conversion error:', err);
+        showToast('❌ Gagal memproses file HEIC!');
+      } finally {
+        setIsConvertingImage(false);
+      }
+      return;
+    }
+
+    // Standard formats: JPG, JPEG, PNG, JPEG2
+    const reader = new FileReader();
+    reader.onload = () => {
+      setRawPhotoSrc(reader.result as string);
+      setAdjustModalOpen(true);
+    };
+    reader.onerror = () => {
+      showToast('❌ Gagal membaca file gambar!');
+    };
+    reader.readAsDataURL(f);
   };
 
   // ═══════════════════════════════════════════════════
@@ -592,23 +663,145 @@ export default function PuzzleGame({
     }, 500);
   };
 
-  const buildGame = useCallback(async () => {
-    const stage = stageRef.current;
-    if (!stage) return;
+  const buildGame = useCallback(
+    async (initialPlacedIds?: number[]) => {
+      const stage = stageRef.current;
+      if (!stage) return;
 
-    if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
-    cancelAnimationFrame(tlRafRef.current);
-    t0Ref.current = 0;
-    placedRef.current = 0;
-    missRef.current = 0;
-    zRef.current = 10;
-    dragRef.current = null;
-    stage.innerHTML = '';
-    setIsWinOpen(false);
-    setPlacedCount(0);
-    setTotalCount(gridN * gridN);
-    setMistakes(0);
-    setTimeStr('00:00');
+      if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
+      cancelAnimationFrame(tlRafRef.current);
+      t0Ref.current = 0;
+      placedRef.current = 0;
+      missRef.current = 0;
+      zRef.current = 10;
+      dragRef.current = null;
+      stage.innerHTML = '';
+      setIsWinOpen(false);
+      setPlacedCount(0);
+      setTotalCount(gridN * gridN);
+      setMistakes(0);
+      setTimeStr('00:00');
+
+      const L = getLayout(stage);
+      const s = Math.max(8, Math.round((L.B * dpr) / gridN));
+      const Wd = s * gridN;
+      const Bc = Wd / dpr;
+      const pad = Math.round(s * 0.3);
+      const bx = L.bx + (L.B - Bc) / 2;
+      const by = L.by + (L.B - Bc) / 2;
+      const S = s / dpr;
+      const P = pad / dpr;
+      const T = L.tray;
+
+      const renderedSrc = await renderSelectedImage(Wd);
+      srcCanvasRef.current = renderedSrc;
+      const E = genE(gridN);
+
+      // Tray area
+      const tr = document.createElement('div');
+      tr.className = 'tray';
+      tr.style.cssText = `left:${T.x}px;top:${T.y}px;width:${T.w}px;height:${T.h}px`;
+      stage.appendChild(tr);
+
+      // Board area
+      const bd = document.createElement('div');
+      bd.className = `board ${isPeeking ? 'peek' : ''}`;
+      bd.id = 'board';
+      bd.style.cssText = `left:${bx}px;top:${by}px;width:${Bc}px;height:${Bc}px`;
+
+      const im = document.createElement('img');
+      im.src = renderedSrc.toDataURL('image/jpeg', 0.85);
+      bd.appendChild(im);
+
+      const gc = document.createElement('canvas');
+      gc.width = gc.height = Wd;
+      guide(gc, s, gridN, E, 0.2, 0.9);
+      bd.appendChild(gc);
+      stage.appendChild(bd);
+
+      const cw = s + 2 * pad;
+      const pcs = Math.round(cw / dpr);
+      const sr = stage.getBoundingClientRect();
+
+      recRef.current = {
+        log: [],
+        init: [],
+        pcs: [],
+        guide: gc,
+        pw: pcs,
+        sw: sr.width,
+        sh: sr.height,
+        bx,
+        by,
+        Bc,
+        T,
+        D: 0,
+      };
+
+      for (let r = 0; r < gridN; r++) {
+        for (let c = 0; c < gridN; c++) {
+          const cv = document.createElement('canvas');
+          cv.width = cv.height = cw;
+          cv.className = 'pc';
+          cv.style.width = cv.style.height = cw / dpr + 'px';
+
+          const x = cv.getContext('2d')!;
+          x.translate(pad, pad);
+          path(x, s, r, c, E, gridN);
+          x.save();
+          x.clip();
+          x.drawImage(renderedSrc, -c * s, -r * s);
+          x.restore();
+
+          const lw = Math.max(1, s * 0.03);
+          x.lineJoin = 'round';
+          x.strokeStyle = 'rgba(31,41,55,.3)';
+          x.lineWidth = lw * 1.8;
+          x.stroke();
+          x.strokeStyle = 'rgba(255,255,255,.7)';
+          x.lineWidth = lw * 0.7;
+          x.stroke();
+
+          const pieceId = r * gridN + c;
+          (cv as any)._tx = bx + c * S - P;
+          (cv as any)._ty = by + r * S - P;
+          (cv as any)._S = S;
+          (cv as any)._pw = pcs;
+          (cv as any)._id = pieceId;
+
+          // Position scattered in tray or auto-place if already placed in co-op session
+          if (initialPlacedIds && initialPlacedIds.includes(pieceId)) {
+            cv.style.left = (cv as any)._tx + 'px';
+            cv.style.top = (cv as any)._ty + 'px';
+            cv.classList.add('ok');
+            placedRef.current++;
+          } else {
+            cv.style.left = T.x + Math.random() * Math.max(0, T.w - pcs) + 'px';
+            cv.style.top = T.y + Math.random() * Math.max(0, T.h - pcs) + 'px';
+          }
+          cv.style.zIndex = String(++zRef.current);
+          stage.appendChild(cv);
+
+          recRef.current.pcs[pieceId] = cv;
+          recRef.current.init[pieceId] = {
+            x: parseFloat(cv.style.left),
+            y: parseFloat(cv.style.top),
+          };
+        }
+      }
+
+      setPlacedCount(placedRef.current);
+      const savedBest = localStorage.getItem('jig_' + gridN);
+      setBestTime(savedBest ? fmt(+savedBest) : '–');
+    },
+    [gridN, isPeeking, renderSelectedImage, dpr]
+  );
+
+  // Smart Relayout: adjusts layout proportionally when fullscreen/resizing WITHOUT wiping placed pieces!
+  const relayoutGame = useCallback(() => {
+    const stage = stageRef.current;
+    const rec = recRef.current;
+    if (!stage || inMenu || !rec || rec.pcs.length === 0) return;
 
     const L = getLayout(stage);
     const s = Math.max(8, Math.round((L.B * dpr) / gridN));
@@ -621,98 +814,61 @@ export default function PuzzleGame({
     const P = pad / dpr;
     const T = L.tray;
 
-    const renderedSrc = await renderSelectedImage(Wd);
-    srcCanvasRef.current = renderedSrc;
-    const E = genE(gridN);
+    // Reposition tray
+    const tr = stage.querySelector('.tray') as HTMLDivElement | null;
+    if (tr) {
+      tr.style.left = `${T.x}px`;
+      tr.style.top = `${T.y}px`;
+      tr.style.width = `${T.w}px`;
+      tr.style.height = `${T.h}px`;
+    }
 
-    // Tray area
-    const tr = document.createElement('div');
-    tr.className = 'tray';
-    tr.style.cssText = `left:${T.x}px;top:${T.y}px;width:${T.w}px;height:${T.h}px`;
-    stage.appendChild(tr);
-
-    // Board area
-    const bd = document.createElement('div');
-    bd.className = `board ${isPeeking ? 'peek' : ''}`;
-    bd.id = 'board';
-    bd.style.cssText = `left:${bx}px;top:${by}px;width:${Bc}px;height:${Bc}px`;
-
-    const im = document.createElement('img');
-    im.src = renderedSrc.toDataURL('image/jpeg', 0.85);
-    bd.appendChild(im);
-
-    const gc = document.createElement('canvas');
-    gc.width = gc.height = Wd;
-    guide(gc, s, gridN, E, 0.2, 0.9);
-    bd.appendChild(gc);
-    stage.appendChild(bd);
+    // Reposition board
+    const bd = stage.querySelector('#board') as HTMLDivElement | null;
+    if (bd) {
+      bd.style.left = `${bx}px`;
+      bd.style.top = `${by}px`;
+      bd.style.width = `${Bc}px`;
+      bd.style.height = `${Bc}px`;
+    }
 
     const cw = s + 2 * pad;
     const pcs = Math.round(cw / dpr);
-    const sr = stage.getBoundingClientRect();
+    const oldT = rec.T;
 
-    recRef.current = {
-      log: [],
-      init: [],
-      pcs: [],
-      guide: gc,
-      pw: pcs,
-      sw: sr.width,
-      sh: sr.height,
-      bx,
-      by,
-      Bc,
-      T,
-      D: 0,
-    };
+    rec.pcs.forEach((cv, id) => {
+      if (!cv) return;
+      const r = Math.floor(id / gridN);
+      const c = id % gridN;
+      const newTx = bx + c * S - P;
+      const newTy = by + r * S - P;
 
-    for (let r = 0; r < gridN; r++) {
-      for (let c = 0; c < gridN; c++) {
-        const cv = document.createElement('canvas');
-        cv.width = cv.height = cw;
-        cv.className = 'pc';
-        cv.style.width = cv.style.height = cw / dpr + 'px';
+      (cv as any)._tx = newTx;
+      (cv as any)._ty = newTy;
+      (cv as any)._S = S;
+      (cv as any)._pw = pcs;
 
-        const x = cv.getContext('2d')!;
-        x.translate(pad, pad);
-        path(x, s, r, c, E, gridN);
-        x.save();
-        x.clip();
-        x.drawImage(renderedSrc, -c * s, -r * s);
-        x.restore();
-
-        const lw = Math.max(1, s * 0.03);
-        x.lineJoin = 'round';
-        x.strokeStyle = 'rgba(31,41,55,.3)';
-        x.lineWidth = lw * 1.8;
-        x.stroke();
-        x.strokeStyle = 'rgba(255,255,255,.7)';
-        x.lineWidth = lw * 0.7;
-        x.stroke();
-
-        (cv as any)._tx = bx + c * S - P;
-        (cv as any)._ty = by + r * S - P;
-        (cv as any)._S = S;
-        (cv as any)._pw = pcs;
-        (cv as any)._id = r * gridN + c;
-
-        // Position scattered in tray
-        cv.style.left = T.x + Math.random() * Math.max(0, T.w - pcs) + 'px';
-        cv.style.top = T.y + Math.random() * Math.max(0, T.h - pcs) + 'px';
-        cv.style.zIndex = String(++zRef.current);
-        stage.appendChild(cv);
-
-        recRef.current.pcs[(cv as any)._id] = cv;
-        recRef.current.init[(cv as any)._id] = {
-          x: parseFloat(cv.style.left),
-          y: parseFloat(cv.style.top),
-        };
+      if (cv.classList.contains('ok')) {
+        // Locked in place: keep exactly on the board!
+        cv.style.left = `${newTx}px`;
+        cv.style.top = `${newTy}px`;
+      } else {
+        // Proportional reposition in new tray
+        const currX = parseFloat(cv.style.left) || T.x;
+        const currY = parseFloat(cv.style.top) || T.y;
+        const relX = oldT.w > 0 ? (currX - oldT.x) / oldT.w : 0.5;
+        const relY = oldT.h > 0 ? (currY - oldT.y) / oldT.h : 0.5;
+        cv.style.left = `${T.x + Math.max(0, Math.min(T.w - pcs, relX * T.w))}px`;
+        cv.style.top = `${T.y + Math.max(0, Math.min(T.h - pcs, relY * T.h))}px`;
       }
-    }
+    });
 
-    const savedBest = localStorage.getItem('jig_' + gridN);
-    setBestTime(savedBest ? fmt(+savedBest) : '–');
-  }, [gridN, isPeeking, renderSelectedImage, dpr]);
+    rec.bx = bx;
+    rec.by = by;
+    rec.Bc = Bc;
+    rec.T = T;
+    rec.pw = pcs;
+  }, [inMenu, gridN, dpr]);
 
   // Pointer event listeners on stage
   useEffect(() => {
@@ -784,6 +940,15 @@ export default function PuzzleGame({
         el.classList.add('ok');
         placedRef.current++;
         setPlacedCount(placedRef.current);
+
+        // Sync placed piece to multiplayer room
+        if (playMode !== 'solo') {
+          voice.sendMessage({
+            type: '__piece_placed__',
+            pieceId: (el as any)._id,
+            byName: playerName,
+          });
+        }
       }
       lg(el, ok);
 
@@ -813,16 +978,20 @@ export default function PuzzleGame({
       stage.removeEventListener('pointerup', onPointerUp);
       stage.removeEventListener('pointercancel', onPointerUp);
     };
-  }, [inMenu, gridN]);
+  }, [inMenu, gridN, playMode, playerName, voice]);
 
-  // Recalculate stage on window resize or fullscreen toggle
+  // Recalculate stage on window resize or fullscreen toggle (WITHOUT resetting pieces!)
   useEffect(() => {
     let timeoutId: any;
     const handleResize = () => {
       clearTimeout(timeoutId);
       timeoutId = setTimeout(() => {
         if (!inMenu && stageRef.current) {
-          buildGame();
+          if (recRef.current && recRef.current.pcs.length > 0) {
+            relayoutGame();
+          } else {
+            buildGame();
+          }
         }
       }, 150);
     };
@@ -831,7 +1000,62 @@ export default function PuzzleGame({
       clearTimeout(timeoutId);
       window.removeEventListener('resize', handleResize);
     };
-  }, [inMenu, buildGame]);
+  }, [inMenu, buildGame, relayoutGame]);
+
+  // Handle incoming data messages (Game Sync & Co-op Moves)
+  useEffect(() => {
+    gameDataHandlerRef.current = (data: any) => {
+      if (!data || typeof data !== 'object') return;
+      if (data.type === '__player_join__') {
+        showToast(`👋 ${data.name || 'Teman'} bergabung ke room!`);
+        // If Host is already playing, send current game state to newcomer!
+        if (!inMenu && recRef.current) {
+          const placedIds: number[] = [];
+          recRef.current.pcs.forEach((cv, idx) => {
+            if (cv && cv.classList.contains('ok')) placedIds.push(idx);
+          });
+          voice.sendMessage({
+            type: '__game_sync__',
+            presetIdx: selectedPreset,
+            gridN,
+            hostName: playerName,
+            placedIds,
+          });
+        }
+      } else if (data.type === '__game_sync__') {
+        showToast(`🎮 Masuk ke sesi puzzle ${data.hostName || 'Host'}!`);
+        if (typeof data.presetIdx === 'number') {
+          setSelectedPreset(data.presetIdx);
+        }
+        if (typeof data.gridN === 'number') {
+          setGridN(data.gridN);
+        }
+        setPlayMode('duo');
+        setInMenu(false);
+        setTimeout(() => {
+          buildGame(data.placedIds);
+        }, 60);
+      } else if (data.type === '__piece_placed__') {
+        const stage = stageRef.current;
+        const rec = recRef.current;
+        if (!stage || !rec) return;
+
+        const pieceEl = rec.pcs[data.pieceId];
+        if (pieceEl && !pieceEl.classList.contains('ok')) {
+          pieceEl.style.left = (pieceEl as any)._tx + 'px';
+          pieceEl.style.top = (pieceEl as any)._ty + 'px';
+          pieceEl.classList.add('ok');
+          placedRef.current++;
+          setPlacedCount(placedRef.current);
+          showToast(`🧩 ${data.byName || 'Teman'} memasang kepingan!`);
+
+          if (placedRef.current === gridN * gridN) {
+            handleWin();
+          }
+        }
+      }
+    };
+  }, [inMenu, selectedPreset, gridN, playerName, buildGame, voice]);
 
   const startGame = () => {
     // Generate random room code for mabar if empty
@@ -842,6 +1066,15 @@ export default function PuzzleGame({
     setInMenu(false);
     setTimeout(() => {
       buildGame();
+      if (playMode !== 'solo') {
+        voice.sendMessage({
+          type: '__game_sync__',
+          presetIdx: selectedPreset,
+          gridN,
+          hostName: playerName,
+          placedIds: [],
+        });
+      }
     }, 50);
   };
 
@@ -960,7 +1193,7 @@ export default function PuzzleGame({
 
           {!inMenu && (
             <div className="pj-action-bar">
-              <button type="button" className="pj-btn" onClick={buildGame} title="Acak Ulang">
+              <button type="button" className="pj-btn" onClick={() => buildGame()} title="Acak Ulang">
                 <RefreshCw size={14} />
                 <span>Acak</span>
               </button>
@@ -1025,73 +1258,115 @@ export default function PuzzleGame({
 
             {/* Right: Controls & Multiplayer */}
             <div className="pj-menu-controls-col">
-              {/* Step 1: Mode Bermain (Solo, 2 Player Free, 4-8 Player VIP) */}
-              <div className="pj-menu-group">
-                <h3>1 · Mode Permainan</h3>
-                <div className="pj-mode-selector">
-                  <button
-                    type="button"
-                    className={`pj-mode-btn ${playerLimit === 1 ? 'on' : ''}`}
-                    onClick={() => handleSelectPartyMode(1)}
-                  >
-                    <span>Solo</span>
-                    <small>Main Sendiri</small>
-                  </button>
-                  <button
-                    type="button"
-                    className={`pj-mode-btn ${playerLimit === 2 ? 'on' : ''}`}
-                    onClick={() => handleSelectPartyMode(2)}
-                  >
-                    <span>2 Pemain</span>
-                    <small className="text-emerald-500 font-bold">Gratis</small>
-                  </button>
-                  <button
-                    type="button"
-                    className={`pj-mode-btn pj-mode-btn--vip ${playerLimit >= 4 ? 'on' : ''}`}
-                    onClick={() => handleSelectPartyMode(4)}
-                  >
-                    <span className="flex items-center gap-1 justify-center">
-                      <Crown size={13} className="text-amber-400" />
-                      4–8 Pemain
-                    </span>
-                    <small className="text-amber-400 font-bold">Khusus VIP</small>
-                  </button>
-                </div>
+                {/* Step 1: Mode Bermain & Mabar Room */}
+                <div className="pj-menu-group">
+                  <h3>1 · Mode Permainan & Mabar</h3>
 
-                {/* Multiplayer Room Code & Join Box — Selalu Tampil agar mudah mabar & masukkan kode */}
-                <div className="pj-room-card">
-                  {/* Bar 1: Room Aktif & Share Link */}
-                  <div className="pj-room-card-head">
-                    <div className="pj-room-badge-group">
-                      <Users size={14} className="text-indigo-600" />
-                      <span className="pj-room-lbl">Kode Room:</span>
-                      <span className="pj-room-code-tag">{roomCode}</span>
-                      <span className="pj-room-players-pill">
-                        {voice.connectedPlayers > 1
-                          ? `🟢 ${voice.connectedPlayers} Pemain Terhubung`
-                          : '1 Pemain'}
-                      </span>
-                    </div>
-                    <div className="pj-room-btn-group">
-                      <button
-                        type="button"
-                        className="pj-room-action-btn"
-                        onClick={copyRoomCode}
-                        title="Salin Link Room untuk dikirim ke teman"
-                      >
-                        {isCopied ? <Check size={12} className="text-emerald-600" /> : <Copy size={12} />}
-                        <span>{isCopied ? 'Tersalin!' : 'Undang Teman'}</span>
-                      </button>
-                      <button
-                        type="button"
-                        className="pj-room-action-btn pj-room-action-btn--icon"
-                        onClick={handleNewRandomRoom}
-                        title="Acak Kode Room Baru"
-                      >
-                        <RefreshCw size={12} />
-                      </button>
-                    </div>
+                  {/* Player Name Input */}
+                  <div className="pj-player-name-box">
+                    <span className="pj-player-name-lbl">Nama Kamu:</span>
+                    <input
+                      type="text"
+                      className="pj-player-name-input"
+                      value={playerName}
+                      onChange={(e) => {
+                        const n = e.target.value;
+                        setPlayerName(n);
+                        if (typeof window !== 'undefined') localStorage.setItem('pj_player_name', n);
+                      }}
+                      placeholder="Ketik nama kamu..."
+                      maxLength={16}
+                    />
                   </div>
+
+                  {/* Mode Selector (Solo, 2 Pemain, 4 Pemain VIP, 8 Pemain VIP) */}
+                  <div className="pj-mode-selector">
+                    <button
+                      type="button"
+                      className={`pj-mode-btn ${playerLimit === 1 ? 'on' : ''}`}
+                      onClick={() => handleSelectPartyMode(1)}
+                    >
+                      <span>Solo</span>
+                      <small>1 Pemain</small>
+                    </button>
+                    <button
+                      type="button"
+                      className={`pj-mode-btn ${playerLimit === 2 ? 'on' : ''}`}
+                      onClick={() => handleSelectPartyMode(2)}
+                    >
+                      <span>2 Pemain</span>
+                      <small className="text-emerald-500 font-bold">Gratis</small>
+                    </button>
+                    <button
+                      type="button"
+                      className={`pj-mode-btn pj-mode-btn--vip ${playerLimit === 4 ? 'on' : ''}`}
+                      onClick={() => handleSelectPartyMode(4)}
+                    >
+                      <span className="flex items-center gap-1 justify-center">
+                        <Crown size={12} className="text-amber-400" />
+                        4 Pemain
+                      </span>
+                      <small className="text-amber-400 font-bold">VIP</small>
+                    </button>
+                    <button
+                      type="button"
+                      className={`pj-mode-btn pj-mode-btn--vip ${playerLimit === 8 ? 'on' : ''}`}
+                      onClick={() => handleSelectPartyMode(8)}
+                    >
+                      <span className="flex items-center gap-1 justify-center">
+                        <Crown size={12} className="text-amber-400" />
+                        8 Pemain
+                      </span>
+                      <small className="text-amber-400 font-bold">Party</small>
+                    </button>
+                  </div>
+
+                  {/* Multiplayer Room Code & Join Box — Selalu Tampil agar mudah mabar & masukkan kode */}
+                  <div className="pj-room-card">
+                    {/* Bar 1: Room Aktif & Share Link */}
+                    <div className="pj-room-card-head">
+                      <div className="pj-room-badge-group">
+                        <Users size={14} className="text-indigo-600" />
+                        <span className="pj-room-lbl">Room:</span>
+                        <span className="pj-room-code-tag">{roomCode}</span>
+                        <span className="pj-room-players-pill">
+                          {voice.playerList.length}/{playerLimit} Pemain
+                        </span>
+                      </div>
+                      <div className="pj-room-btn-group">
+                        <button
+                          type="button"
+                          className="pj-room-action-btn"
+                          onClick={copyRoomCode}
+                          title="Salin Link Room untuk dikirim ke teman"
+                        >
+                          {isCopied ? <Check size={12} className="text-emerald-600" /> : <Copy size={12} />}
+                          <span>{isCopied ? 'Tersalin!' : 'Undang Teman'}</span>
+                        </button>
+                        <button
+                          type="button"
+                          className="pj-room-action-btn pj-room-action-btn--icon"
+                          onClick={handleNewRandomRoom}
+                          title="Acak Kode Room Baru"
+                        >
+                          <RefreshCw size={12} />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Daftar Nama Pemain yang Terhubung di Room */}
+                    {voice.playerList.length > 0 && (
+                      <div className="pj-player-chips">
+                        {voice.playerList.map((p, idx) => (
+                          <span
+                            key={idx}
+                            className={`pj-player-chip ${p === playerName ? 'pj-player-chip--me' : ''}`}
+                          >
+                            {p} {p === playerName ? '(Kamu)' : ''}
+                          </span>
+                        ))}
+                      </div>
+                    )}
 
                   {/* Bar 2: Input Gabung Room Teman */}
                   <form className="pj-room-join-row" onSubmit={handleJoinRoom}>
@@ -1170,7 +1445,8 @@ export default function PuzzleGame({
                     type="button"
                     className={`pj-th-up ${customImageEl ? 'on' : ''} ${!isPremium ? 'locked' : ''}`}
                     onClick={handleCustomPhotoClick}
-                    title={isPremium ? 'Upload Foto Sendiri' : 'Foto Sendiri (Khusus VIP)'}
+                    disabled={isConvertingImage}
+                    title={isPremium ? 'Upload Foto Sendiri (HEIC, JPG, JPEG, PNG, JPEG2)' : 'Foto Sendiri (Khusus VIP)'}
                   >
                     {!isPremium ? (
                       <>
@@ -1179,14 +1455,27 @@ export default function PuzzleGame({
                       </>
                     ) : (
                       <>
-                        <span>Foto Sendiri</span>
+                        <span>{isConvertingImage ? 'Konversi...' : customImageEl ? 'Ganti Foto' : 'Foto Sendiri'}</span>
                       </>
                     )}
                   </button>
+
+                  {customImageEl && rawPhotoSrc && isPremium && (
+                    <button
+                      type="button"
+                      className="pj-btn"
+                      style={{ fontSize: '0.78rem', padding: '6px 10px', height: 'auto', border: '1px dashed #ec4899', color: '#db2777', fontWeight: 600, background: '#fdf2f8' }}
+                      onClick={() => setAdjustModalOpen(true)}
+                      title="Geser atau pusatkan (ketengahin) posisi foto"
+                    >
+                      📐 Atur Posisi Foto
+                    </button>
+                  )}
+
                   <input
                     ref={fileInputRef}
                     type="file"
-                    accept="image/*"
+                    accept=".jpg,.jpeg,.png,.heic,.heif,.jp2,.j2k,image/jpeg,image/png,image/heic,image/heif,image/jp2"
                     style={{ display: 'none' }}
                     onChange={onFileChange}
                   />
@@ -1268,7 +1557,7 @@ export default function PuzzleGame({
               </button>
             </div>
             <div className="pj-win-row pj-win-subrow">
-              <button type="button" className="pj-btn" onClick={buildGame}>
+              <button type="button" className="pj-btn" onClick={() => buildGame()}>
                 Main Lagi
               </button>
               <button type="button" className="pj-btn" onClick={returnToMenu}>
@@ -1285,7 +1574,7 @@ export default function PuzzleGame({
           <div className="pj-room-info">
             <Users size={14} className="text-indigo-400" />
             <span>
-              Room: {roomCode} ({voice.connectedPlayers} Pemain)
+              Room: {roomCode} ({voice.playerList.length}/{playerLimit} Pemain)
             </span>
           </div>
 
@@ -1301,7 +1590,7 @@ export default function PuzzleGame({
           {/* Friend talking indicator */}
           {voice.isRemoteSpeaking && (
             <span className="pj-remote-speaking">
-              🔊 Teman bicara
+              🔊 {voice.remoteSpeakerName || 'Teman'} bicara
             </span>
           )}
 
@@ -1464,6 +1753,18 @@ export default function PuzzleGame({
           </div>
         </div>
       )}
+
+      {/* ── PHOTO ADJUST & CROP MODAL ── */}
+      <PhotoAdjustModal
+        isOpen={adjustModalOpen}
+        rawImageSrc={rawPhotoSrc}
+        onClose={() => setAdjustModalOpen(false)}
+        onApply={(croppedImg) => {
+          setCustomImageEl(croppedImg);
+          setAdjustModalOpen(false);
+          showToast('✅ Posisi foto berhasil disesuaikan!');
+        }}
+      />
     </div>
   );
 }

@@ -35,7 +35,6 @@ import MobileThemePickerModal from '../home/mobile/MobileThemePickerModal';
 import MobileShareModal from '../home/mobile/MobileShareModal';
 import PremiumUnlockModal from './PremiumUnlockModal';
 import VipCardModal from './VipCardModal';
-import FlowerGardenModal from '../garden/FlowerGardenModal';
 import { CANVAS_RATIO_DIMENSIONS } from '@/utils/canvasUtils';
 import { CanvasRatio } from '@/types/design';
 import { FLOWERS } from '@/data/flowers';
@@ -108,7 +107,6 @@ export default function MobileStudioView({ onBack }: MobileStudioViewProps) {
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [isUnlockModalOpen, setIsUnlockModalOpen] = useState(false);
   const [isVipCardOpen, setIsVipCardOpen] = useState(false);
-  const [isGardenModalOpen, setIsGardenModalOpen] = useState(false);
 
   useEffect(() => { setHasMounted(true); }, []);
 
@@ -254,17 +252,6 @@ export default function MobileStudioView({ onBack }: MobileStudioViewProps) {
               </button>
             )
           )}
-
-          {/* Kebun Bunga Streak */}
-          <button
-            type="button"
-            className="ms-studio-btn-icon"
-            onClick={() => setIsGardenModalOpen(true)}
-            title={isEn ? 'Daily Flower Garden (Fire Streak 🔥)' : 'Kebun Bunga Harian (Api Streak 🔥)'}
-            style={{ background: '#FFF7ED', borderColor: '#FED7AA', color: '#EA580C' }}
-          >
-            <span style={{ fontSize: '13px', lineHeight: 1 }}>🌱</span>
-          </button>
 
           {/* Undo */}
           <button
@@ -837,11 +824,6 @@ export default function MobileStudioView({ onBack }: MobileStudioViewProps) {
         canvasRef={canvasRef}
       />
       <PremiumUnlockModal isOpen={isUnlockModalOpen} onClose={() => setIsUnlockModalOpen(false)} />
-      <FlowerGardenModal
-        isOpen={isGardenModalOpen}
-        onClose={() => setIsGardenModalOpen(false)}
-        onOpenVipModal={() => setIsUnlockModalOpen(true)}
-      />
       {isPremiumUnlocked && (
         <VipCardModal
           isOpen={isVipCardOpen}

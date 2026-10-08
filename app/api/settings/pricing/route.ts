@@ -97,7 +97,6 @@ export const DEFAULT_TIERS: Record<string, TierConfig> = {
     features: [
       'Akses VIP permanen SELAMANYA (sekali bayar tanpa langganan)',
       'Link kado interaktif SELAMANYA / Permanen (Tanpa Expired)',
-      '🌸 EKSKLUSIF: Buka Fitur Kebun Bunga Harian Streak 🔥 (Solo / Pasangan)',
       'Ekspor Kualitas Tertinggi Ultra HD 4K & Stiker WA (Transparan)',
       'Kartu Ucapan Kaligrafi Eksklusif & Ornamen Pita Mewah',
       'Bisa terhubung hingga 5 perangkat bersama keluarga / pasangan',

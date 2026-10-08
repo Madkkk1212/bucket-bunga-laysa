@@ -16,7 +16,6 @@ interface PremiumUnlockModalProps {
   itemName?: string;
   itemType?: 'bucket' | 'bunga';
   defaultTier?: string;
-  onOpenGarden?: () => void;
 }
 
 type PricingTierKey = 'daily' | 'weekly' | 'lifetime' | string;
@@ -50,7 +49,6 @@ const DEFAULT_PERKS: Record<PricingTierKey, { title: string; badge?: string; fea
     badge: 'Paling Lengkap & Permanen',
     features: [
       'Akses VIP permanen SELAMANYA (sekali bayar tanpa langganan)',
-      '🌸 EKSKLUSIF: Buka Fitur Kebun Bunga Harian Streak 🔥 (Solo / Pasangan)',
       '🔒 Autosave Cloud Terenkripsi AES-256 (Draft aman antar perangkat)',
       '🖼️ Custom Background Kanvas (Gunakan foto studio pribadi sesuai rasio kanvas)',
       '👑 Ekspor Kualitas Tertinggi Ultra HD 4K (3.5x Lossless Master)',
@@ -89,7 +87,6 @@ const DEFAULT_PERKS_EN: Record<PricingTierKey, { title: string; badge?: string; 
     badge: 'Ultimate & Permanent',
     features: [
       'Permanent VIP access FOREVER (one-time payment, no subscriptions)',
-      '🌸 EXCLUSIVE: Unlock Daily Flower Garden Streak 🔥 (Solo / Partner)',
       '🔒 AES-256 Encrypted Cloud Vault (Seamless multi-device sync)',
       '🖼️ Custom Canvas Background (Use personal studio backdrop with aspect ratio tool)',
       '👑 Ultra HD 4K Highest Quality Export (3.5x Lossless Master)',
@@ -105,7 +102,6 @@ export default function PremiumUnlockModal({
   onClose,
   itemName,
   defaultTier = 'lifetime',
-  onOpenGarden,
 }: PremiumUnlockModalProps) {
   const router = useRouter();
   const { unlockPremium, isPremiumUnlocked, premiumUserName } = useDesign();
@@ -115,7 +111,6 @@ export default function PremiumUnlockModal({
   const [verifiedCode, setVerifiedCode] = useState('');
   const [verifiedTier, setVerifiedTier] = useState<PricingTierKey>('lifetime');
   const [userName, setUserName] = useState(premiumUserName || '');
-  const [gardenNameInput, setGardenNameInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
@@ -128,7 +123,6 @@ export default function PremiumUnlockModal({
     maxDevices: number;
     tier?: string;
     expiresAt?: string | null;
-    hasGardenAccess?: boolean;
   } | null>(null);
 
   const [pricingData, setPricingData] = useState<any>({
@@ -245,8 +239,8 @@ export default function PremiumUnlockModal({
       : `Halo Admin Laysa Florist, saya ingin pesan Kode Akses VIP Paket Mingguan 7 Hari (${formattedPrice}).\n\nBenefit:\n• Bebas rangkai & edit semua bunga & buket (7 Hari)\n• Sangat cocok untuk kado wisuda & ultah\n• Hingga 5 perangkat bersamaan\n\nBoleh minta nomor rekening/QRIS untuk pembayarannya? Terima kasih!`;
   } else if (selectedTier === 'lifetime') {
     waCustomText = isEn
-      ? `Hello Admin Laysa Florist, I would like to order a Lifetime VIP Access Code (${formattedPrice}).\n\nExclusive Benefits:\n• Permanent VIP Access Forever (One-time payment)\n• EXCLUSIVE: Unlock Daily Flower Garden Streak 🔥\n• Ultra HD 4K & Transparent WA Stickers\n• Up to 5 devices simultaneously\n\nMay I have the payment details / QRIS? Thank you!`
-      : `Halo Admin Laysa Florist, saya ingin pesan Kode Akses VIP Paket Selamanya (${formattedPrice}).\n\nBenefit Eksklusif:\n• Akses VIP Selamanya (Permanen Sekali Bayar)\n• EKSKLUSIF: Buka Fitur Kebun Bunga Streak 🔥\n• Ekspor Ultra HD 4K & Stiker WA Transparan\n• Hingga 5 perangkat bersamaan\n\nBoleh minta nomor rekening/QRIS untuk pembayarannya? Terima kasih!`;
+      ? `Hello Admin Laysa Florist, I would like to order a Lifetime VIP Access Code (${formattedPrice}).\n\nExclusive Benefits:\n• Permanent VIP Access Forever (One-time payment)\n• Ultra HD 4K & Transparent WA Stickers\n• Up to 5 devices simultaneously\n\nMay I have the payment details / QRIS? Thank you!`
+      : `Halo Admin Laysa Florist, saya ingin pesan Kode Akses VIP Paket Selamanya (${formattedPrice}).\n\nBenefit Eksklusif:\n• Akses VIP Selamanya (Permanen Sekali Bayar)\n• Ekspor Ultra HD 4K & Stiker WA Transparan\n• Hingga 5 perangkat bersamaan\n\nBoleh minta nomor rekening/QRIS untuk pembayarannya? Terima kasih!`;
   } else {
     const customName = activeTierConfig.name || `Paket ${selectedTier}`;
     const customDuration = activeTierConfig.durationLabel || (activeTierConfig.durationDays ? `${activeTierConfig.durationDays} Hari` : 'Spesial');
@@ -295,7 +289,6 @@ export default function PremiumUnlockModal({
           maxDevices: data.maxDevices ?? 5,
           tier: data.tier,
           expiresAt: data.expiresAt,
-          hasGardenAccess: data.hasGardenAccess,
         });
         if (data.isOwner) {
           setUserName(data.registeredName || premiumUserName || '');
@@ -321,12 +314,6 @@ export default function PremiumUnlockModal({
       return;
     }
 
-    const isLifetime = verifiedTier === 'lifetime' || Boolean(codeInfo?.hasGardenAccess);
-    if (isLifetime && !gardenNameInput.trim()) {
-      setErrorMsg(isEn ? 'As a Lifetime VIP owner, your flower garden must be named first 🌸' : 'Sebagai pemilik Paket Selamanya, kebun bunga kamu wajib dinamai terlebih dahulu 🌸');
-      return;
-    }
-
     setIsLoading(true);
     setErrorMsg('');
 
@@ -335,21 +322,6 @@ export default function PremiumUnlockModal({
     setIsLoading(false);
 
     if (res.success) {
-      if (isLifetime && gardenNameInput.trim()) {
-        try {
-          const trimmedGarden = gardenNameInput.trim();
-          const existing = localStorage.getItem('bucket_garden_info_v3');
-          let info: any = { name: trimmedGarden, partner: '', streak: 14 };
-          if (existing) {
-            try {
-              const parsed = JSON.parse(existing);
-              info = { ...parsed, name: trimmedGarden };
-            } catch {}
-          }
-          localStorage.setItem('bucket_garden_info_v3', JSON.stringify(info));
-          localStorage.setItem('bucket_garden_named', 'true');
-        } catch {}
-      }
       setSuccessMsg(res.message || (isEn ? `VIP Access active for ${userName.trim()}!` : `Akses VIP aktif untuk ${userName.trim()}!`));
       // Lanjut ke popup Terima Kasih
       setStep('THANK_YOU');
@@ -480,9 +452,9 @@ export default function PremiumUnlockModal({
                               </>
                             )}
                           </div>
-                          {t.gardenAccess && (
+                          {isLifetime && (
                             <div className="text-[11px] font-bold text-amber-700 mt-1 flex items-center gap-1">
-                              <span>{isEn ? '🌸 EXCLUSIVE: Flower Garden Streak 🔥' : '🌸 EKSKLUSIF: Kebun Bunga Streak 🔥'}</span>
+                              <span>{isEn ? '👑 EXCLUSIVE: Lifetime VIP Pass' : '👑 EKSKLUSIF: Akses VIP Selamanya'}</span>
                             </div>
                           )}
                         </div>
@@ -575,8 +547,8 @@ export default function PremiumUnlockModal({
                     {activeTierConfig.discountBadge || activeTierConfig.badge || (activeTierConfig.hasDiscount ? `${activeTierConfig.discountPercentage || 50}% OFF` : (isEn ? 'SPECIAL' : 'SPESIAL'))}
                   </span>
                   <span className="boutique-price-note">
-                    {selectedTier === 'lifetime' || Boolean(activeTierConfig.gardenAccess)
-                      ? (isEn ? '🌸 Flower Garden Feature Included' : '🌸 Termasuk Fitur Kebun Bunga')
+                    {selectedTier === 'lifetime'
+                      ? (isEn ? '👑 Permanent Lifetime VIP Access' : '👑 Akses VIP Selamanya Permanen')
                       : selectedTier === 'weekly'
                       ? (isEn ? 'Full access for 7 days' : 'Akses penuh selama 7 hari')
                       : selectedTier === 'daily'
@@ -600,9 +572,9 @@ export default function PremiumUnlockModal({
                 </div>
                 <ul className="boutique-perks-list">
                   {currentTierPerks.features.map((feature: string, idx: number) => {
-                    const isGardenFeature = feature.toLowerCase().includes('kebun') || feature.toLowerCase().includes('garden') || feature.toLowerCase().includes('streak');
+                    const isHighlightFeature = feature.toLowerCase().includes('selamanya') || feature.toLowerCase().includes('forever') || feature.toLowerCase().includes('lifetime');
                     return (
-                      <li key={idx} className={`boutique-perk-item ${isGardenFeature ? 'highlight' : ''}`}>
+                      <li key={idx} className={`boutique-perk-item ${isHighlightFeature ? 'highlight' : ''}`}>
                         <CheckCircle2 size={13} className="boutique-perk-icon" />
                         <span>{feature}</span>
                       </li>
@@ -801,60 +773,10 @@ export default function PremiumUnlockModal({
                   </div>
                 </div>
 
-                {(verifiedTier === 'lifetime' || Boolean(codeInfo?.hasGardenAccess)) && (
-                  <div className="boutique-form-field">
-                    <label className="boutique-input-label flex items-center justify-between">
-                      <span className="flex items-center gap-1">
-                        <span>{isEn ? 'Your Flower Garden Name' : 'Nama Kebun Bunga Anda'}</span>
-                        <span className="text-rose-500 font-bold">*</span>
-                      </span>
-                      <span className="text-[10px] text-amber-700 font-extrabold px-1.5 py-0.5 rounded bg-amber-100">
-                        {isEn ? 'LIFETIME VIP REQUIRED 👑' : 'KHUSUS PAKET SELAMANYA 👑'}
-                      </span>
-                    </label>
-                    <div className="boutique-input-shell">
-                      <span className="boutique-input-icon text-sm">🌸</span>
-                      <input
-                        type="text"
-                        className="boutique-input"
-                        placeholder={isEn ? 'e.g. Laysa Love Sanctuary, Our Rose Garden...' : 'Misal: Kebun Cinta Laysa, Taman Mawar Kita...'}
-                        value={gardenNameInput}
-                        onChange={(e) => {
-                          setGardenNameInput(e.target.value);
-                          if (errorMsg) setErrorMsg('');
-                        }}
-                        disabled={isLoading || isPremiumUnlocked}
-                        required
-                      />
-                    </div>
-                    <div className="flex gap-1 mt-1.5 flex-wrap">
-                      <span className="text-[10px] text-stone-500 self-center">{isEn ? 'Options:' : 'Pilihan:'}</span>
-                      {(isEn
-                        ? ['Our Rose Garden 🌹', 'Laysa Love Sanctuary ✨', 'Happy Blossom 🌼']
-                        : ['Taman Mawar Kita 🌹', 'Kebun Kasih Laysa ✨', 'Puspa Bahagia 🌼']
-                      ).map((preset) => (
-                        <button
-                          key={preset}
-                          type="button"
-                          onClick={() => setGardenNameInput(preset)}
-                          className="text-[10px] px-2 py-0.5 rounded bg-stone-100 hover:bg-amber-100 text-stone-700 font-medium transition"
-                        >
-                          {preset}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
                 <button
                   type="submit"
                   className="boutique-submit-btn-full"
-                  disabled={
-                    isLoading || 
-                    isPremiumUnlocked || 
-                    !userName.trim() || 
-                    ((verifiedTier === 'lifetime' || Boolean(codeInfo?.hasGardenAccess)) && !gardenNameInput.trim())
-                  }
+                  disabled={isLoading || isPremiumUnlocked || !userName.trim()}
                   id="btn-claim-vip-access"
                 >
                   {isLoading
@@ -933,30 +855,6 @@ export default function PremiumUnlockModal({
                 </div>
               </div>
 
-              {/* Callout Khusus Kebun Bunga jika Lifetime */}
-              {(verifiedTier === 'lifetime' || codeInfo?.hasGardenAccess) && (
-                <div
-                  style={{
-                    width: '100%',
-                    background: '#fff7ed',
-                    border: '1.5px solid #fed7aa',
-                    borderRadius: '14px',
-                    padding: '12px 14px',
-                    marginBottom: '16px',
-                    textAlign: 'left',
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 800, fontSize: '12.5px', color: '#9a3412' }}>
-                    <span>{isEn ? '🌱 Daily Flower Garden Streak Feature 🔥 Unlocked!' : '🌱 Fitur Kebun Bunga Streak Harian 🔥 Terbuka!'}</span>
-                  </div>
-                  <p style={{ margin: '3px 0 0', fontSize: '11px', color: '#c2410c', lineHeight: 1.4 }}>
-                    {isEn
-                      ? 'You can now plant daily flowers, nurture your daily fire streak, and invite your partner via garden code!'
-                      : 'Anda kini dapat menanam bunga harian, memelihara api streak harian, dan mengundang pasangan via kode kebun!'}
-                  </p>
-                </div>
-              )}
-
               {/* Action Buttons */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%' }}>
                 <button
@@ -968,42 +866,6 @@ export default function PremiumUnlockModal({
                   <Sparkles size={16} />
                   <span>{isEn ? 'Start Arranging Bouquet Now' : 'Mulai Merangkai Buket Sekarang'}</span>
                 </button>
-
-                {(verifiedTier === 'lifetime' || codeInfo?.hasGardenAccess) && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      onClose();
-                      if (onOpenGarden) {
-                        onOpenGarden();
-                      } else {
-                        router.push('/minigames');
-                      }
-                    }}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '8px',
-                      padding: '11px',
-                      borderRadius: '12px',
-                      background: '#fff7ed',
-                      border: '1.5px solid #fdba74',
-                      color: '#c2410c',
-                      fontSize: '12.5px',
-                      fontWeight: 800,
-                      cursor: 'pointer',
-                      transition: 'all 0.15s',
-                    }}
-                  >
-                    <span>
-                      {isEn
-                        ? `🌱 Open Flower Garden ${gardenNameInput ? `"${gardenNameInput}"` : ''} 🔥`
-                        : `🌱 Buka Kebun Bunga ${gardenNameInput ? `"${gardenNameInput}"` : ''} 🔥`}
-                    </span>
-                    <ArrowRight size={14} />
-                  </button>
-                )}
               </div>
             </div>
           )}

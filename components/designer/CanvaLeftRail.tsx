@@ -23,7 +23,6 @@ import { useLanguage } from '@/context/LanguageContext';
 interface CanvaLeftRailProps {
   currentStep: number;
   onStepClick: (step: number) => void;
-  onOpenGarden: () => void;
   onBackToDashboard?: () => void;
   isSidebarExpanded: boolean;
   onToggleSidebar: () => void;
@@ -42,7 +41,6 @@ const STEP_ITEMS = [
 export default function CanvaLeftRail({
   currentStep,
   onStepClick,
-  onOpenGarden,
   onBackToDashboard,
   isSidebarExpanded,
   onToggleSidebar,
@@ -136,20 +134,6 @@ export default function CanvaLeftRail({
 
         {/* Bottom Utility Items */}
         <div className="canva-rail-bottom">
-          {/* Garden Streak */}
-          <button
-            type="button"
-            onClick={() => {
-              consoleAudio.play('chime');
-              onOpenGarden();
-            }}
-            className="canva-rail-btn text-amber-600 hover:text-amber-700 hover:bg-amber-50"
-            title={t('rail_kebun_title')}
-          >
-            <Flame size={16} />
-            <span className="canva-rail-btn-label">{t('rail_kebun')}</span>
-          </button>
-
           {/* Sound Mute Toggle */}
           <button
             type="button"

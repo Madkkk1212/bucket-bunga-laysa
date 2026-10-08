@@ -42,8 +42,6 @@ export const TRANSLATIONS = {
     step_5_desc: 'Simpan hasil buket resolusi tinggi atau bagikan',
 
     // Rail Navigation
-    rail_kebun: 'Kebun',
-    rail_kebun_title: 'Kebun Bunga Harian (Api Streak 🔥)',
     rail_suara: 'Suara',
     rail_bisu: 'Bisu',
     rail_panduan: 'Panduan',
@@ -426,8 +424,6 @@ export const TRANSLATIONS = {
     step_5_desc: 'Save your high-resolution bouquet artwork or share it',
 
     // Rail Navigation
-    rail_kebun: 'Garden',
-    rail_kebun_title: 'Daily Flower Garden (Streak 🔥)',
     rail_suara: 'Sound',
     rail_bisu: 'Mute',
     rail_panduan: 'Tutorial',

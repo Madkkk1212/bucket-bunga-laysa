@@ -229,7 +229,6 @@ export default function LaysaCleanPortalPage() {
       features: [
         'Akses VIP permanen SELAMANYA (sekali bayar tanpa langganan)',
         'Link kado interaktif SELAMANYA / Permanen (Tanpa Expired)',
-        '🌸 EKSKLUSIF: Buka Fitur Kebun Bunga Harian Streak 🔥 (Solo / Pasangan)',
         'Ekspor Kualitas Tertinggi Ultra HD 4K & Stiker WA (Transparan)',
         'Kartu Ucapan Kaligrafi Eksklusif & Ornamen Pita Mewah',
         'Bisa terhubung hingga 5 perangkat bersama keluarga / pasangan',
@@ -822,11 +821,11 @@ export default function LaysaCleanPortalPage() {
         body: JSON.stringify({ gardenFieldSize, gardenSize, gardenExpansionPrice }),
       });
       const data = await response.json();
-      if (!response.ok || !data.success) throw new Error(data.message || 'Pengaturan kebun gagal disimpan.');
+      if (!response.ok || !data.success) throw new Error(data.message || 'Pengaturan gagal disimpan.');
       setGardenFieldSize(Math.max(8, Math.min(16, Number(data.pricing?.gardenFieldSize) || gardenFieldSize)));
       setGardenSize(Math.max(5, Math.min(10, Number(data.pricing?.gardenSize) || gardenSize)));
       setGardenExpansionPrice(Math.max(0, Number(data.pricing?.gardenExpansionPrice) || 0));
-      setGardenSettingsMsg({ text: 'Ukuran bidang hijau berhasil disimpan dan akan diterapkan ke kebun.', type: 'success' });
+      setGardenSettingsMsg({ text: 'Ukuran bidang hijau berhasil disimpan dan berhasil diterapkan.', type: 'success' });
     } catch (error) {
       setGardenSettingsMsg({ text: error instanceof Error ? error.message : 'Gagal menghubungi server.', type: 'error' });
     } finally {
@@ -860,7 +859,7 @@ export default function LaysaCleanPortalPage() {
         (w.features || []).map((f) => `• ${f}`).join('\n') + `\n\n` +
         `📲 Pesan kode akses instan via WA: https://wa.me/6289514618737`;
     } else if (key === 'lifetime') {
-      text = `👑 *VIP SULTAN SELAMANYA + KEBUN BUNGA STREAK 🔥* 👑\n` +
+      text = `👑 *VIP SULTAN SELAMANYA* 👑\n` +
         `Sekali bayar aktif selamanya tanpa biaya langganan bulanan!\n\n` +
         `💰 Cuma *Rp ${lPrice.toLocaleString('id-ID')}* ${l.isPromoActive ? `(Diskon dari Rp ${l.basePrice.toLocaleString('id-ID')})` : ''}!\n\n` +
         `✨ Keuntungan Eksklusif:\n` +
@@ -874,7 +873,7 @@ export default function LaysaCleanPortalPage() {
         `2️⃣ *Paket Mingguan (7 Hari)* — Rp ${wPrice.toLocaleString('id-ID')}\n` +
         `• Cocok untuk event wisuda/kado, bebas edit kapan saja, hingga 5 device.\n\n` +
         `3️⃣ *Paket Selamanya (VIP Sultan)* — Rp ${lPrice.toLocaleString('id-ID')} 👑\n` +
-        `• Akses PERMANEN selamanya + Buka Fitur Kebun Bunga Harian Streak 🔥 (Solo / Pasangan).\n\n` +
+        `• Akses PERMANEN selamanya.\n\n` +
         `📲 Pesan kode akses langsung via WhatsApp: https://wa.me/6289514618737`;
     }
 
@@ -899,7 +898,7 @@ export default function LaysaCleanPortalPage() {
     } else if (tier === 'weekly') {
       text = `Halo kak! Terima kasih atas pemesanan Akses VIP Mingguan (7 Hari) Studio Buket Laysa.\n\nBerikut kode akses Anda:\n👉 *${codeStr}*\n\nCara pakai:\n1. Buka website Studio Buket kami\n2. Klik "Buka VIP" lalu masukkan kode di atas\n3. Ketik nama kamu, dan seluruh bunga & bucket aktif selama 7 hari! 🌸📅`;
     } else {
-      text = `Halo kak! Terima kasih atas pemesanan Akses VIP Selamanya Studio Buket Laysa.\n\nBerikut kode akses eksklusif Anda:\n👉 *${codeStr}*\n\nCara pakai:\n1. Buka website Studio Buket kami\n2. Klik "Buka VIP" lalu masukkan kode di atas\n3. Ketik nama kamu, seluruh bunga & bucket aktif SELAMANYA + fitur Kebun Bunga Streak 🔥 terbuka! 🌸👑`;
+      text = `Halo kak! Terima kasih atas pemesanan Akses VIP Selamanya Studio Buket Laysa.\n\nBerikut kode akses eksklusif Anda:\n👉 *${codeStr}*\n\nCara pakai:\n1. Buka website Studio Buket kami\n2. Klik "Buka VIP" lalu masukkan kode di atas\n3. Ketik nama kamu, seluruh bunga & bucket aktif SELAMANYA + fitur VIP terbuka! 🌸👑`;
     }
     navigator.clipboard.writeText(text);
     alert(`Pesan WhatsApp untuk kode "${codeStr}" (${tier}) berhasil disalin.`);
@@ -1095,14 +1094,7 @@ export default function LaysaCleanPortalPage() {
               <span>Atur Harga &amp; Promo</span>
             </button>
 
-            <button
-              type="button"
-              onClick={() => setActiveTab('garden')}
-              className={`adm-nav-item ${activeTab === 'garden' ? 'active' : ''}`}
-            >
-              <Trees size={17} />
-              <span>Pengaturan Kebun</span>
-            </button>
+            
 
             <button
               type="button"
@@ -1209,14 +1201,7 @@ export default function LaysaCleanPortalPage() {
                 <span>Harga &amp; Promo</span>
               </button>
 
-              <button
-                type="button"
-                onClick={() => setActiveTab('garden')}
-                className={`adm-mobile-tab-btn ${activeTab === 'garden' ? 'active' : ''}`}
-              >
-                <Trees size={14} />
-                <span>Kebun</span>
-              </button>
+              
 
               <button
                 type="button"
@@ -1477,7 +1462,7 @@ export default function LaysaCleanPortalPage() {
                       style={{ justifyContent: 'center', padding: '12px', borderRadius: '14px', flexDirection: 'column', gap: '6px', height: '72px' }}
                     >
                       <Trees size={18} />
-                      <span style={{ fontSize: '0.78rem' }}>Atur Kebun</span>
+                      <span style={{ fontSize: '0.78rem' }}>Atur VIP</span>
                     </button>
                     <button
                       type="button"
@@ -1651,7 +1636,7 @@ export default function LaysaCleanPortalPage() {
                       >
                         <option value="daily">⏱️ Paket Harian (Berlaku 24 Jam sejak klaim)</option>
                         <option value="weekly">📅 Paket Mingguan (Berlaku 7 Hari sejak klaim)</option>
-                        <option value="lifetime">👑 Paket Selamanya (Permanen + Akses Kebun Bunga Streak 🔥)</option>
+                        <option value="lifetime">👑 Paket Selamanya (Permanen VIP)</option>
                         <option value="custom">⚙️ Kustom Durasi (Bisa isi berapa hari bebas)</option>
                       </select>
                     </div>
@@ -2219,7 +2204,7 @@ export default function LaysaCleanPortalPage() {
 
                 <div className="garden-admin-size-card" style={{ background: 'linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%)', border: '1px solid #bbf7d0', borderRadius: '16px', padding: '16px 18px', marginBottom: '18px', display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) auto auto', gap: '14px', alignItems: 'center' }}>
                   <div>
-                    <h4 style={{ margin: 0, fontSize: '0.92rem', fontWeight: 800, color: '#14532d' }}>Ukuran Kebun Bunga</h4>
+                    <h4 style={{ margin: 0, fontSize: '0.92rem', fontWeight: 800, color: '#14532d' }}>Ukuran Paket</h4>
                     <p style={{ margin: '4px 0 0', fontSize: '0.74rem', color: '#166534', lineHeight: 1.5 }}>Standar 5 × 5. Ukuran aktif ini berlaku global; tarif perluasan dapat dipakai admin untuk pencatatan pembayaran manual.</p>
                   </div>
                   <label style={{ display: 'grid', gap: '4px', fontSize: '0.7rem', color: '#166534', fontWeight: 700 }}>
@@ -2660,62 +2645,6 @@ export default function LaysaCleanPortalPage() {
                     </div>
                   </div>
 
-                  {/* Toggle Akses Kebun Bunga */}
-                  <div
-                    style={{
-                      marginBottom: '16px',
-                      background: currentTierData.gardenAccess ? '#fef3c7' : 'var(--bg-subtle)',
-                      border: currentTierData.gardenAccess ? '1px solid #fde68a' : '1px solid var(--border)',
-                      borderRadius: '12px',
-                      padding: '12px 16px',
-                    }}
-                  >
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', fontSize: '0.86rem', fontWeight: 700, color: currentTierData.gardenAccess ? '#92400e' : 'var(--text-dark)' }}>
-                      <input
-                        type="checkbox"
-                        checked={Boolean(currentTierData.gardenAccess)}
-                        onChange={(e) => {
-                          const val = e.target.checked;
-                          setMultiTierPricing((prev) => ({
-                            ...prev,
-                            [selectedPricingTier]: { ...prev[selectedPricingTier], gardenAccess: val },
-                          }));
-                        }}
-                        style={{ width: '18px', height: '18px', accentColor: '#d97706' }}
-                      />
-                      <span>🌸 Sertakan Akses Fitur Kebun Bunga Harian Streak 🔥</span>
-                    </label>
-                    <p style={{ margin: '3px 0 0 28px', fontSize: '0.72rem', color: currentTierData.gardenAccess ? '#b45309' : 'var(--text-muted)' }}>
-                      Paket ini akan otomatis membuka akses fitur menyiram kebun bunga streak ala TikTok (solo/pasangan).
-                    </p>
-                  </div>
-
-                  {/* Tombol Hapus Voucher Jika Kustom */}
-                  {(currentTierData.isCustom || !['daily', 'weekly', 'lifetime'].includes(selectedPricingTier)) && (
-                    <div style={{ marginBottom: '16px', textAlign: 'right' }}>
-                      <button
-                        type="button"
-                        onClick={() => handleDeleteVoucher(selectedPricingTier)}
-                        style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                          padding: '6px 14px',
-                          borderRadius: '10px',
-                          fontSize: '0.78rem',
-                          fontWeight: 700,
-                          background: '#fee2e2',
-                          color: '#b91c1c',
-                          border: '1px solid #fecaca',
-                          cursor: 'pointer',
-                        }}
-                      >
-                        <Trash2 size={13} />
-                        <span>Hapus Voucher "{currentTierData.name || selectedPricingTier}"</span>
-                      </button>
-                    </div>
-                  )}
-
                   {pricingMsg && (
                     <div
                       style={{
@@ -2756,6 +2685,8 @@ export default function LaysaCleanPortalPage() {
                     <p className="adm-card-sub">Simulasi modal yang dilihat pelanggan saat mengklik Buka VIP.</p>
                   </div>
                 </div>
+
+                  
 
                 <div style={{ padding: '20px' }}>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -2800,7 +2731,7 @@ export default function LaysaCleanPortalPage() {
                                 color: key === 'lifetime' ? '#92400e' : '#15803d',
                               }}
                             >
-                              {t.badge || (key === 'lifetime' ? '👑 Termasuk Kebun' : 'Hemat')}
+                              {t.badge || (key === 'lifetime' ? '👑 Lifetime VIP' : 'Hemat')}
                             </span>
                           </div>
 
@@ -2838,7 +2769,7 @@ export default function LaysaCleanPortalPage() {
 
                           {t.gardenAccess && (
                             <div style={{ fontSize: '0.72rem', color: '#b45309', fontWeight: 700, marginTop: '6px', background: '#fef3c7', padding: '3px 8px', borderRadius: '6px' }}>
-                              🌸 Buka Fitur Kebun Bunga Streak Harian 🔥
+                              👑 Akses Seluruh Koleksi Bunga VIP
                             </div>
                           )}
                         </div>
@@ -3177,79 +3108,7 @@ export default function LaysaCleanPortalPage() {
           {/* ═══════════════════════════════════════════
               TAB 3: STATUS DATABASE
               ═══════════════════════════════════════════ */}
-          {activeTab === 'garden' && (
-            <section className="garden-admin-page">
-              <div className="garden-admin-hero">
-                <div className="garden-admin-hero-mark"><Trees size={22} /></div>
-                <div>
-                  <span className="garden-admin-eyebrow">KONTROL KEBUN 3D</span>
-                  <h2>Pengaturan Kebun</h2>
-                  <p>Atur bidang hijau, petak bunga, dan catatan tarif perluasan dari satu tempat.</p>
-                </div>
-                <div className="garden-admin-live-pill"><span /> Pengaturan global</div>
-              </div>
-
-              <div className="garden-admin-summary-grid">
-                <article className="garden-admin-summary-card">
-                  <span>Bidang hijau</span>
-                  <strong>{gardenFieldSize} × {gardenFieldSize}</strong>
-                  <small>Petak untuk peta kota dan area dekorasi</small>
-                </article>
-                <article className="garden-admin-summary-card flower">
-                  <span>Peta bunga</span>
-                  <strong>{gardenSize} × {gardenSize}</strong>
-                  <small>Grid tanam bunga terpisah dari bidang kota</small>
-                </article>
-                <article className="garden-admin-summary-card price">
-                  <span>Tarif perluasan</span>
-                  <strong>Rp {gardenExpansionPrice.toLocaleString('id-ID')}</strong>
-                  <small>Nilai referensi admin; tidak menagih otomatis</small>
-                </article>
-              </div>
-
-              <form className="garden-admin-settings-card" onSubmit={handleSaveGardenSettings}>
-                <div className="garden-admin-card-heading">
-                  <div>
-                    <h3>Ukuran &amp; perluasan</h3>
-                    <p>Ukuran bidang baru diterapkan pada scene kebun setelah halaman dimuat ulang.</p>
-                  </div>
-                  <span className="garden-admin-default-chip">Normal · 8 × 8</span>
-                </div>
-
-                <div className="garden-admin-controls-grid">
-                  <label className="garden-admin-field">
-                    <span>Ukuran bidang hijau</span>
-                    <select value={gardenFieldSize} onChange={(event) => setGardenFieldSize(Math.max(8, Math.min(16, Number(event.target.value) || 8)))}>
-                      {Array.from({ length: 9 }, (_, index) => index + 8).map((size) => (
-                        <option key={size} value={size}>{size} × {size} petak</option>
-                      ))}
-                    </select>
-                    <small>8 × 8 adalah ukuran normal. Tata kota menempati bidang hijau ini.</small>
-                  </label>
-                  <label className="garden-admin-field">
-                    <span>Ukuran peta bunga</span>
-                    <select value={gardenSize} onChange={(event) => setGardenSize(Math.max(5, Math.min(10, Number(event.target.value) || 5)))}>
-                      {[5, 6, 7, 8, 9, 10].map((size) => <option key={size} value={size}>{size} × {size} petak</option>)}
-                    </select>
-                    <small>Default bunga tetap 5 × 5; tanaman yang sudah ada akan dipertahankan jika masih muat.</small>
-                  </label>
-                  <label className="garden-admin-field">
-                    <span>Tarif perluasan (catatan)</span>
-                    <div className="garden-admin-currency-input"><span>Rp</span><input type="number" min="0" step="1000" value={gardenExpansionPrice} onChange={(event) => setGardenExpansionPrice(Math.max(0, Number(event.target.value) || 0))} /></div>
-                    <small>Belum ada pembayaran otomatis; nilai ini hanya disimpan sebagai konfigurasi admin.</small>
-                  </label>
-                </div>
-
-                {gardenSettingsMsg && <p className={`garden-admin-feedback ${gardenSettingsMsg.type}`} role="status">{gardenSettingsMsg.text}</p>}
-                <div className="garden-admin-save-row">
-                  <span>Disimpan melalui pengaturan server; Supabase memakai kolom JSON yang sudah ada.</span>
-                  <button type="submit" disabled={isSavingGardenSettings}>
-                    <Save size={16} /> {isSavingGardenSettings ? 'Menyimpan…' : 'Simpan pengaturan kebun'}
-                  </button>
-                </div>
-              </form>
-            </section>
-          )}
+          
 
           {activeTab === 'diagnostics' && (
             <div className="adm-form-card">

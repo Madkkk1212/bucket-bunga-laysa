@@ -11,10 +11,9 @@ interface Props {
   isOpen: boolean;
   onClose: () => void;
   onOpenUnlockVip?: () => void;
-  onOpenGarden?: () => void;
 }
 
-export default function MobileQuickMenuModal({ isOpen, onClose, onOpenUnlockVip, onOpenGarden }: Props) {
+export default function MobileQuickMenuModal({ isOpen, onClose, onOpenUnlockVip }: Props) {
   const { isPremiumUnlocked, premiumUserName, resetDesign } = useDesign();
   const { language } = useLanguage();
   const isEn = language === 'en';
@@ -90,39 +89,35 @@ export default function MobileQuickMenuModal({ isOpen, onClose, onOpenUnlockVip,
               )}
             </div>
 
-            {/* Menu List: 1. Kebun Bunga Streak */}
-            <button
-              type="button"
-              onClick={() => {
-                onClose();
-                onOpenGarden?.();
-              }}
+            {/* Menu List: 1. Mini Games */}
+            <Link
+              href="/minigames"
+              onClick={onClose}
               style={{
                 display: 'flex',
                 alignItems: 'center',
                 gap: '12px',
                 borderRadius: '16px',
-                border: '1.5px solid #FFEDD5',
-                background: '#FFF7ED',
+                border: '1.5px solid #E0E7FF',
+                background: '#EEF2FF',
                 padding: '12px 14px',
-                cursor: 'pointer',
-                textAlign: 'left',
+                textDecoration: 'none',
                 width: '100%',
               }}
             >
-              <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: '#FED7AA', color: '#EA580C', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>
-                🌱
+              <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: '#C7D2FE', color: '#4338CA', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>
+                🎮
               </div>
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <p style={{ fontSize: '12.5px', fontWeight: 800, color: '#9A3412' }}>{isEn ? 'Daily Flower Garden' : 'Kebun Bunga Harian'}</p>
-                  <span style={{ fontSize: '10px', fontWeight: 800, background: '#FED7AA', color: '#9A3412', borderRadius: '9999px', padding: '1px 6px' }}>🔥 Streak</span>
+                  <p style={{ fontSize: '12.5px', fontWeight: 800, color: '#3730A3' }}>Mini Games</p>
+                  <span style={{ fontSize: '10px', fontWeight: 800, background: '#C7D2FE', color: '#3730A3', borderRadius: '9999px', padding: '1px 6px' }}>Gratis</span>
                 </div>
-                <p style={{ fontSize: '11px', color: '#C2410C', marginTop: '2px' }}>
-                  {isEn ? 'Water flowers daily & nurture together with partner' : 'Siram bunga setiap hari bersama pasangan / sahabat'}
+                <p style={{ fontSize: '11px', color: '#4338CA', marginTop: '2px' }}>
+                  {isEn ? 'Play interactive flower jigsaw puzzles' : 'Mainkan puzzle jigsaw bunga & game interaktif'}
                 </p>
               </div>
-            </button>
+            </Link>
 
             {/* Menu List: 2. Panduan Tutorial */}
             <Link

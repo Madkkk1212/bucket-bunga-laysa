@@ -3,14 +3,14 @@ import type { Metadata } from 'next';
 export const metadata: Metadata = {
   title: 'Pilih Menu — Bucket Bunga Laysa',
   description:
-    'Mau ngapain hari ini? Buat buket bunga virtual gratis, baca panduan merangkai buket yang cantik, atau rawat Kebun Bunga bersama pasangan.',
+    'Mau ngapain hari ini? Buat buket bunga virtual gratis, baca panduan merangkai buket yang cantik, atau mainkan mini games seru.',
   alternates: {
     canonical: '/menu',
   },
   openGraph: {
     title: 'Pilih Menu — Bucket Bunga Laysa',
     description:
-      'Mau ngapain hari ini? Buat buket bunga virtual gratis, baca panduan merangkai buket yang cantik, atau rawat Kebun Bunga bersama pasangan.',
+      'Mau ngapain hari ini? Buat buket bunga virtual gratis, baca panduan merangkai buket yang cantik, atau mainkan mini games seru.',
     url: 'https://giftbucket.web.id/menu',
     siteName: 'Bucket Bunga Laysa',
     locale: 'id_ID',
@@ -28,7 +28,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'Pilih Menu — Bucket Bunga Laysa',
     description:
-      'Mau ngapain hari ini? Buat buket bunga virtual gratis, baca panduan merangkai buket yang cantik, atau rawat Kebun Bunga bersama pasangan.',
+      'Mau ngapain hari ini? Buat buket bunga virtual gratis, baca panduan merangkai buket yang cantik, atau mainkan mini games seru.',
     images: ['/images/home.png'],
   },
 };

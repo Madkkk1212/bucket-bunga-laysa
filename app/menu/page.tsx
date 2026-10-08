@@ -10,7 +10,6 @@ import {
 } from 'lucide-react';
 import HomeBackgroundVideo from '@/components/home/HomeBackgroundVideo';
 import FlowerCountModal from '@/components/designer/FlowerCountModal';
-import FlowerGardenModal from '@/components/garden/FlowerGardenModal';
 import PremiumUnlockModal from '@/components/designer/PremiumUnlockModal';
 import LanguageSwitcher from '@/components/ui/LanguageSwitcher';
 import { useLanguage } from '@/context/LanguageContext';
@@ -32,7 +31,6 @@ function GameMenuContent() {
 
   // Modals state
   const [isCountModalOpen, setIsCountModalOpen] = useState(false);
-  const [isGardenModalOpen, setIsGardenModalOpen] = useState(false);
   const [isVipModalOpen, setIsVipModalOpen] = useState(false);
 
   // Sound effect synthesizer (Web Audio API - instant, no external files)
@@ -93,7 +91,7 @@ function GameMenuContent() {
     router.push('/tutorial');
   };
 
-  const handleOpenKebun = () => {
+  const handleOpenMiniGames = () => {
     playSfx('select');
     router.push('/minigames');
   };
@@ -271,11 +269,11 @@ function GameMenuContent() {
           {/* ═════════ MENU 3: MINI GAMES ═════════ */}
           <div
             className="game-card game-card-garden cursor-pointer"
-            onClick={handleOpenKebun}
+            onClick={handleOpenMiniGames}
             onMouseEnter={() => playSfx('hover')}
             role="button"
             tabIndex={0}
-            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleOpenKebun(); }}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleOpenMiniGames(); }}
             aria-label="Mini Games"
           >
             {/* Rarity Badge */}
@@ -316,7 +314,7 @@ function GameMenuContent() {
                 type="button"
                 id="btn-menu-minigames"
                 className="game-card-btn btn-garden"
-                onClick={(e) => { e.stopPropagation(); handleOpenKebun(); }}
+                onClick={(e) => { e.stopPropagation(); handleOpenMiniGames(); }}
               >
                 <span>Buka Mini Games</span>
                 <span style={{ fontSize: '16px' }}>🎮</span>
@@ -346,25 +344,11 @@ function GameMenuContent() {
         canDismiss={true}
       />
 
-      {/* Modal 2: Kebun Bunga Streak Harian */}
-      <FlowerGardenModal
-        isOpen={isGardenModalOpen}
-        onClose={() => setIsGardenModalOpen(false)}
-        onOpenVipModal={() => {
-          setIsGardenModalOpen(false);
-          setIsVipModalOpen(true);
-        }}
-      />
-
-      {/* Modal 3: VIP Sultan Unlock (jika dibuka dari kebun) */}
+      {/* Modal 2: VIP Sultan Unlock */}
       <PremiumUnlockModal
         isOpen={isVipModalOpen}
         onClose={() => setIsVipModalOpen(false)}
         defaultTier="lifetime"
-        onOpenGarden={() => {
-          setIsVipModalOpen(false);
-          router.push('/kebun');
-        }}
       />
     </div>
   );

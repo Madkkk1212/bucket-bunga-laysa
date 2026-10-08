@@ -9,7 +9,6 @@ import SelectionSummary from '../designer/SelectionSummary';
 import FlowerCountModal from '../designer/FlowerCountModal';
 import PremiumUnlockModal from '../designer/PremiumUnlockModal';
 import VipCardModal from '../designer/VipCardModal';
-import FlowerGardenModal from '../garden/FlowerGardenModal';
 import StepSize from '../steps/StepSize';
 import StepFlowers from '../steps/StepFlowers';
 import StepText from '../steps/StepText';
@@ -68,7 +67,6 @@ export default function DesignerLayout({ onBackToDashboard }: DesignerLayoutProp
   const [isCountModalOpen, setIsCountModalOpen] = useState(false);
   const [isUnlockModalOpen, setIsUnlockModalOpen] = useState(false);
   const [isVipMenuOpen, setIsVipMenuOpen] = useState(false);
-  const [isGardenModalOpen, setIsGardenModalOpen] = useState(false);
   const [hasMounted, setHasMounted] = useState(false);
 
   // Editable Project Name ala Canva
@@ -295,7 +293,6 @@ export default function DesignerLayout({ onBackToDashboard }: DesignerLayoutProp
         <CanvaLeftRail
           currentStep={design.currentStep}
           onStepClick={(step) => setStep(step)}
-          onOpenGarden={() => setIsGardenModalOpen(true)}
           onBackToDashboard={onBackToDashboard}
           isSidebarExpanded={isSidebarExpanded}
           onToggleSidebar={() => setIsSidebarExpanded(!isSidebarExpanded)}
@@ -375,12 +372,6 @@ export default function DesignerLayout({ onBackToDashboard }: DesignerLayoutProp
         onClose={() => setIsVipMenuOpen(false)}
         userName={premiumUserName || ''}
         onRevoke={revokePremium}
-      />
-
-      <FlowerGardenModal
-        isOpen={isGardenModalOpen}
-        onClose={() => setIsGardenModalOpen(false)}
-        onOpenVipModal={() => setIsUnlockModalOpen(true)}
       />
 
       <FlowerLimitModal

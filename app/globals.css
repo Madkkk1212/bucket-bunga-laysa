@@ -22829,11 +22829,40 @@ body.modal-backdrop-blur-active .ds-root {
   color: var(--mut);
 }
 
+/* Player Name Input */
+.pj-player-name-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 5px 10px;
+  margin-bottom: 0.55rem;
+}
+
+.pj-player-name-lbl {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #475569;
+  white-space: nowrap;
+}
+
+.pj-player-name-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #1e293b;
+  outline: none;
+}
+
 /* Multiplayer Selector */
 .pj-mode-selector {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 0.45rem;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.35rem;
 }
 
 .pj-mode-btn {
@@ -23323,6 +23352,45 @@ body.modal-backdrop-blur-active .ds-root {
   background: #4338ca;
 }
 
+/* Player name badges in Room Card */
+.pj-player-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  padding: 3px 0;
+}
+
+.pj-player-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #e2e8f0;
+  color: #334155;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 99px;
+}
+
+.pj-player-chip--me {
+  background: #e0e7ff;
+  color: #4338ca;
+  border: 1px solid #c7d2fe;
+}
+
+.pj-remote-speaking-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: #ecfdf5;
+  color: #059669;
+  border: 1px solid #a7f3d0;
+  padding: 3px 8px;
+  border-radius: 99px;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
 .pj-lobby-voice-strip {
   display: flex;
   align-items: center;
@@ -23494,4 +23562,227 @@ body.modal-backdrop-blur-active .ds-root {
   background: rgba(16, 185, 129, 0.25) !important;
   color: #34d399 !important;
   border: 1px solid rgba(16, 185, 129, 0.4) !important;
+}
+
+/* ── PHOTO ADJUST & CROP MODAL STYLES ── */
+.pj-crop-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  background: rgba(15, 23, 42, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow-y: auto;
+  padding: 1rem;
+  backdrop-filter: blur(5px);
+}
+
+.pj-crop-modal-card {
+  background: #ffffff;
+  border-radius: 20px;
+  width: min(94vw, 26rem);
+  padding: 1.4rem;
+  box-shadow: 0 25px 60px rgba(15, 23, 42, 0.25);
+  animation: pop 0.25s both;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.pj-crop-modal-hd {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.pj-crop-modal-hd h3 {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #1e293b;
+  margin: 0;
+}
+
+.pj-crop-close-btn {
+  background: #f1f5f9;
+  border: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.pj-crop-close-btn:hover {
+  background: #e2e8f0;
+  color: #1e293b;
+}
+
+.pj-crop-modal-sub {
+  font-size: 0.78rem;
+  color: #64748b;
+  margin: 0;
+  line-height: 1.45;
+}
+
+/* Viewport & Canvas */
+.pj-crop-viewport-wrapper {
+  display: flex;
+  justify-content: center;
+  padding: 4px 0;
+}
+
+.pj-crop-viewport {
+  width: min(78vw, 320px);
+  height: min(78vw, 320px);
+  position: relative;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.12);
+  border: 2px solid #e2e8f0;
+  background: #0f172a;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.pj-crop-viewport.is-dragging {
+  cursor: grabbing;
+}
+
+.pj-crop-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* Grid Framing Guides */
+.pj-crop-grid-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.pj-crop-grid-line {
+  position: absolute;
+  background: rgba(255, 255, 255, 0.35);
+}
+
+.pj-crop-grid-line--h1 { top: 33.33%; left: 0; right: 0; height: 1px; }
+.pj-crop-grid-line--h2 { top: 66.66%; left: 0; right: 0; height: 1px; }
+.pj-crop-grid-line--v1 { left: 33.33%; top: 0; bottom: 0; width: 1px; }
+.pj-crop-grid-line--v2 { left: 66.66%; top: 0; bottom: 0; width: 1px; }
+
+/* Corner Highlights */
+.pj-crop-corner {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-color: #6366f1;
+  pointer-events: none;
+}
+
+.pj-crop-corner--tl { top: 6px; left: 6px; border-top: 3px solid; border-left: 3px solid; }
+.pj-crop-corner--tr { top: 6px; right: 6px; border-top: 3px solid; border-right: 3px solid; }
+.pj-crop-corner--bl { bottom: 6px; left: 6px; border-bottom: 3px solid; border-left: 3px solid; }
+.pj-crop-corner--br { bottom: 6px; right: 6px; border-bottom: 3px solid; border-right: 3px solid; }
+
+.pj-crop-drag-hint {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(4px);
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 99px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  pointer-events: none;
+}
+
+/* Controls */
+.pj-crop-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  background: #f8fafc;
+  padding: 0.7rem;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+}
+
+.pj-crop-zoom-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pj-crop-zoom-slider {
+  flex: 1;
+  height: 5px;
+  accent-color: #4f46e5;
+  cursor: pointer;
+}
+
+.pj-crop-zoom-val {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #475569;
+  min-width: 36px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.pj-crop-btn-row {
+  display: flex;
+  gap: 6px;
+}
+
+.pj-crop-btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #334155;
+  transition: all 0.15s;
+}
+
+.pj-crop-btn:hover {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+  color: #0f172a;
+}
+
+.pj-crop-modal-footer {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 0.2rem;
+}
+
+.pj-crop-modal-footer .pj-btn-pri {
+  flex: 1.5;
+  justify-content: center;
+}
+
+.pj-crop-modal-footer .pj-btn {
+  flex: 1;
+  justify-content: center;
 }
