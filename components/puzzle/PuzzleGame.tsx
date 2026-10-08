@@ -8,7 +8,7 @@ import {
   Maximize, Minimize
 } from 'lucide-react';
 import PremiumUnlockModal from '../designer/PremiumUnlockModal';
-import { useWebRtcVoice } from './useWebRtcVoice';
+import { useWebRtcVoice, type PuzzleRoomRole } from './useWebRtcVoice';
 import PhotoAdjustModal from './PhotoAdjustModal';
 
 // ═══════════════════════════════════════════════════
@@ -74,6 +74,29 @@ const FLOWER_PRESETS = [
   { id: 'p5', name: 'Buket Spesial', url: 'https://images.unsplash.com/photo-1534430480872-3498386e7856?w=800&q=85' },
 ];
 
+function createPuzzleSeed() {
+  return Math.floor(Math.random() * 0xffffffff) >>> 0;
+}
+
+function serializeCustomImage(image: HTMLImageElement | null) {
+  if (!image) return null;
+  try {
+    const width = image.naturalWidth || image.width;
+    const height = image.naturalHeight || image.height;
+    if (!width || !height) return null;
+    const scale = Math.min(1, 1400 / Math.max(width, height));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.max(1, Math.round(width * scale));
+    canvas.height = Math.max(1, Math.round(height * scale));
+    const context = canvas.getContext('2d');
+    if (!context) return null;
+    context.drawImage(image, 0, 0, canvas.width, canvas.height);
+    return canvas.toDataURL('image/jpeg', 0.82);
+  } catch {
+    return null;
+  }
+}
+
 export default function PuzzleGame({
   isPremium = false,
   backHref = '/minigames',
@@ -107,15 +130,12 @@ export default function PuzzleGame({
   const [tlInfo, setTlInfo] = useState('');
 
   // Multiplayer & Voice Chat state
-  const [playerName, setPlayerName] = useState<string>(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('pj_player_name') || `Pemain-${Math.floor(100 + Math.random() * 900)}`;
-    }
-    return 'Pemain 1';
-  });
-  const [playMode, setPlayMode] = useState<'solo' | 'duo' | 'party'>('solo');
-  const [playerLimit, setPlayerLimit] = useState<number>(2);
-  const [roomCode, setRoomCode] = useState<string>('LYS-2026');
+  const [playerName, setPlayerName] = useState<string>('Pemain 1');
+  const [playMode, setPlayMode] = useState<'solo' | 'duo'>('solo');
+  const [playerLimit, setPlayerLimit] = useState<number>(1);
+  const [roomCode, setRoomCode] = useState<string>('');
+  const [roomRole, setRoomRole] = useState<PuzzleRoomRole>('none');
+  const [isPuzzleReady, setIsPuzzleReady] = useState(false);
   const [inputJoinCode, setInputJoinCode] = useState<string>('');
   const [isCopied, setIsCopied] = useState<boolean>(false);
   const [micGuideModalOpen, setMicGuideModalOpen] = useState<boolean>(false);
@@ -125,23 +145,45 @@ export default function PuzzleGame({
 
   // Incoming data message handler reference
   const gameDataHandlerRef = useRef<(data: any) => void>(() => {});
+  const buildTokenRef = useRef(0);
+  const sessionSeedRef = useRef<number>(0);
+  const sessionStartedRef = useRef(false);
+  const pendingPieceIdsRef = useRef(new Set<number>());
   const handleIncomingData = useCallback((data: any) => {
     gameDataHandlerRef.current?.(data);
   }, []);
 
   // WebRTC Voice Chat Engine & Real-time Ping Latency
-  const voice = useWebRtcVoice(roomCode, playMode !== 'solo', playerName, handleIncomingData);
+  const voice = useWebRtcVoice(roomCode, roomRole !== 'none' && playMode === 'duo', roomRole, playerName, handleIncomingData);
+
+  // Hydrate player name from localStorage or generate on client only (prevents SSR mismatch)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('pj_player_name');
+      if (saved) {
+        setPlayerName(saved);
+      } else {
+        const randomName = `Pemain-${Math.floor(100 + Math.random() * 900)}`;
+        setPlayerName(randomName);
+        localStorage.setItem('pj_player_name', randomName);
+      }
+    }
+  }, []);
 
   // Auto-detect Room invite link (?room=LYS-XXXX)
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const p = new URLSearchParams(window.location.search);
       const r = p.get('room');
-      if (r) {
-        setRoomCode(r.toUpperCase());
+      if (r && p.get('role') === 'guest') {
+        const finalCode = r.toUpperCase().replace(/[^A-Z0-9-]/g, '').slice(0, 24);
+        setRoomCode(finalCode);
         setPlayMode('duo');
         setPlayerLimit(2);
-        setToastMsg(`Bergabung ke Room ${r.toUpperCase()}!`);
+        setRoomRole('guest');
+        setIsPuzzleReady(false);
+        setInMenu(false);
+        setToastMsg(`Menghubungkan ke room ${finalCode}...`);
         setTimeout(() => setToastMsg(null), 3500);
       }
     }
@@ -188,8 +230,18 @@ export default function PuzzleGame({
     c.lineTo(bx, by);
   };
 
-  const genE = (k: number): PieceEdges => {
-    const r = () => (Math.random() < 0.5 ? 1 : -1);
+  const genE = (k: number, seed?: number): PieceEdges => {
+    let state = seed === undefined ? 0 : seed >>> 0;
+    const random = seed === undefined
+      ? Math.random
+      : () => {
+          state = (state + 0x6d2b79f5) >>> 0;
+          let value = state;
+          value = Math.imul(value ^ (value >>> 15), value | 1);
+          value ^= value + Math.imul(value ^ (value >>> 7), value | 61);
+          return ((value ^ (value >>> 14)) >>> 0) / 4294967296;
+        };
+    const r = () => (random() < 0.5 ? 1 : -1);
     const H: number[][] = [];
     const V: number[][] = [];
     for (let i = 0; i <= k; i++) {
@@ -253,18 +305,26 @@ export default function PuzzleGame({
   // ═══════════════════════════════════════════════════
 
   const renderSelectedImage = useCallback(
-    (targetW: number): Promise<HTMLCanvasElement> => {
+    (
+      targetW: number,
+      customImgOverride?: HTMLImageElement | null,
+      presetIdxOverride?: number
+    ): Promise<HTMLCanvasElement> => {
       return new Promise((resolve) => {
         const c = document.createElement('canvas');
         c.width = c.height = targetW;
         const ctx = c.getContext('2d')!;
 
-        if (customImageEl) {
-          const m = Math.min(customImageEl.width, customImageEl.height);
+        const imgToUse = customImgOverride !== undefined ? customImgOverride : customImageEl;
+        const presetIdxToUse =
+          presetIdxOverride !== undefined ? presetIdxOverride : selectedPreset;
+
+        if (imgToUse) {
+          const m = Math.min(imgToUse.width, imgToUse.height);
           ctx.drawImage(
-            customImageEl,
-            (customImageEl.width - m) / 2,
-            (customImageEl.height - m) / 2,
+            imgToUse,
+            (imgToUse.width - m) / 2,
+            (imgToUse.height - m) / 2,
             m,
             m,
             0,
@@ -286,7 +346,8 @@ export default function PuzzleGame({
             ctx.fillRect(0, 0, targetW, targetW);
             resolve(c);
           };
-          img.src = FLOWER_PRESETS[selectedPreset].url;
+          const p = FLOWER_PRESETS[presetIdxToUse] || FLOWER_PRESETS[0];
+          img.src = p.url;
         }
       });
     },
@@ -397,12 +458,16 @@ export default function PuzzleGame({
   // ═══════════════════════════════════════════════════
 
   const handleSelectPartyMode = (count: number) => {
-    if (count > 2 && !isPremium) {
-      setIsVipModalOpen(true);
-      return;
-    }
+    if (count > 2) return;
     setPlayerLimit(count);
-    setPlayMode(count === 1 ? 'solo' : count === 2 ? 'duo' : 'party');
+    setPlayMode(count === 1 ? 'solo' : 'duo');
+    if (count === 1) {
+      setRoomRole('none');
+      setRoomCode('');
+      setIsPuzzleReady(false);
+    } else if (roomRole === 'none') {
+      showToast('Buat room terlebih dahulu untuk mengundang teman.');
+    }
   };
 
   const toggleMic = async () => {
@@ -417,35 +482,35 @@ export default function PuzzleGame({
     }
   };
 
-  const copyRoomCode = () => {
-    const origin = typeof window !== 'undefined' ? window.location.origin : '';
-    const path = typeof window !== 'undefined' ? window.location.pathname : '/puzzle';
-    const inviteUrl = `${origin}${path}?room=${roomCode}`;
-    navigator.clipboard.writeText(inviteUrl);
-    setIsCopied(true);
-    showToast('Tautan mabar berhasil disalin!');
-    setTimeout(() => setIsCopied(false), 2000);
-  };
-
-  const handleJoinRoom = (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    const clean = inputJoinCode.trim().toUpperCase().replace(/[^A-Z0-9-]/g, '');
-    if (!clean) {
-      showToast('⚠️ Masukkan kode room teman');
+  const copyRoomCode = async () => {
+    if (!roomCode || roomRole !== 'host' || !voice.isHosting) {
+      showToast('Buat room dan tunggu sampai statusnya siap sebelum mengundang teman.');
       return;
     }
-    const finalCode = clean.startsWith('LYS-') ? clean : `LYS-${clean.replace(/^LYS/, '')}`;
-    setRoomCode(finalCode);
-    setPlayMode('duo');
-    setPlayerLimit(2);
-    setInputJoinCode('');
-    showToast(`✅ Bergabung ke Room ${finalCode}!`);
+    const inviteUrl = `${window.location.origin}${window.location.pathname}?room=${encodeURIComponent(roomCode)}&role=guest`;
+    try {
+      if (!navigator.clipboard?.writeText) throw new Error('Clipboard tidak tersedia');
+      await navigator.clipboard.writeText(inviteUrl);
+      setIsCopied(true);
+      showToast('Tautan undangan room berhasil disalin.');
+      setTimeout(() => setIsCopied(false), 2000);
+    } catch {
+      showToast(`Salin tautan ini secara manual: ${inviteUrl}`);
+    }
   };
 
+
+
   const handleNewRandomRoom = () => {
-    const randomCode = 'LYS-' + Math.floor(1000 + Math.random() * 9000);
+    const randomCode = `LYS-${Math.floor(1000 + Math.random() * 9000)}`;
     setRoomCode(randomCode);
-    showToast(`🎲 Kode Room baru: ${randomCode}`);
+    setRoomRole('host');
+    setPlayerLimit(2);
+    setPlayMode('duo');
+    setInMenu(true);
+    setIsPuzzleReady(false);
+    setIsCopied(false);
+    showToast(`Menyiapkan room ${randomCode}...`);
   };
 
   // ═══════════════════════════════════════════════════
@@ -664,9 +729,18 @@ export default function PuzzleGame({
   };
 
   const buildGame = useCallback(
-    async (initialPlacedIds?: number[]) => {
+    async (
+      initialPlacedIds?: number[],
+      overridePresetIdx?: number,
+      overrideCustomImg?: HTMLImageElement | null,
+      overrideGridN?: number,
+      edgeSeed?: number
+    ) => {
       const stage = stageRef.current;
       if (!stage) return;
+
+      const buildToken = ++buildTokenRef.current;
+      const effectiveGridN = overrideGridN || gridN;
 
       if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
       cancelAnimationFrame(tlRafRef.current);
@@ -676,15 +750,18 @@ export default function PuzzleGame({
       zRef.current = 10;
       dragRef.current = null;
       stage.innerHTML = '';
+      recRef.current = null;
+      pendingPieceIdsRef.current.clear();
+      setIsPuzzleReady(false);
       setIsWinOpen(false);
       setPlacedCount(0);
-      setTotalCount(gridN * gridN);
+      setTotalCount(effectiveGridN * effectiveGridN);
       setMistakes(0);
       setTimeStr('00:00');
 
       const L = getLayout(stage);
-      const s = Math.max(8, Math.round((L.B * dpr) / gridN));
-      const Wd = s * gridN;
+      const s = Math.max(8, Math.round((L.B * dpr) / effectiveGridN));
+      const Wd = s * effectiveGridN;
       const Bc = Wd / dpr;
       const pad = Math.round(s * 0.3);
       const bx = L.bx + (L.B - Bc) / 2;
@@ -693,9 +770,10 @@ export default function PuzzleGame({
       const P = pad / dpr;
       const T = L.tray;
 
-      const renderedSrc = await renderSelectedImage(Wd);
+      const renderedSrc = await renderSelectedImage(Wd, overrideCustomImg, overridePresetIdx);
+      if (buildToken !== buildTokenRef.current || !stageRef.current) return;
       srcCanvasRef.current = renderedSrc;
-      const E = genE(gridN);
+      const E = genE(effectiveGridN, edgeSeed);
 
       // Tray area
       const tr = document.createElement('div');
@@ -715,7 +793,7 @@ export default function PuzzleGame({
 
       const gc = document.createElement('canvas');
       gc.width = gc.height = Wd;
-      guide(gc, s, gridN, E, 0.2, 0.9);
+      guide(gc, s, effectiveGridN, E, 0.2, 0.9);
       bd.appendChild(gc);
       stage.appendChild(bd);
 
@@ -738,8 +816,8 @@ export default function PuzzleGame({
         D: 0,
       };
 
-      for (let r = 0; r < gridN; r++) {
-        for (let c = 0; c < gridN; c++) {
+      for (let r = 0; r < effectiveGridN; r++) {
+        for (let c = 0; c < effectiveGridN; c++) {
           const cv = document.createElement('canvas');
           cv.width = cv.height = cw;
           cv.className = 'pc';
@@ -747,7 +825,7 @@ export default function PuzzleGame({
 
           const x = cv.getContext('2d')!;
           x.translate(pad, pad);
-          path(x, s, r, c, E, gridN);
+          path(x, s, r, c, E, effectiveGridN);
           x.save();
           x.clip();
           x.drawImage(renderedSrc, -c * s, -r * s);
@@ -762,7 +840,7 @@ export default function PuzzleGame({
           x.lineWidth = lw * 0.7;
           x.stroke();
 
-          const pieceId = r * gridN + c;
+          const pieceId = r * effectiveGridN + c;
           (cv as any)._tx = bx + c * S - P;
           (cv as any)._ty = by + r * S - P;
           (cv as any)._S = S;
@@ -791,7 +869,19 @@ export default function PuzzleGame({
       }
 
       setPlacedCount(placedRef.current);
-      const savedBest = localStorage.getItem('jig_' + gridN);
+      pendingPieceIdsRef.current.forEach((pieceId) => {
+        const piece = recRef.current?.pcs[pieceId];
+        if (piece && !piece.classList.contains('ok')) {
+          piece.style.left = `${(piece as any)._tx}px`;
+          piece.style.top = `${(piece as any)._ty}px`;
+          piece.classList.add('ok');
+          placedRef.current += 1;
+        }
+      });
+      pendingPieceIdsRef.current.clear();
+      setPlacedCount(placedRef.current);
+      setIsPuzzleReady(true);
+      const savedBest = localStorage.getItem('jig_' + effectiveGridN);
       setBestTime(savedBest ? fmt(+savedBest) : '–');
     },
     [gridN, isPeeking, renderSelectedImage, dpr]
@@ -942,7 +1032,7 @@ export default function PuzzleGame({
         setPlacedCount(placedRef.current);
 
         // Sync placed piece to multiplayer room
-        if (playMode !== 'solo') {
+        if (playMode === 'duo' && roomRole !== 'none') {
           voice.sendMessage({
             type: '__piece_placed__',
             pieceId: (el as any)._id,
@@ -978,7 +1068,7 @@ export default function PuzzleGame({
       stage.removeEventListener('pointerup', onPointerUp);
       stage.removeEventListener('pointercancel', onPointerUp);
     };
-  }, [inMenu, gridN, playMode, playerName, voice]);
+  }, [inMenu, gridN, playMode, roomRole, playerName, voice]);
 
   // Recalculate stage on window resize or fullscreen toggle (WITHOUT resetting pieces!)
   useEffect(() => {
@@ -1002,28 +1092,68 @@ export default function PuzzleGame({
     };
   }, [inMenu, buildGame, relayoutGame]);
 
+  const handleJoinRoom = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const raw = inputJoinCode.trim().toUpperCase().replace(/[^A-Z0-9-]/g, '');
+    const token = raw.replace(/^LYS-?/, '');
+    if (token.length < 4) {
+      showToast('⚠️ Masukkan kode room teman');
+      return;
+    }
+    const finalCode = `LYS-${token.slice(0, 20)}`;
+    setRoomCode(finalCode);
+    setPlayMode('duo');
+    setPlayerLimit(2);
+    setRoomRole('guest');
+    setInputJoinCode('');
+    setIsPuzzleReady(false);
+    sessionStartedRef.current = false;
+    showToast(`Menghubungkan ke room ${finalCode}...`);
+    setInMenu(false);
+  };
+
   // Handle incoming data messages (Game Sync & Co-op Moves)
   useEffect(() => {
     gameDataHandlerRef.current = (data: any) => {
       if (!data || typeof data !== 'object') return;
-      if (data.type === '__player_join__') {
-        showToast(`👋 ${data.name || 'Teman'} bergabung ke room!`);
-        // If Host is already playing, send current game state to newcomer!
-        if (!inMenu && recRef.current) {
-          const placedIds: number[] = [];
+      if (data.type === '__player_join__' || data.type === '__request_sync__') {
+        if (roomRole !== 'host') return;
+        showToast(`👋 ${data.name || 'Teman'} terhubung ke room!`);
+        const placedIds: number[] = [];
+        if (recRef.current) {
           recRef.current.pcs.forEach((cv, idx) => {
             if (cv && cv.classList.contains('ok')) placedIds.push(idx);
           });
-          voice.sendMessage({
-            type: '__game_sync__',
-            presetIdx: selectedPreset,
-            gridN,
-            hostName: playerName,
-            placedIds,
-          });
         }
+        const isGameRunning = sessionStartedRef.current && !inMenu && !!recRef.current;
+        if (!isGameRunning) {
+          voice.sendMessage({ type: '__room_waiting__', hostName: playerName });
+          return;
+        }
+        const customImageSrc = serializeCustomImage(customImageEl);
+        voice.sendMessage({
+          type: '__game_sync__',
+          presetIdx: selectedPreset,
+          gridN,
+          hostName: playerName,
+          placedIds,
+          edgeSeed: sessionSeedRef.current,
+          customImageSrc,
+          inGame: true,
+        });
+      } else if (data.type === '__room_waiting__') {
+        setIsPuzzleReady(false);
+        showToast(`${data.hostName || 'Host'} belum memulai puzzle. Menunggu host...`);
+      } else if (data.type === '__room_full__') {
+        setIsPuzzleReady(false);
+        showToast('Room ini sudah penuh. Minta host membuat room baru.');
+      } else if (data.type === '__asset_error__') {
+        showToast(data.message || 'Foto gagal disinkronkan.');
       } else if (data.type === '__game_sync__') {
-        showToast(`🎮 Masuk ke sesi puzzle ${data.hostName || 'Host'}!`);
+        if (roomRole !== 'guest' || data.inGame !== true) return;
+        showToast(`🎮 Mengikuti puzzle ${data.hostName || 'Host'}!`);
+        sessionStartedRef.current = true;
+        sessionSeedRef.current = Number(data.edgeSeed) >>> 0;
         if (typeof data.presetIdx === 'number') {
           setSelectedPreset(data.presetIdx);
         }
@@ -1032,13 +1162,33 @@ export default function PuzzleGame({
         }
         setPlayMode('duo');
         setInMenu(false);
-        setTimeout(() => {
-          buildGame(data.placedIds);
-        }, 60);
+
+        const buildSyncedGame = (image: HTMLImageElement | null) => {
+          void buildGame(data.placedIds, data.presetIdx, image, data.gridN, sessionSeedRef.current);
+        };
+        if (data.customImageSrc) {
+          const img = new Image();
+          img.onload = () => {
+            setCustomImageEl(img);
+            buildSyncedGame(img);
+          };
+          img.onerror = () => {
+            setCustomImageEl(null);
+            showToast('Foto host gagal dibuka; memakai foto pilihan puzzle.');
+            buildSyncedGame(null);
+          };
+          img.src = data.customImageSrc;
+        } else {
+          setCustomImageEl(null);
+          buildSyncedGame(null);
+        }
       } else if (data.type === '__piece_placed__') {
         const stage = stageRef.current;
         const rec = recRef.current;
-        if (!stage || !rec) return;
+        if (!stage || !rec || !isPuzzleReady) {
+          if (Number.isInteger(data.pieceId) && data.pieceId >= 0) pendingPieceIdsRef.current.add(data.pieceId);
+          return;
+        }
 
         const pieceEl = rec.pcs[data.pieceId];
         if (pieceEl && !pieceEl.classList.contains('ok')) {
@@ -1055,27 +1205,51 @@ export default function PuzzleGame({
         }
       }
     };
-  }, [inMenu, selectedPreset, gridN, playerName, buildGame, voice]);
+  }, [inMenu, isPuzzleReady, selectedPreset, gridN, playerName, buildGame, voice, customImageEl, roomRole]);
 
-  const startGame = () => {
-    // Generate random room code for mabar if empty
-    if (!roomCode) {
-      const randomCode = 'LYS-' + Math.floor(1000 + Math.random() * 9000);
-      setRoomCode(randomCode);
+  const startGame = async () => {
+    if (playMode === 'duo' && roomRole === 'guest') {
+      showToast('Tunggu host memulai atau mengatur ulang puzzle.');
+      return;
     }
+    if (playMode === 'duo' && roomRole === 'none') {
+      setRoomCode(`LYS-${Math.floor(1000 + Math.random() * 9000)}`);
+      setRoomRole('host');
+      setPlayerLimit(2);
+    }
+    const seed = createPuzzleSeed();
+    sessionSeedRef.current = seed;
+    sessionStartedRef.current = true;
+    pendingPieceIdsRef.current.clear();
     setInMenu(false);
-    setTimeout(() => {
-      buildGame();
-      if (playMode !== 'solo') {
-        voice.sendMessage({
-          type: '__game_sync__',
-          presetIdx: selectedPreset,
-          gridN,
-          hostName: playerName,
-          placedIds: [],
-        });
-      }
-    }, 50);
+    await buildGame(undefined, selectedPreset, customImageEl, gridN, seed);
+    if (playMode === 'duo' && roomRole !== 'guest') sendCurrentGameState([]);
+  };
+
+  const sendCurrentGameState = (placedIds?: number[]) => {
+    voice.sendMessage({
+      type: '__game_sync__',
+      presetIdx: selectedPreset,
+      gridN,
+      hostName: playerName,
+      placedIds: placedIds ?? recRef.current?.pcs.flatMap((piece, index) => piece?.classList.contains('ok') ? [index] : []) ?? [],
+      edgeSeed: sessionSeedRef.current,
+      customImageSrc: serializeCustomImage(customImageEl),
+      inGame: true,
+    });
+  };
+
+  const restartGame = async () => {
+    if (playMode === 'duo' && roomRole === 'guest') {
+      showToast('Hanya host yang dapat mengacak ulang puzzle bersama.');
+      return;
+    }
+    const seed = createPuzzleSeed();
+    sessionSeedRef.current = seed;
+    sessionStartedRef.current = true;
+    pendingPieceIdsRef.current.clear();
+    await buildGame(undefined, selectedPreset, customImageEl, gridN, seed);
+    if (playMode === 'duo') sendCurrentGameState([]);
   };
 
   const returnToMenu = () => {
@@ -1138,16 +1312,10 @@ export default function PuzzleGame({
           {/* Real-time WebRTC Ping Badge - Always Visible */}
           <div
             className={`pj-ping-badge pj-ping-badge--${voice.pingQuality}`}
-            title={`Latensi Suara P2P: ${voice.pingMs ? `${voice.pingMs}ms` : '32ms'} (${
-              voice.pingQuality === 'good'
-                ? 'Ultra Cepat · Tanpa Delay'
-                : voice.pingQuality === 'medium'
-                ? 'Koneksi Lancar'
-                : 'Sinyal Kurang Stabil'
-            })`}
+            title={`Latensi suara P2P: ${voice.pingMs === null ? 'belum terukur' : `${voice.pingMs}ms`}`}
           >
             <span className="pj-ping-dot" />
-            <span className="pj-ping-val">{voice.pingMs ? `${voice.pingMs}ms` : '32ms'}</span>
+            <span className="pj-ping-val">{voice.pingMs === null ? '—' : `${voice.pingMs}ms`}</span>
           </div>
 
           {/* Room Code Badge - Always Visible */}
@@ -1155,11 +1323,11 @@ export default function PuzzleGame({
             type="button"
             className="pj-btn pj-btn-room"
             onClick={copyRoomCode}
-            title={`Kode Room: ${roomCode}. Klik untuk salin tautan mabar!`}
+            title={roomCode ? `Kode room ${roomCode}. Salin tautan undangan.` : 'Buat room untuk mengundang teman.'}
             id="btn-header-room"
           >
             <Users size={14} className="text-indigo-500" />
-            <span className="font-mono font-bold">{roomCode}</span>
+            <span className="font-mono font-bold">{roomCode || 'Buat Room'}</span>
             {isCopied && <span className="text-emerald-500 text-xs">✓</span>}
           </button>
 
@@ -1168,6 +1336,7 @@ export default function PuzzleGame({
             type="button"
             className={`pj-btn pj-btn-mic ${voice.isMicOn ? 'pj-btn-mic--on' : ''}`}
             onClick={toggleMic}
+            disabled={roomRole === 'none' || voice.connectionStatus !== 'connected'}
             title={voice.isMicOn ? 'Matikan Mikrofon' : 'Nyalakan Mikrofon (On-Mic)'}
             id="btn-header-mic"
           >
@@ -1193,7 +1362,7 @@ export default function PuzzleGame({
 
           {!inMenu && (
             <div className="pj-action-bar">
-              <button type="button" className="pj-btn" onClick={() => buildGame()} title="Acak Ulang">
+              <button type="button" className="pj-btn" onClick={restartGame} disabled={playMode === 'duo' && roomRole === 'guest'} title="Acak Ulang">
                 <RefreshCw size={14} />
                 <span>Acak</span>
               </button>
@@ -1237,6 +1406,20 @@ export default function PuzzleGame({
 
       {/* ── INTERACTIVE CANVAS STAGE (puzzle.html engine) ── */}
       <div id="stage" ref={stageRef} className={`pj-stage ${inMenu ? 'pj-stage--hidden' : ''}`} />
+      {!inMenu && roomRole === 'guest' && !isPuzzleReady && (
+        <div className="pj-room-waiting-overlay" role="status" aria-live="polite">
+          <div className="pj-room-waiting-card">
+            <div className="pj-room-waiting-icon"><Users size={24} /></div>
+            <h2>{voice.connectionStatus === 'error' ? 'Belum tersambung' : 'Menunggu puzzle dari host'}</h2>
+            <p>{voice.connectionError || (voice.connectionStatus === 'connected' ? 'Room tersambung. Host sedang menyiapkan puzzle.' : 'Menyiapkan koneksi puzzle dan voice chat…')}</p>
+            <div className={`pj-room-waiting-status pj-room-waiting-status--${voice.connectionStatus}`}>
+              <span className="pj-ping-dot" />
+              {voice.connectionStatus === 'connected' ? 'Terhubung ke room' : voice.connectionStatus === 'connecting' ? 'Menghubungkan…' : voice.connectionStatus === 'error' ? 'Perlu coba lagi' : 'Menunggu host'}
+            </div>
+            <button type="button" className="pj-btn" onClick={returnToMenu}>Kembali ke lobby</button>
+          </div>
+        </div>
+      )}
 
       {/* ── MENU / LOBBY (From puzzle.html + VIP Perks & Multiplayer) ── */}
       {inMenu && (
@@ -1279,7 +1462,7 @@ export default function PuzzleGame({
                     />
                   </div>
 
-                  {/* Mode Selector (Solo, 2 Pemain, 4 Pemain VIP, 8 Pemain VIP) */}
+                  {/* Mode Selector: only supported multiplayer mode is one-to-one. */}
                   <div className="pj-mode-selector">
                     <button
                       type="button"
@@ -1297,28 +1480,6 @@ export default function PuzzleGame({
                       <span>2 Pemain</span>
                       <small className="text-emerald-500 font-bold">Gratis</small>
                     </button>
-                    <button
-                      type="button"
-                      className={`pj-mode-btn pj-mode-btn--vip ${playerLimit === 4 ? 'on' : ''}`}
-                      onClick={() => handleSelectPartyMode(4)}
-                    >
-                      <span className="flex items-center gap-1 justify-center">
-                        <Crown size={12} className="text-amber-400" />
-                        4 Pemain
-                      </span>
-                      <small className="text-amber-400 font-bold">VIP</small>
-                    </button>
-                    <button
-                      type="button"
-                      className={`pj-mode-btn pj-mode-btn--vip ${playerLimit === 8 ? 'on' : ''}`}
-                      onClick={() => handleSelectPartyMode(8)}
-                    >
-                      <span className="flex items-center gap-1 justify-center">
-                        <Crown size={12} className="text-amber-400" />
-                        8 Pemain
-                      </span>
-                      <small className="text-amber-400 font-bold">Party</small>
-                    </button>
                   </div>
 
                   {/* Multiplayer Room Code & Join Box — Selalu Tampil agar mudah mabar & masukkan kode */}
@@ -1328,9 +1489,9 @@ export default function PuzzleGame({
                       <div className="pj-room-badge-group">
                         <Users size={14} className="text-indigo-600" />
                         <span className="pj-room-lbl">Room:</span>
-                        <span className="pj-room-code-tag">{roomCode}</span>
+                        <span className="pj-room-code-tag">{roomCode || 'Belum dibuat'}</span>
                         <span className="pj-room-players-pill">
-                          {voice.playerList.length}/{playerLimit} Pemain
+                          {voice.playerList.length}/2 Pemain
                         </span>
                       </div>
                       <div className="pj-room-btn-group">
@@ -1338,6 +1499,7 @@ export default function PuzzleGame({
                           type="button"
                           className="pj-room-action-btn"
                           onClick={copyRoomCode}
+                          disabled={roomRole !== 'host' || (!voice.isHosting && voice.connectionStatus !== 'connected')}
                           title="Salin Link Room untuk dikirim ke teman"
                         >
                           {isCopied ? <Check size={12} className="text-emerald-600" /> : <Copy size={12} />}
@@ -1345,11 +1507,12 @@ export default function PuzzleGame({
                         </button>
                         <button
                           type="button"
-                          className="pj-room-action-btn pj-room-action-btn--icon"
+                          className="pj-room-action-btn"
                           onClick={handleNewRandomRoom}
-                          title="Acak Kode Room Baru"
+                          title="Buat room host baru"
                         >
                           <RefreshCw size={12} />
+                          <span>{roomRole === 'host' ? 'Room Baru' : 'Buat Room'}</span>
                         </button>
                       </div>
                     </div>
@@ -1367,13 +1530,17 @@ export default function PuzzleGame({
                         ))}
                       </div>
                     )}
+                    <div className={`pj-room-connection-state pj-room-connection-state--${voice.connectionStatus}`} role="status">
+                      <span className="pj-ping-dot" />
+                      {roomRole === 'none' ? 'Belum ada room aktif' : voice.connectionError || (voice.connectionStatus === 'hosting' ? 'Room siap — bagikan kode ke teman' : voice.connectionStatus === 'connected' ? 'Teman terhubung' : voice.connectionStatus === 'connecting' ? 'Menghubungkan ke room…' : voice.connectionStatus === 'error' ? 'Koneksi gagal' : 'Room tidak aktif')}
+                    </div>
 
                   {/* Bar 2: Input Gabung Room Teman */}
                   <form className="pj-room-join-row" onSubmit={handleJoinRoom}>
                     <input
                       type="text"
                       className="pj-room-join-input"
-                      placeholder="Masukkan kode room teman (misal: LYS-2026)"
+                      placeholder="Masukkan kode room host (misal: LYS-4821)"
                       value={inputJoinCode}
                       onChange={(e) => setInputJoinCode(e.target.value.toUpperCase())}
                       maxLength={12}

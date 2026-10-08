@@ -23786,3 +23786,77 @@ body.modal-backdrop-blur-active .ds-root {
   flex: 1;
   justify-content: center;
 }
+
+.pj-room-action-btn:disabled,
+.pj-btn:disabled {
+  opacity: .48;
+  cursor: not-allowed;
+  filter: saturate(.55);
+}
+
+.pj-room-connection-state {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 10px 0 2px;
+  padding: 9px 11px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #f8fafc;
+  color: #475569;
+  font-size: .78rem;
+  line-height: 1.35;
+}
+
+.pj-room-connection-state--hosting,
+.pj-room-connection-state--connected { border-color: #bbf7d0; background: #f0fdf4; color: #166534; }
+.pj-room-connection-state--connecting { border-color: #bfdbfe; background: #eff6ff; color: #1d4ed8; }
+.pj-room-connection-state--error { border-color: #fecaca; background: #fef2f2; color: #b91c1c; }
+.pj-room-connection-state--idle { color: #64748b; }
+
+.pj-room-waiting-overlay {
+  position: fixed;
+  z-index: 120;
+  inset: 78px 16px 18px;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgba(15, 23, 42, .48);
+  backdrop-filter: blur(7px);
+}
+
+.pj-room-waiting-card {
+  width: min(100%, 430px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 13px;
+  padding: 30px 26px;
+  border: 1px solid rgba(255, 255, 255, .78);
+  border-radius: 24px;
+  background: #fff;
+  box-shadow: 0 24px 80px rgba(15, 23, 42, .25);
+  text-align: center;
+}
+
+.pj-room-waiting-icon {
+  width: 58px;
+  height: 58px;
+  display: grid;
+  place-items: center;
+  border-radius: 19px;
+  background: #eef2ff;
+  color: #4f46e5;
+}
+
+.pj-room-waiting-card h2 { margin: 0; color: #172033; font-size: 1.25rem; font-weight: 800; }
+.pj-room-waiting-card p { max-width: 34ch; margin: 0; color: #64748b; font-size: .92rem; line-height: 1.55; }
+.pj-room-waiting-status { display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 999px; background: #f1f5f9; color: #475569; font-size: .8rem; font-weight: 700; }
+.pj-room-waiting-status--connected { background: #f0fdf4; color: #166534; }
+.pj-room-waiting-status--connecting { background: #eff6ff; color: #1d4ed8; }
+.pj-room-waiting-status--error { background: #fef2f2; color: #b91c1c; }
+
+@media (max-width: 640px) {
+  .pj-room-waiting-overlay { inset: 68px 8px 8px; padding: 12px; }
+  .pj-room-waiting-card { padding: 24px 18px; border-radius: 20px; }
+}

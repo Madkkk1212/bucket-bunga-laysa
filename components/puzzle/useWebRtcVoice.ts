@@ -1,6 +1,9 @@
 'use client';
 
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+
+export type PuzzleRoomRole = 'none' | 'host' | 'guest';
+export type PuzzleRoomStatus = 'idle' | 'connecting' | 'hosting' | 'connected' | 'error';
 
 export interface ToggleMicResult {
   action: 'turned_on' | 'turned_off' | 'error';
@@ -8,543 +11,547 @@ export interface ToggleMicResult {
   errorMessage?: string;
 }
 
-export interface WebRtcVoiceState {
-  isMicOn: boolean;
-  toggleMic: () => Promise<ToggleMicResult>;
-  pingMs: number | null;
-  pingQuality: 'good' | 'medium' | 'bad' | 'offline';
-  connectedPlayers: number;
-  localVolume: number; // 0 to 100 for visualizer
-  voiceBands: [number, number, number, number]; // 4 reactive voice bands (0-100)
-  isSpeaking: boolean;
-  remoteVolume: number; // 0 to 100 for remote visualizer
-  isRemoteSpeaking: boolean;
-  remoteSpeakerName: string | null;
-  roomCode: string;
-  playerList: string[];
-  sendMessage: (data: any) => void;
+type DataConnectionLike = {
+  open?: boolean;
+  peer?: string;
+  send: (data: unknown) => void;
+  close?: () => void;
+  on: (event: string, callback: (...args: any[]) => void) => void;
+  dataChannel?: RTCDataChannel;
+};
+
+type MediaCallLike = {
+  peer?: string;
+  peerConnection?: RTCPeerConnection;
+  answer: (stream?: MediaStream) => void;
+  close?: () => void;
+  on: (event: string, callback: (...args: any[]) => void) => void;
+};
+
+type AssetTransfer = {
+  message: Record<string, any>;
+  chunks: string[];
+  received: number;
+  total: number;
+  timer: ReturnType<typeof setTimeout>;
+};
+
+const ASSET_CHUNK_SIZE = 12_000;
+const MAX_ASSET_CHARS = 10_000_000;
+
+function safeRoomToken(roomCode: string) {
+  return roomCode.trim().toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 24);
 }
 
 export function useWebRtcVoice(
-  initialRoomCode: string,
-  isMultiplayerActive: boolean,
-  playerName: string = 'Pemain',
-  onDataMessage?: (data: any) => void
+  roomCode: string,
+  isActive: boolean,
+  role: PuzzleRoomRole,
+  playerName: string,
+  onDataMessage?: (data: any) => void,
 ) {
-  const [roomCode, setRoomCode] = useState(initialRoomCode);
+  const [connectionStatus, setConnectionStatus] = useState<PuzzleRoomStatus>('idle');
+  const [connectionError, setConnectionError] = useState<string | null>(null);
   const [isMicOn, setIsMicOn] = useState(false);
   const [pingMs, setPingMs] = useState<number | null>(null);
-  const [connectedPlayers, setConnectedPlayers] = useState(1);
   const [playerList, setPlayerList] = useState<string[]>([playerName]);
   const [localVolume, setLocalVolume] = useState(0);
   const [voiceBands, setVoiceBands] = useState<[number, number, number, number]>([0, 0, 0, 0]);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [remoteVolume, setRemoteVolume] = useState(0);
+  const [audioPlaybackBlocked, setAudioPlaybackBlocked] = useState(false);
 
-  // Refs
+  const peerRef = useRef<any>(null);
+  const roleRef = useRef(role);
   const playerNameRef = useRef(playerName);
   const onDataMessageRef = useRef(onDataMessage);
-  const isMicOnRef = useRef(false);
-  const peerRef = useRef<any>(null);
+  const dataConnectionsRef = useRef<DataConnectionLike[]>([]);
+  const mediaCallsRef = useRef<MediaCallLike[]>([]);
   const localStreamRef = useRef<MediaStream | null>(null);
+  const silentStreamRef = useRef<MediaStream | null>(null);
+  const silentAudioContextRef = useRef<AudioContext | null>(null);
+  const meterAudioContextRef = useRef<AudioContext | null>(null);
   const audioElementsRef = useRef<HTMLAudioElement[]>([]);
-  const activeCallsRef = useRef<any[]>([]);
-  const activeDataConsRef = useRef<any[]>([]);
-  const pingIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const localAnalyserRef = useRef<AnalyserNode | null>(null);
-  const remoteAnalyserRef = useRef<AnalyserNode | null>(null);
-  const animFrameRef = useRef<number | null>(null);
+  const transferMapRef = useRef(new Map<string, AssetTransfer>());
+  const isMicOnRef = useRef(false);
+  const analyserRefs = useRef<{ local: AnalyserNode | null; remote: AnalyserNode | null }>({ local: null, remote: null });
+  const rafRef = useRef<number | null>(null);
+  const pingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  useEffect(() => { roleRef.current = role; }, [role]);
   useEffect(() => {
     playerNameRef.current = playerName;
+    setPlayerList((prev) => {
+      if (prev.length <= 1) return [playerName];
+      return [playerName, ...prev.slice(1)];
+    });
   }, [playerName]);
+  useEffect(() => { onDataMessageRef.current = onDataMessage; }, [onDataMessage]);
+  useEffect(() => { isMicOnRef.current = isMicOn; }, [isMicOn]);
 
-  useEffect(() => {
-    onDataMessageRef.current = onDataMessage;
-  }, [onDataMessage]);
-
-  // Keep isMicOnRef synced for 60fps requestAnimationFrame loop
-  useEffect(() => {
-    isMicOnRef.current = isMicOn;
-    if (!isMicOn) {
-      setLocalVolume(0);
-      setVoiceBands([0, 0, 0, 0]);
-      setIsSpeaking(false);
+  const makeSilentStream = useCallback(() => {
+    if (silentStreamRef.current?.getAudioTracks().some((track) => track.readyState === 'live')) {
+      return silentStreamRef.current;
     }
-  }, [isMicOn]);
-
-  // Update room code if parent changes it
-  useEffect(() => {
-    if (initialRoomCode) setRoomCode(initialRoomCode);
-  }, [initialRoomCode]);
-
-  // Determine ping quality
-  const pingQuality: 'good' | 'medium' | 'bad' | 'offline' =
-    pingMs === null
-      ? 'offline'
-      : pingMs < 80
-      ? 'good'
-      : pingMs < 160
-      ? 'medium'
-      : 'bad';
-
-  // Volume analyzer loop with 4 real frequency bands
-  const startVolumeMeter = useCallback((stream: MediaStream, isLocal: boolean) => {
     try {
-      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
-      if (!audioContextRef.current) {
-        audioContextRef.current = new AudioCtx();
-      }
-      const ctx = audioContextRef.current;
-      if (ctx.state === 'suspended') {
-        ctx.resume().catch(() => {});
-      }
+      const AudioCtor = window.AudioContext || (window as any).webkitAudioContext;
+      const context: AudioContext = silentAudioContextRef.current || new AudioCtor();
+      const oscillator = context.createOscillator();
+      const gain = context.createGain();
+      const destination = context.createMediaStreamDestination();
+      gain.gain.value = 0;
+      oscillator.connect(gain);
+      gain.connect(destination);
+      oscillator.start();
+      context.resume().catch(() => {});
+      silentAudioContextRef.current = context;
+      silentStreamRef.current = destination.stream;
+      return destination.stream;
+    } catch {
+      return new MediaStream();
+    }
+  }, []);
 
-      const analyser = ctx.createAnalyser();
+  const startMeter = useCallback((stream: MediaStream, local: boolean) => {
+    try {
+      const AudioCtor = window.AudioContext || (window as any).webkitAudioContext;
+      const context: AudioContext = meterAudioContextRef.current || new AudioCtor();
+      meterAudioContextRef.current = context;
+      const analyser = context.createAnalyser();
       analyser.fftSize = 64;
-      analyser.smoothingTimeConstant = 0.25; // Snappy 60fps response
+      analyser.smoothingTimeConstant = 0.35;
+      context.createMediaStreamSource(stream).connect(analyser);
+      if (local) analyserRefs.current.local = analyser;
+      else analyserRefs.current.remote = analyser;
+      context.resume().catch(() => {});
 
-      const source = ctx.createMediaStreamSource(stream);
-      source.connect(analyser);
+      const sample = new Uint8Array(analyser.frequencyBinCount);
+      let lastUpdate = 0;
+      const tick = (now: number) => {
+        if (now - lastUpdate > 70) {
+          lastUpdate = now;
+          const localAnalyser = analyserRefs.current.local;
+          if (localAnalyser && isMicOnRef.current) {
+            localAnalyser.getByteFrequencyData(sample);
+            const bands: [number, number, number, number] = [
+              sample[1] + sample[2],
+              sample[3] + sample[4] + sample[5],
+              sample[6] + sample[7] + sample[8],
+              sample[9] + sample[10] + sample[11],
+            ].map((value) => Math.min(100, Math.round(value / 2.4))) as [number, number, number, number];
+            const peak = Math.max(...bands);
+            setVoiceBands(bands);
+            setLocalVolume(peak);
+            setIsSpeaking(peak > 12);
+          } else {
+            setVoiceBands([0, 0, 0, 0]);
+            setLocalVolume(0);
+            setIsSpeaking(false);
+          }
 
-      if (isLocal) {
-        localAnalyserRef.current = analyser;
-      } else {
-        remoteAnalyserRef.current = analyser;
-      }
-
-      const pcmData = new Uint8Array(analyser.frequencyBinCount);
-
-      const checkVolume = () => {
-        if (localAnalyserRef.current && isMicOnRef.current) {
-          localAnalyserRef.current.getByteFrequencyData(pcmData);
-
-          // 4 voice formant frequency bins
-          const b1 = (pcmData[1] + pcmData[2] + pcmData[3]) / 3;
-          const b2 = (pcmData[4] + pcmData[5] + pcmData[6] + pcmData[7]) / 4;
-          const b3 = (pcmData[8] + pcmData[9] + pcmData[10] + pcmData[11]) / 4;
-          const b4 = (pcmData[12] + pcmData[13] + pcmData[14] + pcmData[15]) / 4;
-
-          // Noise gate & dynamic voice scaling
-          const scaleBand = (val: number, multiplier: number) => {
-            if (val < 10) return 0; // Filter room hum / silence
-            return Math.min(100, Math.round(((val - 10) / 75) * 100 * multiplier));
-          };
-
-          const s1 = scaleBand(b1, 1.0);
-          const s2 = scaleBand(b2, 1.25);
-          const s3 = scaleBand(b3, 1.1);
-          const s4 = scaleBand(b4, 0.95);
-
-          const peak = Math.max(s1, s2, s3, s4);
-
-          setLocalVolume(peak);
-          setVoiceBands([s1, s2, s3, s4]);
-          setIsSpeaking(peak > 10);
-        } else {
-          setLocalVolume(0);
-          setVoiceBands([0, 0, 0, 0]);
-          setIsSpeaking(false);
+          const remoteAnalyser = analyserRefs.current.remote;
+          if (remoteAnalyser) {
+            remoteAnalyser.getByteFrequencyData(sample);
+            const avg = sample.reduce((sum, value) => sum + value, 0) / sample.length;
+            setRemoteVolume(avg > 10 ? Math.min(100, Math.round((avg - 10) * 1.4)) : 0);
+          } else {
+            setRemoteVolume(0);
+          }
         }
-
-        if (remoteAnalyserRef.current) {
-          remoteAnalyserRef.current.getByteFrequencyData(pcmData);
-          let sum = 0;
-          for (let i = 0; i < pcmData.length; i++) sum += pcmData[i];
-          const avg = sum / pcmData.length;
-          setRemoteVolume(avg > 10 ? Math.min(100, Math.round(((avg - 10) / 70) * 100)) : 0);
-        }
-
-        animFrameRef.current = requestAnimationFrame(checkVolume);
+        rafRef.current = requestAnimationFrame(tick);
       };
-
-      if (!animFrameRef.current) {
-        animFrameRef.current = requestAnimationFrame(checkVolume);
-      }
+      if (rafRef.current === null) rafRef.current = requestAnimationFrame(tick);
     } catch {
-      // AudioContext initialization handled
+      // Audio playback remains available even if a browser blocks visual metering.
     }
   }, []);
 
-  // Native network RTT baseline check (when no peer yet or checking line speed)
-  const measureBaseNetworkPing = useCallback(async () => {
-    try {
-      const start = performance.now();
-      await fetch('/api/health?t=' + Date.now(), { method: 'HEAD', cache: 'no-store' }).catch(() => {});
-      const elapsed = Math.round(performance.now() - start);
-      setPingMs((prev) => (prev ? Math.round(prev * 0.7 + elapsed * 0.3) : Math.min(65, Math.max(18, elapsed))));
-    } catch {
-      setPingMs((prev) => prev || 32);
-    }
-  }, []);
+  const sendMessage = useCallback((data: Record<string, any>) => {
+    const connections = dataConnectionsRef.current.filter((connection) => connection.open);
+    if (!connections.length) return false;
 
-  // Broadcast data packet to all peers in room
-  const sendMessage = useCallback((data: any) => {
-    activeDataConsRef.current.forEach((conn) => {
-      if (conn.open) {
-        try {
-          conn.send(data);
-        } catch {}
+    const image = typeof data.customImageSrc === 'string' ? data.customImageSrc : '';
+    if (image.length > MAX_ASSET_CHARS) {
+      connections.forEach((connection) => {
+        try { connection.send({ type: '__asset_error__', message: 'Foto terlalu besar untuk dikirim. Gunakan foto di bawah 7 MB.' }); } catch {}
+      });
+      return false;
+    }
+
+    if (image.length <= ASSET_CHUNK_SIZE) {
+      connections.forEach((connection) => {
+        try { connection.send(data); } catch {}
+      });
+      return true;
+    }
+
+    const transferId = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 9)}`;
+    const chunks = Math.ceil(image.length / ASSET_CHUNK_SIZE);
+    const { customImageSrc: _ignoredImage, ...message } = data;
+    connections.forEach((connection) => {
+      try {
+        connection.send({ ...message, assetTransferId: transferId, assetChunkCount: chunks });
+        for (let index = 0; index < chunks; index += 1) {
+          connection.send({
+            type: '__asset_chunk__',
+            transferId,
+            index,
+            total: chunks,
+            chunk: image.slice(index * ASSET_CHUNK_SIZE, (index + 1) * ASSET_CHUNK_SIZE),
+          });
+        }
+      } catch {
+        try { connection.send({ type: '__asset_error__', message: 'Foto gagal dikirim ke teman. Coba foto yang lebih kecil.' }); } catch {}
       }
     });
+    return true;
   }, []);
 
-  // Initialize WebRTC Peer connection
   useEffect(() => {
-    if (!isMultiplayerActive || !roomCode) {
-      if (peerRef.current) {
-        peerRef.current.destroy();
-        peerRef.current = null;
-      }
-      setConnectedPlayers(1);
+    const token = safeRoomToken(roomCode);
+    if (!isActive || role === 'none' || !token) {
+      setConnectionStatus('idle');
+      setConnectionError(null);
+      setPingMs(null);
       setPlayerList([playerNameRef.current]);
       return;
     }
 
-    let isMounted = true;
-    const cleanCode = roomCode.trim().toUpperCase().replace(/[^A-Z0-9]/g, '') || '2026';
-    const hostId = `lysroom-${cleanCode}-host`;
-    const peerConfig = {
-      debug: 0,
-      config: {
-        iceServers: [
-          { urls: 'stun:stun.l.google.com:19302' },
-          { urls: 'stun:global.stun.twilio.com:3478' },
-        ],
-      },
+    let alive = true;
+    let peer: any = null;
+    const connections: DataConnectionLike[] = [];
+    const calls: MediaCallLike[] = [];
+    const transfers = transferMapRef.current;
+    const hostId = `lysroom-${token}-host`;
+    const guestId = `lysroom-${token}-guest-${Math.random().toString(36).slice(2, 9)}`;
+    const startedAt = Date.now();
+    const transferTimeouts: ReturnType<typeof setTimeout>[] = [];
+
+    setConnectionStatus(role === 'host' ? 'connecting' : 'connecting');
+    setConnectionError(null);
+    setPingMs(null);
+    setPlayerList([playerNameRef.current]);
+
+    const statusError = (message: string) => {
+      if (!alive) return;
+      setConnectionStatus('error');
+      setConnectionError(message);
     };
 
-    function setupMediaCall(mediaCall: any) {
-      if (!activeCallsRef.current.includes(mediaCall)) {
-        activeCallsRef.current.push(mediaCall);
-      }
-      setConnectedPlayers((p) => Math.max(p, activeCallsRef.current.length + 1));
+    const attachMeter = (stream: MediaStream, isLocal: boolean) => startMeter(stream, isLocal);
 
-      mediaCall.on('stream', (remoteStream: MediaStream) => {
-        // Individual audio element per caller for crystal-clear 2-way audio
+    const setupCall = (call: MediaCallLike) => {
+      if (calls.some((existing) => existing.peer === call.peer)) {
+        call.close?.();
+        return;
+      }
+      calls.push(call);
+      mediaCallsRef.current = calls;
+      call.on('stream', (stream: MediaStream) => {
+        if (!alive) return;
         const audio = document.createElement('audio');
         audio.autoplay = true;
-        (audio as any).playsInline = true;
+        audio.setAttribute('playsinline', 'true');
+        audio.setAttribute('aria-hidden', 'true');
         audio.style.display = 'none';
-        audio.srcObject = remoteStream;
+        audio.srcObject = stream;
         document.body.appendChild(audio);
         audioElementsRef.current.push(audio);
-        (mediaCall as any)._audioEl = audio;
-        audio.play().catch(() => {});
-
-        startVolumeMeter(remoteStream, false);
+        audio.play().then(() => setAudioPlaybackBlocked(false)).catch(() => setAudioPlaybackBlocked(true));
+        attachMeter(stream, false);
+        (call as any).__audio = audio;
       });
-
-      mediaCall.on('close', () => {
-        if ((mediaCall as any)._audioEl) {
-          (mediaCall as any)._audioEl.remove();
-          audioElementsRef.current = audioElementsRef.current.filter((a) => a !== (mediaCall as any)._audioEl);
-        }
-        activeCallsRef.current = activeCallsRef.current.filter((c) => c !== mediaCall);
-        setConnectedPlayers(Math.max(1, activeDataConsRef.current.length + 1));
+      const removeCall = () => {
+        const audio = (call as any).__audio as HTMLAudioElement | undefined;
+        audio?.remove();
+        audioElementsRef.current = audioElementsRef.current.filter((item) => item !== audio);
+        const index = calls.indexOf(call);
+        if (index >= 0) calls.splice(index, 1);
+        mediaCallsRef.current = calls;
+      };
+      call.on('close', removeCall);
+      call.on('error', () => {
+        removeCall();
+        if (alive) setConnectionError('Voice terputus. Periksa jaringan dan coba nyalakan mikrofon lagi.');
       });
+    };
 
-      mediaCall.on('error', () => {
-        if ((mediaCall as any)._audioEl) {
-          (mediaCall as any)._audioEl.remove();
-        }
-        activeCallsRef.current = activeCallsRef.current.filter((c) => c !== mediaCall);
-      });
-    }
-
-    function setupDataConnection(conn: any) {
-      if (!activeDataConsRef.current.includes(conn)) {
-        activeDataConsRef.current.push(conn);
+    const deliver = (data: any) => {
+      if (!data || typeof data !== 'object') return;
+      if (data.type === '__ping__') {
+        const connection = connections.find((item) => item.open);
+        try { connection?.send({ type: '__pong__', ts: data.ts }); } catch {}
+        return;
       }
-      setConnectedPlayers((p) => Math.max(p, activeDataConsRef.current.length + 1));
-
-      conn.on('open', () => {
-        conn.send({ type: '__ping__', ts: Date.now() });
-        conn.send({ type: '__player_join__', name: playerNameRef.current });
-      });
-
-      conn.on('data', (data: any) => {
-        if (!data || typeof data !== 'object') return;
-        if (data.type === '__ping__') {
-          conn.send({ type: '__pong__', ts: data.ts });
-        } else if (data.type === '__pong__') {
-          const rtt = Math.max(5, Math.round(Date.now() - data.ts));
-          const latency = Math.round(rtt / 2);
-          setPingMs(latency);
-        } else if (data.type === '__player_join__') {
-          (conn as any)._playerName = data.name;
-          const names = [
-            playerNameRef.current,
-            ...activeDataConsRef.current.map((c) => (c as any)._playerName).filter(Boolean),
-          ];
-          const uniqueNames = Array.from(new Set(names));
-          setPlayerList(uniqueNames);
-          conn.send({ type: '__player_welcome__', name: playerNameRef.current, players: uniqueNames });
-          onDataMessageRef.current?.(data);
-        } else if (data.type === '__player_welcome__') {
-          (conn as any)._playerName = data.name;
-          if (Array.isArray(data.players)) {
-            setPlayerList(Array.from(new Set([playerNameRef.current, ...data.players])));
+      if (data.type === '__pong__') {
+        if (typeof data.ts === 'number') setPingMs(Math.max(1, Date.now() - data.ts));
+        return;
+      }
+      if (data.type === '__hello__') {
+        const remoteName = String(data.name || 'Teman').slice(0, 24);
+        setPlayerList([playerNameRef.current, remoteName]);
+        const connection = connections.find((item) => item.peer === data.peerId) || connections[0];
+        try { connection?.send({ type: '__welcome__', name: playerNameRef.current }); } catch {}
+        onDataMessageRef.current?.({ ...data, type: '__player_join__', name: remoteName });
+        return;
+      }
+      if (data.type === '__welcome__') {
+        const remoteName = String(data.name || 'Host').slice(0, 24);
+        setPlayerList([playerNameRef.current, remoteName]);
+        onDataMessageRef.current?.({ ...data, type: '__player_welcome__', name: remoteName, players: [remoteName] });
+        return;
+      }
+      if (data.type === '__asset_error__') {
+        onDataMessageRef.current?.(data);
+        return;
+      }
+      if (data.type === '__asset_chunk__') {
+        const transfer = transfers.get(data.transferId);
+        if (!transfer || !Number.isInteger(data.index) || data.index < 0 || data.index >= transfer.total) return;
+        if (!transfer.chunks[data.index]) {
+          transfer.chunks[data.index] = String(data.chunk || '');
+          transfer.received += 1;
+        }
+        if (transfer.received === transfer.total) {
+          clearTimeout(transfer.timer);
+          transfers.delete(data.transferId);
+          const image = transfer.chunks.join('');
+          if (image.length <= MAX_ASSET_CHARS) {
+            onDataMessageRef.current?.({ ...transfer.message, customImageSrc: image });
+          } else {
+            onDataMessageRef.current?.({ type: '__asset_error__', message: 'Foto yang diterima terlalu besar.' });
           }
-          onDataMessageRef.current?.(data);
-        } else {
-          // Game-level messages: pieces placed, sync game state, etc.
-          onDataMessageRef.current?.(data);
+        }
+        return;
+      }
+      if (data.assetTransferId && Number.isInteger(data.assetChunkCount)) {
+        const total = data.assetChunkCount;
+        if (total < 1 || total > Math.ceil(MAX_ASSET_CHARS / ASSET_CHUNK_SIZE)) return;
+        const id = String(data.assetTransferId);
+        const timer = setTimeout(() => {
+          transfers.delete(id);
+          onDataMessageRef.current?.({ type: '__asset_error__', message: 'Pengiriman foto terputus. Minta host kirim ulang.' });
+        }, 30_000);
+        transferTimeouts.push(timer);
+        transfers.set(id, { message: data, chunks: new Array(total), received: 0, total, timer });
+        return;
+      }
+      onDataMessageRef.current?.(data);
+    };
+
+    const setupDataConnection = (connection: DataConnectionLike) => {
+      if (!connections.includes(connection)) connections.push(connection);
+      dataConnectionsRef.current = connections;
+      connection.on('open', () => {
+        if (!alive) return;
+        if (role === 'host' && connections.filter((item) => item.open).length > 1) {
+          try { connection.send({ type: '__room_full__' }); connection.close?.(); } catch {}
+          return;
+        }
+        setConnectionStatus('connected');
+        setConnectionError(null);
+        try {
+          connection.send({ type: '__hello__', name: playerNameRef.current, peerId: connection.peer });
+        } catch {
+          statusError('Koneksi room terbuka, tetapi pesan awal gagal dikirim. Coba gabung ulang.');
+        }
+        if (role === 'guest' && peer && !calls.some((call) => call.peer === hostId)) {
+          try {
+            const mediaCall = peer.call(hostId, localStreamRef.current || makeSilentStream());
+            if (mediaCall) setupCall(mediaCall);
+          } catch {
+            setConnectionError('Koneksi puzzle aktif, tetapi voice gagal dimulai. Coba nyalakan mikrofon lagi.');
+          }
         }
       });
-
-      conn.on('close', () => {
-        activeDataConsRef.current = activeDataConsRef.current.filter((c) => c !== conn);
-        const names = [
-          playerNameRef.current,
-          ...activeDataConsRef.current.map((c) => (c as any)._playerName).filter(Boolean),
-        ];
-        setPlayerList(Array.from(new Set(names)));
-        setConnectedPlayers(Math.max(1, activeDataConsRef.current.length + 1));
+      connection.on('data', deliver);
+      connection.on('error', (error: any) => {
+        const errorText = error?.type === 'peer-unavailable'
+          ? 'Room belum tersedia. Pastikan host sudah membuat room dan masih online.'
+          : 'Koneksi data room gagal. Coba gabung ulang.';
+        statusError(errorText);
       });
-    }
+      connection.on('close', () => {
+        const index = connections.indexOf(connection);
+        if (index >= 0) connections.splice(index, 1);
+        dataConnectionsRef.current = connections;
+        if (!alive) return;
+        if (role === 'host') {
+          setConnectionStatus('hosting');
+          setPlayerList([playerNameRef.current]);
+        } else {
+          setConnectionStatus('error');
+          setConnectionError('Koneksi host terputus. Gabung kembali dengan kode room.');
+          setPlayerList([playerNameRef.current]);
+        }
+      });
+    };
 
-    async function initPeer() {
+    const timeout = setTimeout(() => {
+      if (alive && role === 'guest' && Date.now() - startedAt >= 12_000 && !connections.some((connection) => connection.open)) {
+        statusError('Host tidak ditemukan. Pastikan tautan/kode benar dan host sudah membuka room.');
+      }
+    }, 12_000);
+
+    (async () => {
       try {
         const { default: Peer } = await import('peerjs');
-        if (!isMounted) return;
-
-        // Clean up previous peer
-        if (peerRef.current) {
-          peerRef.current.destroy();
-          peerRef.current = null;
-        }
-
-        const attachCommonListeners = (p: any) => {
-          // Handle incoming voice stream calls
-          p.on('call', (mediaCall: any) => {
-            const streamToSend = localStreamRef.current || createSilentAudioStream();
-            mediaCall.answer(streamToSend);
-            setupMediaCall(mediaCall);
-          });
-
-          // Handle incoming Data Connection (for exact round-trip ping)
-          p.on('connection', (conn: any) => {
-            setupDataConnection(conn);
-          });
-        };
-
-        // 1. Try connecting as the Host of the room
-        const hostPeer = new Peer(hostId, peerConfig);
-        peerRef.current = hostPeer;
-
-        hostPeer.on('open', () => {
-          if (!isMounted) return;
-          measureBaseNetworkPing();
-        });
-
-        attachCommonListeners(hostPeer);
-
-        // 2. If Host ID is already taken by a friend, we join as Guest and call the Host!
-        hostPeer.on('error', (err: any) => {
-          if (!isMounted) return;
-          if (err.type === 'unavailable-id') {
-            try {
-              hostPeer.destroy();
-            } catch {}
-
-            const guestId = `lysroom-${cleanCode}-guest-${Math.random().toString(36).substring(2, 7)}`;
-            const guestPeer = new Peer(guestId, peerConfig);
-            peerRef.current = guestPeer;
-
-            guestPeer.on('open', () => {
-              if (!isMounted) return;
-              measureBaseNetworkPing();
-
-              // Connect data ping channel to host
-              const conn = guestPeer.connect(hostId, { reliable: true });
-              setupDataConnection(conn);
-
-              // Connect voice media call to host
-              const streamToSend = localStreamRef.current || createSilentAudioStream();
-              const mediaCall = guestPeer.call(hostId, streamToSend);
-              setupMediaCall(mediaCall);
-            });
-
-            attachCommonListeners(guestPeer);
-          }
-        });
-
-        // Periodically measure ping
-        pingIntervalRef.current = setInterval(() => {
-          if (activeDataConsRef.current.length > 0) {
-            const now = Date.now();
-            activeDataConsRef.current.forEach((conn) => {
-              if (conn.open) {
-                conn.send({ type: '__ping__', ts: now });
-              }
-            });
-          } else {
-            measureBaseNetworkPing();
-          }
-        }, 2000);
-      } catch {
-        measureBaseNetworkPing();
-      }
-    }
-
-    initPeer();
-
-    return () => {
-      isMounted = false;
-      if (pingIntervalRef.current) clearInterval(pingIntervalRef.current);
-      if (peerRef.current) {
-        peerRef.current.destroy();
-        peerRef.current = null;
-      }
-      activeCallsRef.current = [];
-      activeDataConsRef.current = [];
-    };
-  }, [isMultiplayerActive, roomCode, measureBaseNetworkPing, startVolumeMeter]);
-
-  // Helper: Create silent stream if answering before mic is turned on
-  function createSilentAudioStream(): MediaStream {
-    try {
-      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
-      const ctx = new AudioCtx();
-      const osc = ctx.createOscillator();
-      const dst = ctx.createMediaStreamDestination();
-      const gain = ctx.createGain();
-      gain.gain.value = 0; // complete silence
-      osc.connect(gain);
-      gain.connect(dst);
-      osc.start();
-      return dst.stream;
-    } catch {
-      return new MediaStream();
-    }
-  }
-
-  // Toggle Microphone
-  const toggleMic = useCallback(async (): Promise<ToggleMicResult> => {
-    if (!isMicOn) {
-      if (
-        typeof navigator === 'undefined' ||
-        !navigator.mediaDevices ||
-        !navigator.mediaDevices.getUserMedia
-      ) {
-        return {
-          action: 'error',
-          errorName: 'NotSupported',
-          errorMessage:
-            'Browser tidak mendukung akses mikrofon atau halaman tidak dibuka via HTTPS / localhost.',
-        };
-      }
-
-      let stream: MediaStream | null = null;
-      let caughtErr: any = null;
-
-      // 1. Try with echo cancellation and noise suppression
-      try {
-        stream = await navigator.mediaDevices.getUserMedia({
-          audio: {
-            echoCancellation: true,
-            noiseSuppression: true,
-            autoGainControl: true,
+        if (!alive) return;
+        peer = new Peer(role === 'host' ? hostId : guestId, {
+          debug: 0,
+          config: {
+            iceServers: [
+              { urls: 'stun:stun.l.google.com:19302' },
+              { urls: 'stun:global.stun.twilio.com:3478' },
+            ],
           },
         });
-      } catch (err: any) {
-        caughtErr = err;
-        // 2. Automatic fallback to basic audio if driver/constraints threw an error
-        try {
-          stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-          caughtErr = null;
-        } catch (fallbackErr: any) {
-          caughtErr = fallbackErr;
-        }
+        peerRef.current = peer;
+
+        peer.on('open', () => {
+          if (!alive) return;
+          if (role === 'host') {
+            setConnectionStatus('hosting');
+            setConnectionError(null);
+          } else {
+            setConnectionStatus('connecting');
+            setupDataConnection(peer.connect(hostId, { reliable: true, serialization: 'json' }));
+          }
+        });
+        peer.on('connection', setupDataConnection);
+        peer.on('call', (call: MediaCallLike) => {
+          try {
+            call.answer(localStreamRef.current || makeSilentStream());
+            setupCall(call);
+          } catch {
+            setConnectionError('Voice tidak dapat dijawab. Periksa dukungan WebRTC di browser.');
+          }
+        });
+        peer.on('error', (error: any) => {
+          if (!alive) return;
+          if (error?.type === 'unavailable-id' && role === 'host') {
+            statusError('Kode room sudah dipakai. Buat room baru, lalu bagikan tautannya.');
+          } else if (error?.type === 'peer-unavailable' && role === 'guest') {
+            statusError('Host belum online atau room tidak ditemukan. Coba lagi setelah host membuka room.');
+          } else {
+            statusError(`Koneksi room gagal${error?.type ? ` (${error.type})` : ''}. Periksa internet lalu coba lagi.`);
+          }
+        });
+        peer.on('disconnected', () => {
+          if (!alive) return;
+          setConnectionStatus('connecting');
+          try { peer.reconnect(); } catch {}
+        });
+      } catch {
+        statusError('Komponen WebRTC gagal dimuat. Muat ulang halaman dan coba lagi.');
       }
+    })();
 
-      if (!stream || caughtErr) {
-        const errName = caughtErr?.name || 'UnknownError';
-        let friendlyMsg = 'Izin mikrofon belum aktif.';
-
-        if (errName === 'NotAllowedError' || errName === 'PermissionDeniedError') {
-          friendlyMsg =
-            'Izin mikrofon diblokir. Klik ikon 🔒 atau 🎙️ di address bar browser untuk mengizinkan mic.';
-        } else if (errName === 'NotFoundError' || errName === 'DevicesNotFoundError') {
-          friendlyMsg = 'Perangkat mikrofon tidak terdeteksi. Pastikan mic terpasang.';
-        } else if (errName === 'NotReadableError' || errName === 'TrackStartError') {
-          friendlyMsg =
-            'Mikrofon sedang dipakai aplikasi lain (Discord/Zoom). Silakan matikan mic di aplikasi tersebut.';
-        }
-
-        return {
-          action: 'error',
-          errorName: errName,
-          errorMessage: friendlyMsg,
-        };
+    pingTimerRef.current = setInterval(() => {
+      const connection = connections.find((item) => item.open);
+      if (connection) {
+        try { connection.send({ type: '__ping__', ts: Date.now() }); } catch {}
+      } else {
+        setPingMs(null);
       }
+    }, 2_000);
 
-      localStreamRef.current = stream;
-      setIsMicOn(true);
-      startVolumeMeter(stream, true);
+    return () => {
+      alive = false;
+      clearTimeout(timeout);
+      if (pingTimerRef.current) clearInterval(pingTimerRef.current);
+      transferTimeouts.forEach(clearTimeout);
+      transfers.forEach((transfer) => clearTimeout(transfer.timer));
+      transfers.clear();
+      calls.forEach((call) => { try { call.close?.(); } catch {} });
+      connections.forEach((connection) => { try { connection.close?.(); } catch {} });
+      if (peer) {
+        try { peer.destroy(); } catch {}
+      }
+      if (peerRef.current === peer) peerRef.current = null;
+      dataConnectionsRef.current = [];
+      mediaCallsRef.current = [];
+      audioElementsRef.current.forEach((audio) => audio.remove());
+      audioElementsRef.current = [];
+      setConnectionStatus('idle');
+      setPingMs(null);
+      setRemoteVolume(0);
+    };
+  }, [isActive, role, roomCode, makeSilentStream, startMeter]);
 
-      // Update all active WebRTC calls with the new live audio track
-      activeCallsRef.current.forEach((call) => {
-        const senders = call.peerConnection?.getSenders?.();
-        const audioSender = senders?.find((s: any) => s.track?.kind === 'audio');
-        const newTrack = stream.getAudioTracks()[0];
-        if (audioSender && newTrack) {
-          audioSender.replaceTrack(newTrack);
-        }
+  const toggleMic = useCallback(async (): Promise<ToggleMicResult> => {
+    if (isMicOn) {
+      const silentTrack = makeSilentStream().getAudioTracks()[0];
+      mediaCallsRef.current.forEach((call) => {
+        const sender = call.peerConnection?.getSenders().find((item) => item.track?.kind === 'audio');
+        if (sender) void sender.replaceTrack(silentTrack || null).catch(() => {});
       });
-
-      return { action: 'turned_on' };
-    } else {
-      // Turn off mic
-      if (localStreamRef.current) {
-        localStreamRef.current.getTracks().forEach((track) => track.stop());
-        localStreamRef.current = null;
-      }
+      localStreamRef.current?.getTracks().forEach((track) => track.stop());
+      localStreamRef.current = null;
       setIsMicOn(false);
-      setLocalVolume(0);
       return { action: 'turned_off' };
     }
-  }, [isMicOn, startVolumeMeter]);
 
-  // Clean up on component unmount
-  useEffect(() => {
-    return () => {
-      if (localStreamRef.current) {
-        localStreamRef.current.getTracks().forEach((t) => t.stop());
-      }
-      audioElementsRef.current.forEach((el) => {
-        try {
-          el.remove();
-        } catch {}
+    if (!navigator.mediaDevices?.getUserMedia) {
+      return { action: 'error', errorName: 'NotSupportedError', errorMessage: 'Browser tidak mendukung mikrofon. Buka situs melalui HTTPS atau localhost.' };
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
       });
-      if (animFrameRef.current) {
-        cancelAnimationFrame(animFrameRef.current);
-      }
-      if (audioContextRef.current) {
-        audioContextRef.current.close().catch(() => {});
-      }
-    };
+      localStreamRef.current = stream;
+      setIsMicOn(true);
+      startMeter(stream, true);
+      const track = stream.getAudioTracks()[0];
+      mediaCallsRef.current.forEach((call) => {
+        const sender = call.peerConnection?.getSenders().find((item) => item.track?.kind === 'audio');
+        if (sender && track) void sender.replaceTrack(track).catch(() => {});
+      });
+      audioElementsRef.current.forEach((audio) => {
+        audio.play().then(() => setAudioPlaybackBlocked(false)).catch(() => setAudioPlaybackBlocked(true));
+      });
+      return { action: 'turned_on' };
+    } catch (error: any) {
+      const errorName = error?.name || 'UnknownError';
+      const message = errorName === 'NotAllowedError' || errorName === 'PermissionDeniedError'
+        ? 'Izin mikrofon diblokir. Izinkan mikrofon di pengaturan browser.'
+        : errorName === 'NotFoundError'
+          ? 'Mikrofon tidak terdeteksi.'
+          : errorName === 'NotReadableError'
+            ? 'Mikrofon sedang digunakan aplikasi lain.'
+            : 'Mikrofon gagal diaktifkan. Periksa izin dan perangkat audio.';
+      return { action: 'error', errorName, errorMessage: message };
+    }
+  }, [isMicOn, makeSilentStream, startMeter]);
+
+  useEffect(() => () => {
+    localStreamRef.current?.getTracks().forEach((track) => track.stop());
+    silentStreamRef.current?.getTracks().forEach((track) => track.stop());
+    if (silentAudioContextRef.current) void silentAudioContextRef.current.close().catch(() => {});
+    if (meterAudioContextRef.current) void meterAudioContextRef.current.close().catch(() => {});
+    if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
+    audioElementsRef.current.forEach((audio) => audio.remove());
   }, []);
 
-  const remoteSpeakerName =
-    remoteVolume > 15 ? playerList.find((p) => p !== playerName) || 'Teman' : null;
-
   return {
+    connectionStatus,
+    connectionError,
+    isConnected: connectionStatus === 'connected',
+    isHosting: role === 'host' && connectionStatus === 'hosting',
     isMicOn,
     toggleMic,
     pingMs,
-    pingQuality,
-    connectedPlayers,
+    pingQuality: pingMs === null ? 'offline' as const : pingMs < 80 ? 'good' as const : pingMs < 160 ? 'medium' as const : 'bad' as const,
+    connectedPlayers: playerList.length,
     localVolume,
     voiceBands,
     isSpeaking,
     remoteVolume,
     isRemoteSpeaking: remoteVolume > 15,
-    remoteSpeakerName,
-    roomCode,
+    remoteSpeakerName: remoteVolume > 15 ? playerList.find((name) => name !== playerName) || 'Teman' : null,
     playerList,
     sendMessage,
+    audioPlaybackBlocked,
   };
 }
