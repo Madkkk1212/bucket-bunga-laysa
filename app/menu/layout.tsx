@@ -11,7 +11,7 @@ export const metadata: Metadata = {
     title: 'Pilih Menu — Bucket Bunga Laysa',
     description:
       'Mau ngapain hari ini? Buat buket bunga virtual gratis, baca panduan merangkai buket yang cantik, atau rawat Kebun Bunga bersama pasangan.',
-    url: 'https://bucketbunga-laysa.vercel.app/menu',
+    url: 'https://giftbucket.web.id/menu',
     siteName: 'Bucket Bunga Laysa',
     locale: 'id_ID',
     type: 'website',

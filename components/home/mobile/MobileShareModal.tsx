@@ -148,12 +148,12 @@ export default function MobileShareModal({ isOpen, onClose, canvasRef }: Props) 
       `✨ *Style:* ${currentBucket.label}\n` +
       `🌹 *Capacity:* ${targetCount} Flowers (${flowerCount} arranged)\n` +
       `💌 *Card Message:* "${cardMessage}"\n\n` +
-      `Design your dream custom bouquet for free at: ${typeof window !== 'undefined' ? window.location.origin : 'https://bucketbunga-laysa.vercel.app'}`
+      `Design your dream custom bouquet for free at: ${typeof window !== 'undefined' ? window.location.origin : 'https://giftbucket.web.id'}`
     : `🌸 *Bucket Bunga Laysa — Rangkaian Virtual*\n\n` +
       `✨ *Model:* ${currentBucket.label}\n` +
       `🌹 *Kapasitas:* ${targetCount} Bunga (${flowerCount} terpasang)\n` +
       `💌 *Pesan Kartu:* "${cardMessage}"\n\n` +
-      `Rancang buket custom impianmu secara gratis di: ${typeof window !== 'undefined' ? window.location.origin : 'https://bucketbunga-laysa.vercel.app'}`;
+      `Rancang buket custom impianmu secara gratis di: ${typeof window !== 'undefined' ? window.location.origin : 'https://giftbucket.web.id'}`;
 
   const handleSendWA = () => {
     const encoded = encodeURIComponent(summaryShareText);

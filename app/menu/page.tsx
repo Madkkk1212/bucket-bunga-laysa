@@ -95,11 +95,7 @@ function GameMenuContent() {
 
   const handleOpenKebun = () => {
     playSfx('select');
-    if (!isPremiumUnlocked) {
-      setIsVipModalOpen(true);
-      return;
-    }
-    router.push('/kebun');
+    router.push('/minigames');
   };
 
   return (
@@ -272,70 +268,58 @@ function GameMenuContent() {
             </div>
           </div>
 
-          {/* ═════════ MENU 3: KEBUN (DAILY STREAK HARIAN) ═════════ */}
-          <div 
+          {/* ═════════ MENU 3: MINI GAMES ═════════ */}
+          <div
             className="game-card game-card-garden cursor-pointer"
             onClick={handleOpenKebun}
             onMouseEnter={() => playSfx('hover')}
             role="button"
             tabIndex={0}
             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleOpenKebun(); }}
-            aria-label={t('menu_card3_title')}
+            aria-label="Mini Games"
           >
-            {/* Rarity & Mode Badge */}
-            <div className={`game-card-tag tag-garden ${!isPremiumUnlocked ? 'tag-locked' : ''}`}>
-              {isPremiumUnlocked ? (
-                <>
-                  <Flame size={12} className="text-amber-300 animate-bounce" />
-                  <span>{t('menu_card3_tag_unlocked')}</span>
-                </>
-              ) : (
-                <>
-                  <Crown size={12} className="text-amber-300" />
-                  <span>{t('menu_card3_tag_locked')}</span>
-                </>
-              )}
+            {/* Rarity Badge */}
+            <div className="game-card-tag tag-garden">
+              <span style={{ fontSize: '12px' }}>🎮</span>
+              <span>Mini Games — Gratis!</span>
             </div>
 
-            {/* Visual Icon / Artwork Preview */}
+            {/* Visual Icon */}
             <div className="game-card-visual-wrapper">
               <div className="game-card-aura aura-garden" />
-              <div className="game-card-icon-emblem bg-gradient-to-br from-emerald-500 to-teal-400">
-                <span className="game-emblem-emoji">🌱</span>
-                <span className="game-emblem-sparkle">🔥</span>
+              <div className="game-card-icon-emblem bg-gradient-to-br from-purple-500 to-indigo-500">
+                <span className="game-emblem-emoji">🧩</span>
+                <span className="game-emblem-sparkle">⭐</span>
               </div>
             </div>
 
-            {/* Content Details */}
+            {/* Content */}
             <div className="game-card-body">
-              <h2 className="game-card-title">{t('menu_card3_title')}</h2>
-              <p className="game-card-tagline">{t('menu_card3_sub')}</p>
-              
+              <h2 className="game-card-title">Mini Games</h2>
+              <p className="game-card-tagline">Kumpulan game seru bunga interaktif</p>
+
               <ul className="game-card-features">
                 <li>
-                  <Heart size={13} className="feature-icon text-rose-500" />
-                  <span>{t('menu_card3_feat1')}</span>
+                  <span style={{ fontSize: '13px' }}>🧩</span>
+                  <span>Puzzle Bunga Interaktif</span>
                 </li>
                 <li>
-                  <Flame size={13} className="feature-icon text-amber-500" />
-                  <span>{t('menu_card3_feat2')}</span>
+                  <span style={{ fontSize: '13px' }}>✨</span>
+                  <span>Game baru segera hadir!</span>
                 </li>
               </ul>
             </div>
 
-            {/* Action Trigger Button */}
+            {/* Action Button */}
             <div className="game-card-action-bar">
               <button
                 type="button"
-                id="btn-menu-garden"
-                className={`game-card-btn btn-garden ${!isPremiumUnlocked ? 'btn-garden-locked' : ''}`}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleOpenKebun();
-                }}
+                id="btn-menu-minigames"
+                className="game-card-btn btn-garden"
+                onClick={(e) => { e.stopPropagation(); handleOpenKebun(); }}
               >
-                <span>{isPremiumUnlocked ? t('menu_card3_btn_unlocked') : t('menu_card3_btn_locked')}</span>
-                {isPremiumUnlocked ? <Flame size={16} /> : <Crown size={16} className="text-amber-300" />}
+                <span>Buka Mini Games</span>
+                <span style={{ fontSize: '16px' }}>🎮</span>
               </button>
             </div>
           </div>

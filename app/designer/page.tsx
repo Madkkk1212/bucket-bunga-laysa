@@ -12,7 +12,7 @@ export const metadata: Metadata = {
     title: 'Studio Buat Buket — Bucket Bunga Laysa',
     description:
       'Rancang buket bunga virtual sesukamu secara gratis. Pilih dari 56+ model kertas buket, padukan 53+ varietas bunga botani di kanvas interaktif, tulis kartu ucapan, dan ekspor gambar HD (PNG/JPG) atau kado link dengan musik.',
-    url: 'https://bucketbunga-laysa.vercel.app/designer',
+    url: 'https://giftbucket.web.id/designer',
     siteName: 'Bucket Bunga Laysa',
     locale: 'id_ID',
     type: 'website',

@@ -43,7 +43,7 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://bucketbunga-laysa.vercel.app'),
+  metadataBase: new URL('https://giftbucket.web.id'),
   title: 'Bucket Bunga Laysa — Bikin Buket Bunga Virtual & Hadiah Online Gratis',
   description:
     'Studio pembuat buket bunga virtual gratis. Pilih bunga dan kertas buket, tulis kartu ucapan, lalu unduh gambar HD untuk kado ulang tahun, wisuda, pacar LDR, dan momen spesial.',
@@ -83,7 +83,7 @@ export const metadata: Metadata = {
     'trend bikin bunga online tiktok viral',
     'interactive 2d flower bouquet canvas',
   ],
-  authors: [{ name: 'Bucket Bunga Laysa Atelier', url: 'https://bucketbunga-laysa.vercel.app' }],
+  authors: [{ name: 'Bucket Bunga Laysa Atelier', url: 'https://giftbucket.web.id' }],
   creator: 'Bucket Bunga Laysa',
   publisher: 'Bucket Bunga Laysa',
   formatDetection: {
@@ -124,7 +124,7 @@ export const metadata: Metadata = {
     title: 'Bucket Bunga Laysa — Bikin Buket Bunga Virtual & Hadiah Online Gratis',
     description:
       'Studio pembuat buket bunga virtual gratis. Pilih bunga dan kertas buket, tulis kartu ucapan, lalu unduh gambar HD untuk kado ulang tahun, wisuda, pacar LDR, dan momen spesial.',
-    url: 'https://bucketbunga-laysa.vercel.app',
+    url: 'https://giftbucket.web.id',
     siteName: 'Bucket Bunga Laysa',
     locale: 'id_ID',
     type: 'website',
@@ -151,8 +151,8 @@ const jsonLdStructuredData = {
   '@graph': [
     {
       '@type': 'WebSite',
-      '@id': 'https://bucketbunga-laysa.vercel.app/#website',
-      url: 'https://bucketbunga-laysa.vercel.app',
+      '@id': 'https://giftbucket.web.id/#website',
+      url: 'https://giftbucket.web.id',
       name: 'Bucket Bunga Laysa',
       description:
         'Studio Kreatif Pembuat Buket Bunga Virtual & Kartu Ucapan Kustom Online Gratis untuk Segala Momen Spesial',
@@ -160,18 +160,18 @@ const jsonLdStructuredData = {
       publisher: {
         '@type': 'Organization',
         name: 'Bucket Bunga Laysa',
-        url: 'https://bucketbunga-laysa.vercel.app',
+        url: 'https://giftbucket.web.id',
         logo: {
           '@type': 'ImageObject',
-          url: 'https://bucketbunga-laysa.vercel.app/images/home.png',
+          url: 'https://giftbucket.web.id/images/home.png',
         },
       },
     },
     {
       '@type': 'WebApplication',
-      '@id': 'https://bucketbunga-laysa.vercel.app/#app',
+      '@id': 'https://giftbucket.web.id/#app',
       name: 'Bucket Bunga Laysa — Virtual Bouquet Designer & Gift Maker',
-      url: 'https://bucketbunga-laysa.vercel.app',
+      url: 'https://giftbucket.web.id',
       applicationCategory: 'DesignApplication',
       operatingSystem: 'All (Web, Android, iOS, Windows, macOS)',
       browserRequirements: 'Requires Modern Web Browser with HTML5 Canvas',
@@ -223,7 +223,7 @@ const jsonLdStructuredData = {
     },
     {
       '@type': 'HowTo',
-      '@id': 'https://bucketbunga-laysa.vercel.app/#howto',
+      '@id': 'https://giftbucket.web.id/#howto',
       name: 'Cara Membuat Buket Bunga Virtual Kustom untuk Hadiah Online',
       description:
         'Panduan 4 langkah mudah mendesain buket bunga digital kustom untuk kado ulang tahun, wisuda, atau pacar LDR secara gratis.',
@@ -257,7 +257,7 @@ const jsonLdStructuredData = {
     },
     {
       '@type': 'FAQPage',
-      '@id': 'https://bucketbunga-laysa.vercel.app/#faq',
+      '@id': 'https://giftbucket.web.id/#faq',
       mainEntity: [
         {
           '@type': 'Question',

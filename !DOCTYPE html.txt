@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Ucapan Spesial 💌</title>
+<style>
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  html, body {
+    min-height: 100%;
+    width: 100%;
+  }
+
+  body {
+    background: linear-gradient(135deg, #fce4ec 0%, #f8bbd0 50%, #e1bee7 100%);
+    font-family: 'Georgia', serif;
+    overflow-x: hidden;
+  }
+
+  /* ============================================================
+     SPLASHSCREEN
+     ============================================================ */
+  .splash {
+    position: fixed;
+    inset: 0;
+    background: linear-gradient(135deg, #fce4ec 0%, #f8bbd0 50%, #e1bee7 100%);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 999;
+    cursor: pointer;
+    transition: opacity 0.8s ease, visibility 0.8s ease;
+    padding: 20px;
+  }
+
+  .splash.hide {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+  }
+
+  /* Bunga di splash */
+  .splash .flower-deco {
+    position: absolute;
+    font-size: 2.5rem;
+    opacity: 0.7;
+    animation: sway 3s ease-in-out infinite;
+    pointer-events: none;
+  }
+
+  .splash .flower-deco:nth-child(1) { top: 8%;  left: 12%; font-size: 3rem;  animation-delay: 0s; }
+  .splash .flower-deco:nth-child(2) { top: 20%; right: 15%; font-size: 2.4rem; animation-delay: 0.5s; }
+  .splash .flower-deco:nth-child(3) { bottom: 15%; left: 18%; font-size: 2.8rem; animation-delay: 1s; }
+  .splash .flower-deco:nth-child(4) { bottom: 10%; right: 12%; font-size: 3rem;  animation-delay: 1.5s; }
+  .splash .flower-deco:nth-child(5) { top: 45%; left: 5%;  font-size: 2.2rem; animation-delay: 0.3s; }
+  .splash .flower-deco:nth-child(6) { top: 55%; right: 6%; font-size: 2.6rem; animation-delay: 0.8s; }
+
+  @keyframes sway {
+    0%, 100% { transform: rotate(-8deg) translateY(0); }
+    50%      { transform: rotate(8deg) translateY(-10px); }
+  }
+
+  /* Printer besar di splash */
+  .splash-printer {
+    position: relative;
+    width: 300px;
+    max-width: 70vw;
+    cursor: pointer;
+    animation: floatPrinter 3s ease-in-out infinite;
+    transition: transform 0.3s ease;
+    filter: drop-shadow(0 20px 30px rgba(0,0,0,0.25));
+  }
+
+  .splash-printer:hover {
+    transform: scale(1.08);
+  }
+
+  .splash-printer:active {
+    transform: scale(0.95);
+  }
+
+  @keyframes floatPrinter {
+    0%, 100% { transform: translateY(0); }
+    50%      { transform: translateY(-12px); }
+  }
+
+  .sp-body {
+    width: 100%;
+    height: 150px;
+    background: linear-gradient(180deg, #5a5a5a 0%, #2c2c2c 100%);
+    border-radius: 18px 18px 22px 22px;
+    position: relative;
+    box-shadow:
+      inset 0 3px 0 rgba(255,255,255,0.18),
+      inset 0 -8px 15px rgba(0,0,0,0.4);
+  }
+
+  .sp-top {
+    position: absolute;
+    top: -16px;
+    left: 5%;
+    width: 90%;
+    height: 22px;
+    background: linear-gradient(180deg, #7a7a7a, #4a4a4a);
+    border-radius: 12px 12px 0 0;
+    box-shadow: inset 0 2px 0 rgba(255,255,255,0.2);
+  }
+
+  .sp-slot {
+    position: absolute;
+    bottom: 14px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 75%;
+    height: 12px;
+    background: #0a0a0a;
+    border-radius: 6px;
+    box-shadow: inset 0 3px 6px rgba(0,0,0,0.95);
+  }
+
+  .sp-lights {
+    position: absolute;
+    top: 25px;
+    right: 25px;
+    display: flex;
+    gap: 10px;
+  }
+
+  .sp-light {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    box-shadow: 0 0 10px currentColor;
+  }
+
+  .sp-light.g { background: #4caf50; color: #4caf50; animation: blink 1.5s infinite; }
+  .sp-light.o { background: #ff9800; color: #ff9800; animation: blink 1.5s infinite 0.5s; }
+  .sp-light.b { background: #2196f3; color: #2196f3; animation: blink 1.5s infinite 1s; }
+
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50%      { opacity: 0.3; }
+  }
+
+  .sp-panel {
+    position: absolute;
+    top: 65px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 65%;
+    height: 45px;
+    background: linear-gradient(180deg, #3a3a3a, #1c1c1c);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.1);
+  }
+
+  .sp-panel .sp-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #555;
+  }
+
+  .sp-panel .sp-brand {
+    color: #999;
+    font-size: 0.75rem;
+    letter-spacing: 4px;
+    font-family: monospace;
+    margin-left: 8px;
+  }
+
+  .sp-paper-peek {
+    position: absolute;
+    top: 100%;
+    left: 12.5%;
+    width: 75%;
+    height: 18px;
+    background: #fffdf7;
+    border-radius: 0 0 5px 5px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    animation: peekPaper 3s ease-in-out infinite;
+  }
+
+  @keyframes peekPaper {
+    0%, 100% { height: 14px; }
+    50%      { height: 26px; }
+  }
+
+  .splash-text {
+    margin-top: 70px;
+    text-align: center;
+    animation: pulseText 2s ease-in-out infinite;
+  }
+
+  .splash-text h2 {
+    font-size: 1.5rem;
+    color: #ad1457;
+    margin-bottom: 12px;
+    letter-spacing: 1px;
+  }
+
+  .splash-text p {
+    font-size: 1rem;
+    color: #6d4c5c;
+    font-style: italic;
+  }
+
+  @keyframes pulseText {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50%      { transform: scale(1.06); opacity: 0.85; }
+  }
+
+  .tap-hint {
+    margin-top: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    color: #ad1457;
+    font-size: 0.85rem;
+    letter-spacing: 2px;
+    opacity: 0.8;
+  }
+
+  .tap-hint::before,
+  .tap-hint::after {
+    content: '';
+    width: 30px;
+    height: 1px;
+    background: #ad1457;
+  }
+
+  /* ============================================================
+     HALAMAN UTAMA
+     ============================================================ */
+  .main-stage {
+    min-height: 100vh;
+    min-height: 100dvh;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    position: relative;
+    padding: clamp(20px, 5vw, 60px) clamp(10px, 4vw, 30px) clamp(60px, 12vw, 100px);
+    opacity: 0;
+    transition: opacity 0.8s ease 0.3s;
+    overflow: hidden;
+  }
+
+  .main-stage.show {
+    opacity: 1;
+  }
+
+  /* ============ HIASAN BUNGA ============ */
+  .flowers {
+    position: absolute;
+    top: 0;
+    height: 100%;
+    width: clamp(80px, 18vw, 240px);
+    pointer-events: none;
+    z-index: 5;
+  }
+
+  .flowers.left { left: 0; }
+  .flowers.right { right: 0; transform: scaleX(-1); }
+
+  .flower {
+    position: absolute;
+    font-size: clamp(1.2rem, 2.5vw, 3rem);
+    animation: sway 3s ease-in-out infinite;
+    filter: drop-shadow(0 4px 6px rgba(0,0,0,0.15));
+  }
+
+  .flower:nth-child(1) { top: 3%;  left: 15%; font-size: clamp(1.5rem, 3vw, 3rem);  animation-delay: 0s; }
+  .flower:nth-child(2) { top: 15%; left: 55%; font-size: clamp(1.1rem, 2.2vw, 2.2rem); animation-delay: 0.4s; }
+  .flower:nth-child(3) { top: 28%; left: 8%;  font-size: clamp(1.4rem, 2.8vw, 2.8rem); animation-delay: 0.8s; }
+  .flower:nth-child(4) { top: 42%; left: 60%; font-size: clamp(1.2rem, 2.5vw, 2.5rem); animation-delay: 1.2s; }
+  .flower:nth-child(5) { top: 55%; left: 20%; font-size: clamp(1.6rem, 3.2vw, 3.2rem); animation-delay: 0.6s; }
+  .flower:nth-child(6) { top: 68%; left: 50%; font-size: clamp(1.2rem, 2.4vw, 2.4rem); animation-delay: 1s; }
+  .flower:nth-child(7) { top: 80%; left: 12%; font-size: clamp(1.4rem, 2.9vw, 2.9rem); animation-delay: 1.4s; }
+  .flower:nth-child(8) { top: 90%; left: 58%; font-size: clamp(1.3rem, 2.6vw, 2.6rem); animation-delay: 0.2s; }
+
+  /* ============ WRAPPER ============ */
+  .printer-wrap {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    z-index: 10;
+    width: min(420px, 92vw);
+  }
+
+  /* ============ BADAN PRINTER ============ */
+  .printer-body {
+    width: 100%;
+    aspect-ratio: 420 / 130;
+    background: linear-gradient(180deg, #4a4a4a 0%, #2c2c2c 100%);
+    border-radius: clamp(10px, 3vw, 14px) clamp(10px, 3vw, 14px) clamp(14px, 4vw, 18px) clamp(14px, 4vw, 18px);
+    position: relative;
+    box-shadow:
+      0 15px 35px rgba(0,0,0,0.35),
+      inset 0 2px 0 rgba(255,255,255,0.15);
+    z-index: 5;
+  }
+
+  .printer-top {
+    position: absolute;
+    top: -10%;
+    left: 5%;
+    width: 90%;
+    height: 15%;
+    background: linear-gradient(180deg, #6b6b6b, #454545);
+    border-radius: 10px 10px 0 0;
+  }
+
+  .printer-slot {
+    position: absolute;
+    bottom: 8%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80%;
+    height: 9%;
+    background: #0a0a0a;
+    border-radius: 6px;
+    box-shadow: inset 0 3px 6px rgba(0,0,0,0.9);
+    z-index: 1;
+  }
+
+  .lights {
+    position: absolute;
+    top: 15%;
+    right: 7%;
+    display: flex;
+    gap: clamp(6px, 1.5vw, 12px);
+  }
+
+  .light {
+    width: clamp(8px, 1.6vw, 12px);
+    height: clamp(8px, 1.6vw, 12px);
+    border-radius: 50%;
+    box-shadow: 0 0 8px currentColor;
+  }
+
+  .light.green {
+    background: #4caf50;
+    color: #4caf50;
+    animation: blink 1.5s infinite;
+  }
+
+  .light.orange {
+    background: #ff9800;
+    color: #ff9800;
+    animation: blink 1.5s infinite 0.5s;
+  }
+
+  .printer-panel {
+    position: absolute;
+    top: 42%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60%;
+    height: 30%;
+    background: linear-gradient(180deg, #3a3a3a, #222);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(6px, 1.5vw, 10px);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.1);
+  }
+
+  .printer-panel .dot {
+    width: clamp(5px, 1vw, 8px);
+    height: clamp(5px, 1vw, 8px);
+    border-radius: 50%;
+    background: #555;
+  }
+
+  .printer-panel .brand {
+    color: #888;
+    font-size: clamp(0.5rem, 1.2vw, 0.7rem);
+    letter-spacing: clamp(2px, 0.5vw, 3px);
+    font-family: monospace;
+    margin-left: 6px;
+  }
+
+  /* ============ KERTAS ============ */
+  .paper-slot {
+    position: relative;
+    width: 90%;
+    margin-top: -1.5%;
+    z-index: 2;
+  }
+
+  .paper {
+    position: relative;
+    width: 100%;
+    background: #fffdf7;
+    border-radius: 0 0 6px 6px;
+    box-shadow: 0 12px 30px rgba(0,0,0,0.18);
+    text-align: center;
+    background-image:
+      repeating-linear-gradient(0deg, transparent, transparent 28px, #f0e6d2 29px);
+    border: 1px solid #e8dcc0;
+    border-top: none;
+    padding: clamp(20px, 6vw, 35px) clamp(15px, 5vw, 30px);
+    max-height: 0;
+    overflow: hidden;
+  }
+
+  .main-stage.show .paper {
+    animation: paperGrow 8s cubic-bezier(0.4, 0, 0.2, 1) 0.6s forwards;
+  }
+
+  .paper::before {
+    content: '';
+    position: absolute;
+    top: 6px;
+    left: 0;
+    right: 0;
+    height: 6px;
+    background-image: radial-gradient(circle, #d4c4a8 2px, transparent 2.5px);
+    background-size: 16px 6px;
+    background-position: center;
+    background-repeat: repeat-x;
+  }
+
+  @keyframes paperGrow {
+    0%   { max-height: 0;    padding-top: 0; padding-bottom: 0; }
+    12%  { max-height: 80px; }
+    25%  { max-height: 150px; }
+    40%  { max-height: 220px; }
+    55%  { max-height: 290px; }
+    70%  { max-height: 350px; }
+    85%  { max-height: 410px; }
+    100% { max-height: 700px; padding-top: clamp(20px, 6vw, 35px); padding-bottom: clamp(20px, 6vw, 35px); }
+  }
+
+  /* ============ TULISAN ============ */
+  .reveal {
+    opacity: 0;
+    transform: translateY(-12px);
+  }
+
+  .main-stage.show .reveal {
+    animation: revealDown 0.9s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+  }
+
+  @keyframes revealDown {
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .main-stage.show .reveal:nth-child(1) { animation-delay: 1.2s; }
+  .main-stage.show .reveal:nth-child(2) { animation-delay: 2.0s; }
+
+  .line {
+    display: block;
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+
+  .main-stage.show .line {
+    animation: revealLine 0.9s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+  }
+
+  @keyframes revealLine {
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .main-stage.show .line:nth-child(1) { animation-delay: 2.6s; }
+  .main-stage.show .line:nth-child(2) { animation-delay: 3.2s; }
+  .main-stage.show .line:nth-child(3) { animation-delay: 4.2s; }
+  .main-stage.show .line:nth-child(4) { animation-delay: 4.8s; }
+
+  .main-stage.show .signature { animation-delay: 6.6s !important; }
+  .main-stage.show .divider-2 { animation-delay: 5.8s !important; }
+
+  .message-content h1 {
+    font-size: clamp(1.1rem, 4vw, 1.9rem);
+    color: #c2185b;
+    margin-bottom: clamp(8px, 2vw, 15px);
+    letter-spacing: 1px;
+    text-shadow: 1px 1px 0 #f8bbd0;
+    line-height: 1.3;
+  }
+
+  .message-content p {
+    font-size: clamp(0.8rem, 2.2vw, 1.05rem);
+    color: #5d4037;
+    line-height: 1.7;
+    margin-bottom: clamp(8px, 2vw, 12px);
+  }
+
+  .message-content .signature {
+    margin-top: clamp(10px, 3vw, 20px);
+    font-style: italic;
+    color: #ad1457;
+    font-size: clamp(0.85rem, 2.4vw, 1.1rem);
+  }
+
+  .divider {
+    width: clamp(50px, 12vw, 80px);
+    height: 2px;
+    background: #f48fb1;
+    margin: clamp(8px, 2vw, 15px) auto;
+    border-radius: 2px;
+  }
+
+  /* ============================================================
+     RESPONSIVE — TABLET (max 1024px)
+     ============================================================ */
+  @media (max-width: 1024px) {
+    .splash-printer { width: 260px; }
+    .sp-body { height: 130px; }
+    .sp-top { height: 20px; top: -15px; }
+    .sp-slot { height: 11px; bottom: 12px; }
+    .sp-panel { top: 55px; height: 42px; }
+    .splash-text { margin-top: 60px; }
+
+    .flowers { width: clamp(70px, 14vw, 180px); }
+  }
+
+  /* ============================================================
+     RESPONSIVE — MOBILE LANDSCAPE & TABLET KECIL (max 768px)
+     ============================================================ */
+  @media (max-width: 768px) {
+    .splash-printer { width: 240px; max-width: 60vw; }
+    .sp-body { height: 120px; }
+    .sp-top { height: 18px; top: -13px; }
+    .sp-slot { height: 10px; bottom: 11px; }
+    .sp-lights { top: 20px; right: 20px; }
+    .sp-light { width: 8px; height: 8px; }
+    .sp-panel { top: 50px; height: 38px; }
+    .sp-panel .sp-brand { font-size: 0.65rem; letter-spacing: 3px; }
+
+    .splash-text { margin-top: 55px; }
+    .splash-text h2 { font-size: 1.2rem; }
+    .splash-text p { font-size: 0.9rem; }
+    .tap-hint { font-size: 0.75rem; }
+
+    .splash .flower-deco { font-size: 1.8rem; }
+    .splash .flower-deco:nth-child(1) { font-size: 2.2rem; }
+    .splash .flower-deco:nth-child(4) { font-size: 2.2rem; }
+
+    .flowers { width: clamp(60px, 13vw, 140px); }
+  }
+
+  /* ============================================================
+     RESPONSIVE — MOBILE KECIL (max 480px)
+     ============================================================ */
+  @media (max-width: 480px) {
+    .splash { padding: 15px; }
+
+    .splash-printer { width: 200px; max-width: 65vw; }
+    .sp-body { height: 100px; border-radius: 14px 14px 18px 18px; }
+    .sp-top { height: 15px; top: -11px; border-radius: 9px 9px 0 0; }
+    .sp-slot { height: 8px; bottom: 10px; }
+    .sp-lights { top: 16px; right: 16px; gap: 7px; }
+    .sp-light { width: 7px; height: 7px; }
+    .sp-panel { top: 42px; height: 32px; border-radius: 8px; gap: 6px; }
+    .sp-panel .sp-dot { width: 5px; height: 5px; }
+    .sp-panel .sp-brand { font-size: 0.55rem; letter-spacing: 2.5px; margin-left: 4px; }
+    .sp-paper-peek { left: 12.5%; width: 75%; }
+
+    .splash-text { margin-top: 45px; }
+    .splash-text h2 { font-size: 1.05rem; margin-bottom: 8px; }
+    .splash-text p { font-size: 0.82rem; }
+    .tap-hint { margin-top: 14px; font-size: 0.7rem; letter-spacing: 1.5px; }
+    .tap-hint::before, .tap-hint::after { width: 22px; }
+
+    .splash .flower-deco { font-size: 1.4rem; }
+    .splash .flower-deco:nth-child(1) { font-size: 1.8rem; left: 8%; }
+    .splash .flower-deco:nth-child(2) { font-size: 1.5rem; right: 10%; }
+    .splash .flower-deco:nth-child(3) { font-size: 1.7rem; left: 12%; }
+    .splash .flower-deco:nth-child(4) { font-size: 1.8rem; right: 8%; }
+    .splash .flower-deco:nth-child(5) { font-size: 1.3rem; }
+    .splash .flower-deco:nth-child(6) { font-size: 1.5rem; }
+
+    .main-stage {
+      padding: 30px 8px 60px;
+    }
+
+    .printer-wrap {
+      width: min(340px, 94vw);
+    }
+
+    .paper-slot {
+      width: 92%;
+    }
+
+    .paper {
+      padding: 18px 14px;
+    }
+  }
+
+  /* ============================================================
+     RESPONSIVE — MOBILE SANGAT KECIL (max 360px)
+     ============================================================ */
+  @media (max-width: 360px) {
+    .splash-printer { width: 170px; }
+    .sp-body { height: 88px; }
+    .sp-top { height: 13px; top: -10px; }
+    .sp-panel { top: 36px; height: 28px; }
+    .sp-panel .sp-brand { font-size: 0.5rem; letter-spacing: 2px; }
+
+    .splash-text h2 { font-size: 0.95rem; }
+    .splash-text p { font-size: 0.75rem; }
+
+    .flower { font-size: 1rem !important; }
+
+    .printer-wrap { width: 96vw; }
+
+    .message-content h1 { font-size: 1rem; }
+    .message-content p { font-size: 0.75rem; }
+  }
+
+  /* ============================================================
+     LANDSCAPE MOBILE (tinggi kecil) — biar muat
+     ============================================================ */
+  @media (max-height: 500px) and (orientation: landscape) {
+    .splash-printer { width: 150px; }
+    .sp-body { height: 75px; }
+    .sp-top { height: 12px; top: -9px; }
+    .sp-panel { top: 30px; height: 24px; }
+    .sp-panel .sp-brand { font-size: 0.5rem; }
+    .sp-slot { height: 7px; bottom: 8px; }
+
+    .splash-text { margin-top: 30px; }
+    .splash-text h2 { font-size: 1rem; }
+    .splash-text p { font-size: 0.78rem; }
+    .tap-hint { margin-top: 10px; font-size: 0.7rem; }
+
+    .splash .flower-deco { font-size: 1.3rem; }
+  }
+
+  /* ============================================================
+     TABLET BESAR / LAPTOP (min 1025px) — tampilan optimal
+     ============================================================ */
+  @media (min-width: 1025px) {
+    .splash-printer { width: 320px; }
+    .sp-body { height: 160px; }
+    .sp-top { height: 24px; top: -18px; }
+    .sp-panel { top: 70px; height: 48px; }
+    .sp-slot { height: 13px; bottom: 15px; }
+
+    .splash-text { margin-top: 80px; }
+    .splash-text h2 { font-size: 1.7rem; }
+    .splash-text p { font-size: 1.1rem; }
+  }
+
+  /* ============================================================
+     LAYAR SANGAT BESAR (min 1440px) — biar tetap proporsional
+     ============================================================ */
+  @media (min-width: 1440px) {
+    .printer-wrap { width: 480px; }
+
+    @keyframes paperGrow {
+      0%   { max-height: 0;    padding-top: 0; padding-bottom: 0; }
+      12%  { max-height: 90px; }
+      25%  { max-height: 170px; }
+      40%  { max-height: 250px; }
+      55%  { max-height: 330px; }
+      70%  { max-height: 400px; }
+      85%  { max-height: 470px; }
+      100% { max-height: 800px; padding-top: 40px; padding-bottom: 40px; }
+    }
+  }
+</style>
+</head>
+<body>
+
+  <!-- ============================================================
+       SPLASHSCREEN
+       ============================================================ -->
+  <div class="splash" id="splash">
+    <div class="flower-deco">🌸</div>
+    <div class="flower-deco">🌺</div>
+    <div class="flower-deco">🌷</div>
+    <div class="flower-deco">🌼</div>
+    <div class="flower-deco">🌹</div>
+    <div class="flower-deco">💐</div>
+
+    <div class="splash-printer" id="splashPrinter">
+      <div class="sp-body">
+        <div class="sp-top"></div>
+
+        <div class="sp-lights">
+          <div class="sp-light g"></div>
+          <div class="sp-light o"></div>
+          <div class="sp-light b"></div>
+        </div>
+
+        <div class="sp-panel">
+          <div class="sp-dot"></div>
+          <div class="sp-dot"></div>
+          <div class="sp-brand">PRINTER</div>
+        </div>
+
+        <div class="sp-slot"></div>
+      </div>
+      <div class="sp-paper-peek"></div>
+    </div>
+
+    <div class="splash-text">
+      <h2>💌 Ada Ucapan Untukmu</h2>
+      <p>Klik printernya untuk membuka pesan</p>
+      <div class="tap-hint">TAP / KLIK</div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       HALAMAN UTAMA
+       ============================================================ -->
+  <div class="main-stage" id="mainStage">
+
+    <div class="flowers left">
+      <div class="flower">🌸</div>
+      <div class="flower">🌺</div>
+      <div class="flower">🌷</div>
+      <div class="flower">🌼</div>
+      <div class="flower">🌹</div>
+      <div class="flower">💐</div>
+      <div class="flower">🌸</div>
+      <div class="flower">🌻</div>
+    </div>
+
+    <div class="flowers right">
+      <div class="flower">🌸</div>
+      <div class="flower">🌺</div>
+      <div class="flower">🌷</div>
+      <div class="flower">🌼</div>
+      <div class="flower">🌹</div>
+      <div class="flower">💐</div>
+      <div class="flower">🌸</div>
+      <div class="flower">🌻</div>
+    </div>
+
+    <div class="printer-wrap">
+
+      <div class="printer-body">
+        <div class="printer-top"></div>
+
+        <div class="lights">
+          <div class="light green"></div>
+          <div class="light orange"></div>
+        </div>
+
+        <div class="printer-panel">
+          <div class="dot"></div>
+          <div class="dot"></div>
+          <div class="brand">PRINTER</div>
+        </div>
+
+        <div class="printer-slot"></div>
+      </div>
+
+      <div class="paper-slot">
+        <div class="paper">
+          <div class="message-content">
+
+            <h1 class="reveal">💖 Selamat & Sukses 💖</h1>
+
+            <div class="divider reveal"></div>
+
+            <p>
+              <span class="line">Terima kasih telah menjadi bagian terindah</span>
+              <span class="line">dalam setiap langkah dan cerita.</span>
+            </p>
+
+            <p>
+              <span class="line">Semoga hari-harimu selalu dipenuhi</span>
+              <span class="line">kebahagiaan, cinta, dan keberkahan.</span>
+            </p>
+
+            <div class="divider reveal divider-2"></div>
+
+            <p class="signature reveal">
+              — Dengan penuh cinta 💕 —
+            </p>
+
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <script>
+    const splash = document.getElementById('splash');
+    const mainStage = document.getElementById('mainStage');
+
+    // Lock scroll saat splash tampil
+    document.body.style.overflow = 'hidden';
+
+    // Fungsi buka
+    function openInvitation() {
+      splash.classList.add('hide');
+      mainStage.classList.add('show');
+
+      setTimeout(() => {
+        document.body.style.overflow = 'auto';
+      }, 800);
+    }
+
+    // Klik / tap di splash
+    splash.addEventListener('click', openInvitation);
+
+    // Support touch untuk mobile
+    splash.addEventListener('touchend', (e) => {
+      e.preventDefault();
+      openInvitation();
+    }, { passive: false });
+
+    // Support keyboard (Enter / Space) untuk aksesibilitas
+    splash.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        openInvitation();
+      }
+    });
+
+    splash.setAttribute('tabindex', '0');
+  </script>
+
+</body>
+</html>

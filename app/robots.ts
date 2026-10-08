@@ -7,6 +7,6 @@ export default function robots(): MetadataRoute.Robots {
       allow: '/',
       disallow: ['/admin', '/admin/*', '/api/admin/*', '/api/settings/*'],
     },
-    sitemap: 'https://bucketbunga-laysa.vercel.app/sitemap.xml',
+    sitemap: 'https://giftbucket.web.id/sitemap.xml',
   };
 }

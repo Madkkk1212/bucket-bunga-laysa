@@ -17,7 +17,7 @@ export const metadata: Metadata = {
     title: 'Bikin Buket Bunga Virtual Gratis — Bucket Bunga Laysa',
     description:
       'Pilih bunga dan pembungkus favoritmu, tulis kartu ucapan personal, lalu unduh gambar buket HD gratis tanpa daftar untuk kado ulang tahun, wisuda, atau pacar LDR.',
-    url: 'https://bucketbunga-laysa.vercel.app',
+    url: 'https://giftbucket.web.id',
     siteName: 'Bucket Bunga Laysa',
     locale: 'id_ID',
     type: 'website',

@@ -977,7 +977,7 @@ export default function PremiumUnlockModal({
                       if (onOpenGarden) {
                         onOpenGarden();
                       } else {
-                        router.push('/kebun');
+                        router.push('/minigames');
                       }
                     }}
                     style={{

@@ -11,7 +11,7 @@ export const metadata: Metadata = {
     title: 'Panduan Merangkai Buket — Bucket Bunga Laysa',
     description:
       'Pelajari cara mudah membuat buket bunga virtual: memilih kertas pembungkus, menata bunga di kanvas, menulis kartu ucapan, dan mengunduh gambar HD gratis.',
-    url: 'https://bucketbunga-laysa.vercel.app/tutorial',
+    url: 'https://giftbucket.web.id/tutorial',
     siteName: 'Bucket Bunga Laysa',
     locale: 'id_ID',
     type: 'website',

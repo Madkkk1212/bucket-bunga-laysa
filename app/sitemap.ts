@@ -1,7 +1,7 @@
 import type { MetadataRoute } from 'next';
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = 'https://bucketbunga-laysa.vercel.app';
+  const baseUrl = 'https://giftbucket.web.id';
 
   return [
     {
