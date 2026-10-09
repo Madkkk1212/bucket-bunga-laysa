@@ -22888,6 +22888,14 @@ body.modal-backdrop-blur-active .ds-root {
   z-index: 50;
 }
 
+.pc.remote-drag {
+  filter: drop-shadow(0 0 12px rgba(244, 63, 94, 0.75)) drop-shadow(0 8px 16px rgba(0, 0, 0, 0.35));
+  pointer-events: none !important;
+  cursor: not-allowed !important;
+  z-index: 60;
+  transition: left 0.04s linear, top 0.04s linear;
+}
+
 .pc.ok {
   filter: none;
   pointer-events: none;

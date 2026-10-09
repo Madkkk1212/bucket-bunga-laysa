@@ -27,7 +27,6 @@ export const BUCKET_TEMPLATES: BucketTemplate[] = [
     flowerColors: ['#FF69B4', '#9370DB', '#FF69B4', '#9370DB', '#FF69B4'],
     bgColor: '#FAF6F2',
     tag: 'Signature Model',
-    previewImage: '/images/templates/reference_signature_bouquet.png',
   },
   {
     id: 'romantic_red',

@@ -1,6 +1,5 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Flower, ArrowLeft, BookOpen, Crown } from 'lucide-react';
@@ -15,39 +14,6 @@ export default function Navbar() {
   const isPremium = designCtx?.isPremiumUnlocked;
   const userName = designCtx?.premiumUserName;
   const { t } = useLanguage();
-
-  // ── Stealth Owner Gateway Shortcut ──
-  // Akses mudah bagi pemilik tanpa diketahui pengunjung publik:
-  // 1. Tekan kombinasi keyboard Ctrl + Shift + A (atau Cmd + Shift + A)
-  // 2. Ketuk/klik logo bunga 5x dengan cepat
-  const clickCountRef = useRef(0);
-  const clickTimerRef = useRef<NodeJS.Timeout | null>(null);
-
-  const handleSecretBrandClick = (e: React.MouseEvent) => {
-    clickCountRef.current += 1;
-    if (clickTimerRef.current) clearTimeout(clickTimerRef.current);
-
-    clickTimerRef.current = setTimeout(() => {
-      clickCountRef.current = 0;
-    }, 1500);
-
-    if (clickCountRef.current >= 5) {
-      e.preventDefault();
-      clickCountRef.current = 0;
-      window.location.href = '/lys-atelier-vault-89x';
-    }
-  };
-
-  useEffect(() => {
-    const handleKey = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'A' || e.key === 'a')) {
-        e.preventDefault();
-        window.location.href = '/lys-atelier-vault-89x';
-      }
-    };
-    window.addEventListener('keydown', handleKey);
-    return () => window.removeEventListener('keydown', handleKey);
-  }, []);
 
   return (
     <nav className="navbar navbar-centered">
@@ -66,7 +32,6 @@ export default function Navbar() {
 
         <Link
           href="/"
-          onClick={handleSecretBrandClick}
           className="navbar-brand-centered"
           aria-label="Bucket Bunga Laysa Home"
         >

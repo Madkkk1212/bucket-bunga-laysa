@@ -197,8 +197,10 @@ function board(){
 const svgW=inner=>`<svg viewBox="0 0 ${N*W} ${VH()}" xmlns="${NS}">${inner}</svg>`;
 
 /* ---------- menu ---------- */
+let cpuTimeout=null,turnActionId=0;
+function cancelCpuTurn(){if(cpuTimeout){clearTimeout(cpuTimeout);cpuTimeout=null;}}
 function drawOpts(){
-  $('po').innerHTML='';PMODES.forEach(([k,l])=>{const b=document.createElement('button');b.className=k===np?'on':'';b.textContent=l;b.onclick=()=>{np=k;onlineIntent=k===1?'local':'choose';drawOpts();announceSettings()};$('po').appendChild(b)});
+  $('po').innerHTML='';PMODES.forEach(([k,l])=>{const b=document.createElement('button');b.className=k===np?'on':'';b.textContent=l;b.onclick=()=>{np=k;if(k===1)onlineIntent='local';drawOpts();announceSettings()};$('po').appendChild(b)});
   $('so').innerHTML='';SIZES.forEach(([k,l])=>{const b=document.createElement('button');b.className=k===N?'on':'';b.innerHTML=`${k}×${k}<small>${l} · ${k*k} blok</small>`;b.onclick=()=>{N=k;gen();drawOpts();preview();announceSettings()};$('so').appendChild(b)});
   updateOnlineAvailability();
 }
@@ -215,7 +217,6 @@ function updateOnlineAvailability(){
   actions.hidden=onlineIntent!=='online'||onlineRole!=='none';
   if(!embedded){$('onlineNote').textContent='';go.disabled=false;return}
   if(np<=1){$('onlineNote').textContent='Mode komputer bisa langsung dimainkan.';go.disabled=false;return}
-  if(onlineIntent==='choose'){$('onlineNote').textContent='Pilih bermain lokal atau bersama teman terlebih dahulu.';go.disabled=true;return}
   if(onlineIntent==='local'){$('onlineNote').textContent='Mode lokal · pemain bergantian di perangkat ini.';go.disabled=false;return}
   if(onlineRole==='guest'){$('onlineNote').textContent=`Menunggu host memulai · ${np} pemain`;go.disabled=true;return}
   if(onlineRole!=='host'){$('onlineNote').textContent='Buat room baru atau masukkan kode dari teman.';go.disabled=true;return}
@@ -223,7 +224,7 @@ function updateOnlineAvailability(){
   $('onlineNote').textContent=ready?`Semua peserta siap · ${joined}/${np}`:`Menunggu peserta · ${joined}/${np} sudah bergabung`;
   go.disabled=!ready;
 }
-function showMenu(){over=true;busy=false;$('win').classList.remove('on');$('menu').classList.remove('hide');drawOpts();preview()}
+function showMenu(){over=true;busy=false;cancelCpuTurn();turnActionId++;$('win').classList.remove('on');$('menu').classList.remove('hide');drawOpts();preview()}
 
 /* ---------- efek ---------- */
 function setFace(v){const m={1:[4],2:[0,8],3:[0,4,8],4:[0,2,6,8],5:[0,2,4,6,8],6:[0,2,3,5,6,8]}[v]||[];$('die').innerHTML=[...Array(9)].map((_,i)=>`<i class="${m.includes(i)?'on':''}"></i>`).join('')}
@@ -293,10 +294,12 @@ function ui(){
   players.forEach((_,i)=>{const e=$('pw'+i);if(e)e.classList.toggle('cur',i===turn&&!over)});
 }
 function start(){
+  cancelCpuTurn();
+  turnActionId++;
   if(embedded&&np>1&&onlineIntent==='online'){
     if(onlineRole==='host'){sendParent('snake:start-request',{np,N,L,S,elev});return}
     if(onlineRole==='guest'){$('onlineNote').textContent='Menunggu host memulai permainan.';return}
-    $('onlineNote').textContent='Buat voice room atau gabung dengan kode untuk mengundang pemain.';return;
+    $('onlineNote').textContent='Buat room atau gabung dengan kode untuk bermain bersama.';return;
   }
   onlineGame=false;gameSnapshot=null;
   over=false;busy=false;moves=0;turn=0;
@@ -309,10 +312,11 @@ function renderStartedGame(){
   $('bd').classList.toggle('z',zoomed);$('bd').scrollLeft=0;$('bd').scrollTop=0;
   players.forEach((_,i)=>place(i,1,0));setFace(1);say('Tekan "Lempar dadu" untuk mulai.');ui();
   $('menu').classList.add('hide');$('win').classList.remove('on');
-  if(players[0].cpu)cpuTurn();
+  if(players[0]?.cpu)cpuTurn();
 }
 function exportGameState(){return{N,np,L,S,elev,players:players.map(({id,name,color,pos,cpu})=>({id,name,color,pos,cpu:false})),turn,moves,over,winnerId:over?players[turn]?.id:null}}
 function startOnline(snapshot){
+  cancelCpuTurn();turnActionId++;
   onlineGame=true;gameSnapshot=snapshot;N=snapshot.N;np=snapshot.np;L=snapshot.L;S=snapshot.S;elev=snapshot.elev;jump={};L.forEach(([a,b])=>jump[a]=b);S.forEach(([h,t])=>jump[h]=t);
   players=snapshot.players.map((p,i)=>({...p,cpu:false,color:p.color||PCOL[i%PCOL.length]}));turn=0;moves=0;over=false;busy=false;
   $('menu').classList.add('hide');$('win').classList.remove('on');renderStartedGame();publishGameState();
@@ -322,35 +326,49 @@ function applyGameState(snapshot){
   const needsStart=!onlineGame||N!==snapshot.N||players.length!==snapshot.players.length;
   onlineGame=true;gameSnapshot=snapshot;N=snapshot.N;np=snapshot.np;L=snapshot.L;S=snapshot.S;elev=snapshot.elev;jump={};L.forEach(([a,b])=>jump[a]=b);S.forEach(([h,t])=>jump[h]=t);
   players=snapshot.players.map((p,i)=>({...p,cpu:false,color:p.color||PCOL[i%PCOL.length]}));turn=snapshot.turn;moves=snapshot.moves;over=snapshot.over;busy=false;
-  if(needsStart)renderStartedGame();else{
+  if(needsStart){renderStartedGame();players.forEach((p,i)=>place(i,p.pos,0));}else{
     players.forEach((p,i)=>place(i,p.pos,0));setFace(1);ui();
     if(over&&snapshot.winnerId){const winner=players.find(p=>p.id===snapshot.winnerId);if(winner)finish(winner)}
   }
 }
 function publishGameState(){if(onlineGame&&!over||onlineGame&&players.length)sendParent('snake:game-state',{state:exportGameState()})}
-function cpuTurn(){setTimeout(()=>{if(!over&&players[turn].cpu)roll()},900)}
+function cpuTurn(){cancelCpuTurn();cpuTimeout=setTimeout(()=>{cpuTimeout=null;if(!over&&players[turn]?.cpu)void roll()},900)}
 async function roll(){
   if(busy||over)return;
   if(onlineGame&&onlineRole==='guest'){sendParent('snake:roll-request',{playerId:players[turn]?.id});return}
   if(onlineGame&&players[turn]?.id!==localPeerId&&!authorizedRemoteRoll){if(onlineRole==='guest')sendParent('snake:roll-request',{playerId:players[turn]?.id});return}
   authorizedRemoteRoll=false;
   busy=true;ui();const P=players[turn],i=turn,v=rand(1,6);
-  await throwDice(v,P.color);if(over)return;
-  setFace(v);say(`${P.name} dapat ${v}.`);moves++;await sleep(150);
-  let c=P.pos,d=1;
-  for(let k=0;k<v;k++){if(c===N*N)d=-1;c+=d;place(i,c,200);follow(c);P.pos=c;ui();await sleep(210);if(over)return}
-  if(jump[c]){
-    await sleep(300);const dest=jump[c],up=dest>c,a=pos(c),b=pos(dest),dur=up?1000:850;
-    pop(up?`Naik tangga! +${dest-c}`:`Digigit ular! ${dest-c}`,up?'#6c4cf0':'#e0823a');
-    say(up?`${P.name} naik tangga ke blok ${dest}.`:`${P.name} digigit ular, turun ke blok ${dest}.`);
-    place(i,dest,dur);follow(dest);trail(a,b,dur,up?['#ffd23f','#9be8c8','#cdbfff','#fff']:['#f08a4b','#c97b3a','#8d6a4a']);
-    P.pos=dest;c=dest;await sleep(dur+50);
-    fx(b.x,b.y-6,up?['#ffd23f','#9be8c8','#fff']:['#f08a4b','#8d6a4a'],12,34,5);if(!up)shake();ui();
+  const curAction=++turnActionId;
+  try{
+    await throwDice(v,P.color);if(over||curAction!==turnActionId)return;
+    setFace(v);say(`${P.name} dapat ${v}.`);moves++;await sleep(150);
+    if(over||curAction!==turnActionId)return;
+    let c=P.pos,d=1;
+    for(let k=0;k<v;k++){
+      if(c===N*N)d=-1;c+=d;place(i,c,200);follow(c);P.pos=c;ui();await sleep(210);
+      if(over||curAction!==turnActionId)return;
+    }
+    if(jump[c]){
+      await sleep(300);if(over||curAction!==turnActionId)return;
+      const dest=jump[c],up=dest>c,a=pos(c),b=pos(dest),dur=up?1000:850;
+      pop(up?`Naik tangga! +${dest-c}`:`Digigit ular! ${dest-c}`,up?'#6c4cf0':'#e0823a');
+      say(up?`${P.name} naik tangga ke blok ${dest}.`:`${P.name} digigit ular, turun ke blok ${dest}.`);
+      place(i,dest,dur);follow(dest);trail(a,b,dur,up?['#ffd23f','#9be8c8','#cdbfff','#fff']:['#f08a4b','#c97b3a','#8d6a4a']);
+      P.pos=dest;c=dest;await sleep(dur+50);
+      if(over||curAction!==turnActionId)return;
+      fx(b.x,b.y-6,up?['#ffd23f','#9be8c8','#fff']:['#f08a4b','#8d6a4a'],12,34,5);if(!up)shake();ui();
+    }
+    if(c===N*N){over=true;busy=false;ui();publishGameState();setTimeout(()=>finish(P),500);return}
+    if(v===6)say(`${P.name} dapat 6, lempar sekali lagi!`);else turn=(turn+1)%players.length;
+  }catch(err){
+    console.error(err);
+  }finally{
+    if(curAction===turnActionId&&!over){
+      busy=false;
+      ui();publishGameState();if(players[turn]?.cpu)cpuTurn();
+    }
   }
-  if(c===N*N){over=true;busy=false;ui();publishGameState();setTimeout(()=>finish(P),500);return}
-  busy=false;
-  if(v===6)say(`${P.name} dapat 6, lempar sekali lagi!`);else turn=(turn+1)%players.length;
-  ui();publishGameState();if(players[turn].cpu)cpuTurn();
 }
 function finish(P){
   $('wdot').style.background=P.color;$('wname').textContent=`${P.name} menang!`;$('winfo').textContent=`Papan ${N}×${N} · ${moves} kali lempar dadu`;

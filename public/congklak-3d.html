@@ -589,8 +589,8 @@ const anchor=new THREE.Vector3(),anchorTarget=new THREE.Vector3(),tmp=new THREE.
 const tweens=[];
 function tween(dur,fn){return new Promise(res=>{tweens.push({t:0,dur:Math.max(dur,1),fn:fn,res:res});});}
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
-function flightTo(s,i,dur,arc){
-  const from=s.position.clone(),to=slotPos(i,holeSeeds[i].length+pending[i]);
+function flightTo(s,i,dur,arc,targetPos){
+  const from=s.position.clone(),to=targetPos||slotPos(i,holeSeeds[i].length+pending[i]);
   pending[i]++;
   const glow=KINDS[s.userData.kind].glow;
   return tween(dur,p=>{
@@ -715,6 +715,9 @@ async function intro(full){
     });
     jobs.push(sleep(n*stepH+Math.max(list.length-1,0)*stepK+520).then(()=>popLabel(i)));
   });
+  [7, 15].forEach(si => {
+    holeSeeds[si].forEach(s => { s.visible = true; });
+  });
   jobs.push(sleep(order.length*stepH+900).then(()=>{popLabel(7);popLabel(15);}));
   await Promise.all(jobs);
   if(tk!==runToken)return;
@@ -783,35 +786,68 @@ async function captureSeeds(from,at,p){
   tok(300);
   const fc=holeCenter(from);
   burst(new THREE.Vector3(fc.x,0.4,fc.z),16,'#ffe9b0');
-  await Promise.all(list.map((s,n)=>sleep(n*(RM?5:70)).then(()=>flightTo(s,store,RM?60:300,1.7).then(()=>{tok(640);burst(s.position,3,'#ffd77a');}))));
+  const startSlot=holeSeeds[store].length;
+  await Promise.all(list.map((s,n)=>sleep(n*(RM?5:70)).then(()=>{
+    const target=slotPos(store,startSlot+n);
+    return flightTo(s,store,RM?60:300,1.7,target).then(()=>{tok(640);burst(s.position,3,'#ffd77a');});
+  })));
+}
+
+let pendingRemoteMoves=[];
+function drainRemoteMoves(){
+  if(busy||state.over||pendingRemoteMoves.length===0)return;
+  const nextHole=pendingRemoteMoves.shift();
+  if(HOLES[state.turn].includes(nextHole)&&state.h[nextHole]>0){
+    void runMove(nextHole);
+  }
 }
 
 async function runMove(start){
   const tk=runToken,p=state.turn;
   busy=true;hover=-1;
-  const r=playMove(state.h,p,start);
-  setStatus('Menyebar biji…');
-  for(const e of r.ev){
-    if(e.t==='pick')await pickSeeds(e.i);
-    else if(e.t==='drop')await dropSeed(e.i);
-    else await captureSeeds(e.from,e.at,p);
-    if(tk!==runToken)return;
-  }
-  state.h=r.h;
-  if(r.extra){const sc=holeCenter(OWN_STORE[p]);burst(new THREE.Vector3(sc.x,1.2,sc.z),18,'#ffe08a');}
   let msg='';
-  if(r.captured)msg=pname(p)+' menembak, '+r.captured+' biji masuk rumah.';
-  else if(r.extra)msg=pname(p)+' dapat giliran lagi.';
-  if(!r.extra)state.turn=1-p;
-  if(sideCount(state.h,state.turn)===0){await finishGame(msg);return;}
-  if(state.turn!==p){
-    renderCards();
-    await turnBoard(state.turn);
-    if(tk!==runToken)return;
+  try{
+    const r=playMove(state.h,p,start);
+    setStatus('Menyebar biji…');
+    for(const e of r.ev){
+      if(e.t==='pick')await pickSeeds(e.i);
+      else if(e.t==='drop')await dropSeed(e.i);
+      else await captureSeeds(e.from,e.at,p);
+      if(tk!==runToken)return;
+    }
+    state.h=r.h;
+    if(r.extra){const sc=holeCenter(OWN_STORE[p]);burst(new THREE.Vector3(sc.x,1.2,sc.z),18,'#ffe08a');}
+    if(r.captured)msg=pname(p)+' menembak, '+r.captured+' biji masuk rumah.';
+    else if(r.extra)msg=pname(p)+' dapat giliran lagi.';
+    if(!r.extra)state.turn=1-p;
+
+    // Periksa apakah kedua pemain sudah benar-benar tidak memiliki biji di jalurnya
+    if(sideCount(state.h,0)===0 && sideCount(state.h,1)===0){
+      await finishGame(msg);
+      return;
+    }
+    // Jika giliran pemain yang aktif kosong, tetapi lawan masih memiliki biji, giliran dilewati (pass)
+    if(sideCount(state.h,state.turn)===0){
+      const skipped=state.turn;
+      state.turn=1-state.turn;
+      const skipMsg=pname(skipped)+' tidak ada biji di jalurnya (lewat). Giliran '+pname(state.turn)+'.';
+      msg=msg?msg+' '+skipMsg:skipMsg;
+    }
+    if(state.turn!==p){
+      renderCards();
+      await turnBoard(state.turn);
+      if(tk!==runToken)return;
+    }
+  }catch(err){
+    console.error(err);
+  }finally{
+    if(tk===runToken&&!state.over){
+      busy=false;renderCards();announceTurn(msg);
+      if(onlineRole==='host'&&pendingRoomSync){pendingRoomSync=false;sendRoom({kind:'snapshot',h:state.h,turn:state.turn});}
+      if(pendingRemoteMoves.length>0)drainRemoteMoves();
+      else if(isAI(state.turn))aiTurn();
+    }
   }
-  busy=false;renderCards();announceTurn(msg);
-  if(onlineRole==='host'&&pendingRoomSync){pendingRoomSync=false;sendRoom({kind:'snapshot',h:state.h,turn:state.turn});}
-  if(isAI(state.turn))aiTurn();
 }
 async function aiTurn(){
   const tk=runToken;
@@ -825,15 +861,24 @@ async function aiTurn(){
 async function finishGame(msg){
   const tk=runToken;
   busy=true;
-  const stuck=state.turn,winnerSide=1-stuck;
-  const jobs=[];let n=0;
-  for(const i of HOLES[winnerSide]){
-    for(const s of holeSeeds[i].splice(0))jobs.push(sleep(n++*(RM?5:55)).then(()=>flightTo(s,OWN_STORE[winnerSide],RM?60:280,1.4)));
+  const jobs=[];
+  let n=0;
+  for(let side=0;side<2;side++){
+    const store=OWN_STORE[side];
+    const startSlot=holeSeeds[store].length;
+    let localN=0;
+    for(const i of HOLES[side]){
+      for(const s of holeSeeds[i].splice(0)){
+        const target=slotPos(store,startSlot+localN);
+        jobs.push(sleep((n++)*(RM?5:55)).then(()=>flightTo(s,store,RM?60:280,1.4,target)));
+        localN++;
+      }
+    }
   }
-  setStatus('Biji yang tersisa masuk ke rumah pemiliknya.');
+  setStatus('Permainan selesai. Menghitung biji akhir…');
   await Promise.all(jobs);
   if(tk!==runToken)return;
-  state.h=settle(state.h,stuck);
+  state.h=settle(state.h,state.turn);
   state.over=true;renderCards();
   const a=state.h[7],b=state.h[15];
   if(a!==b)celebrate(a>b?7:15);
@@ -900,12 +945,15 @@ function applyRoomMessage(data){
   if(data.kind==='snapshot'&&onlineRole==='guest'&&Array.isArray(data.h)&&data.h.length===16){newGame({h:data.h,turn:data.turn},false);return;}
   if(data.kind==='move'&&onlineReady&&state.turn!==onlineSide&&Number(data.turn)===state.turn){
     const hole=Number(data.hole);
-    if(HOLES[state.turn].includes(hole)&&state.h[hole]>0&&!busy&&!state.over)runMove(hole);
+    if(HOLES[state.turn].includes(hole)&&state.h[hole]>0&&!state.over){
+      if(!busy)void runMove(hole);
+      else pendingRemoteMoves.push(hole);
+    }
   }
 }
 
 function newGame(data,full){
-  runToken++;busy=true;hover=-1;
+  runToken++;busy=true;hover=-1;pendingRemoteMoves=[];
   tweens.splice(0).forEach(t=>t.res());
   for(const s of allSeeds){s.userData.dead=true;world.remove(s);}
   allSeeds.length=0;hand.length=0;pending.fill(0);resetSparks();

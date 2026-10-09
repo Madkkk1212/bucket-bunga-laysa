@@ -214,6 +214,7 @@ export default function PuzzleGame({
   const missRef = useRef<number>(0);
   const zRef = useRef<number>(10);
   const lastLogRef = useRef<number>(0);
+  const lastBroadcastRef = useRef<number>(0);
   const tlRafRef = useRef<number>(0);
   const tlStartRef = useRef<number>(0);
   const DpRef = useRef<number>(8000);
@@ -688,12 +689,13 @@ export default function PuzzleGame({
   };
 
   const lg = (el: any, ok?: boolean) => {
-    if (!recRef.current || !t0Ref.current) return;
+    if (!recRef.current) return;
+    const t = t0Ref.current ? Math.max(0, Date.now() - t0Ref.current) : 0;
     recRef.current.log.push({
-      t: Date.now() - t0Ref.current,
+      t,
       id: el._id,
-      x: parseFloat(el.style.left),
-      y: parseFloat(el.style.top),
+      x: parseFloat(el.style.left) || 0,
+      y: parseFloat(el.style.top) || 0,
       ok: !!ok,
     });
   };
@@ -716,13 +718,24 @@ export default function PuzzleGame({
       setTimeout(() => {
         el.classList.remove('bad', 'ret');
         lg(el, false);
+        if (playMode === 'duo' && roomRole !== 'none') {
+          const rec = recRef.current;
+          const bc = rec?.Bc || 400;
+          voice.sendMessage({
+            type: '__piece_wrong__',
+            pieceId: (el as any)._id,
+            dx: (sx - ((el as any)._tx ?? 0)) / bc,
+            dy: (sy - ((el as any)._ty ?? 0)) / bc,
+          });
+        }
       }, 380);
     }, 520);
   };
 
   const handleWin = () => {
     if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
-    const sec = Math.floor((Date.now() - t0Ref.current) / 1000);
+    const elapsedMs = t0Ref.current > 0 ? Date.now() - t0Ref.current : 1000;
+    const sec = Math.max(1, Math.floor(elapsedMs / 1000));
     const savedBest = localStorage.getItem('jig_' + gridN);
     let extra = '';
     if (!savedBest || sec < +savedBest) {
@@ -732,7 +745,7 @@ export default function PuzzleGame({
     setBestTime(fmt(Math.min(sec, savedBest ? +savedBest : sec)));
     setWinTimeStr(`${gridN}×${gridN} selesai dalam ${fmt(sec)} · ${missRef.current} salah${extra}`);
     if (recRef.current) {
-      recRef.current.D = Date.now() - t0Ref.current + 400;
+      recRef.current.D = elapsedMs + 400;
     }
     setIsWinOpen(true);
     setTimeout(() => {
@@ -872,6 +885,7 @@ export default function PuzzleGame({
             cv.style.top = (cv as any)._ty + 'px';
             cv.classList.add('ok');
             placedRef.current++;
+            lg(cv, true);
           } else {
             cv.style.left = T.x + Math.random() * Math.max(0, T.w - pcs) + 'px';
             cv.style.top = T.y + Math.random() * Math.max(0, T.h - pcs) + 'px';
@@ -895,10 +909,14 @@ export default function PuzzleGame({
           piece.style.top = `${(piece as any)._ty}px`;
           piece.classList.add('ok');
           placedRef.current += 1;
+          lg(piece, true);
         }
       });
       pendingPieceIdsRef.current.clear();
       setPlacedCount(placedRef.current);
+      if (placedRef.current === effectiveGridN * effectiveGridN) {
+        handleWin();
+      }
       setIsPuzzleReady(true);
       const savedBest = localStorage.getItem('jig_' + effectiveGridN);
       setBestTime(savedBest ? fmt(+savedBest) : '–');
@@ -990,10 +1008,16 @@ export default function PuzzleGame({
         .filter((e) => e.classList && e.classList.contains('pc') && !e.classList.contains('ok'));
 
       for (const el of els as HTMLCanvasElement[]) {
+        // Prevent grabbing pieces currently held or dragged by partner (avoids collision/tumburan)
+        if (el.classList.contains('remote-drag') || (el as any)._heldBy) {
+          continue;
+        }
+
         const rc = el.getBoundingClientRect();
         const lx = (((ev.clientX - rc.left) * el.width) / rc.width) | 0;
         const ly = (((ev.clientY - rc.top) * el.height) / rc.height) | 0;
         if (el.getContext('2d')!.getImageData(lx, ly, 1, 1).data[3] > 40) {
+          (el as any)._heldBy = 'me';
           dragRef.current = {
             el,
             ox: ev.clientX - rc.left,
@@ -1014,6 +1038,14 @@ export default function PuzzleGame({
           try {
             stage.setPointerCapture(ev.pointerId);
           } catch {}
+
+          if (playMode === 'duo' && roomRole !== 'none') {
+            voice.sendMessage({
+              type: '__piece_grab__',
+              pieceId: (el as any)._id,
+              byName: playerName,
+            });
+          }
           return;
         }
       }
@@ -1021,23 +1053,51 @@ export default function PuzzleGame({
 
     const onPointerMove = (ev: PointerEvent) => {
       if (!dragRef.current) return;
+      const el = dragRef.current.el;
       const r = stage.getBoundingClientRect();
-      dragRef.current.el.style.left = ev.clientX - dragRef.current.ox - r.left + 'px';
-      dragRef.current.el.style.top = ev.clientY - dragRef.current.oy - r.top + 'px';
+      const currentLeft = ev.clientX - dragRef.current.ox - r.left;
+      const currentTop = ev.clientY - dragRef.current.oy - r.top;
+      el.style.left = currentLeft + 'px';
+      el.style.top = currentTop + 'px';
+
       const nw = Date.now();
       if (nw - lastLogRef.current > 40) {
         lastLogRef.current = nw;
-        lg(dragRef.current.el);
+        lg(el);
+      }
+
+      // Real-time piece dragging broadcast (~30fps) so partner sees piece follow live without delay
+      if (playMode === 'duo' && roomRole !== 'none' && nw - lastBroadcastRef.current > 32) {
+        lastBroadcastRef.current = nw;
+        const rec = recRef.current;
+        const bc = rec?.Bc || 400;
+        const tx = (el as any)._tx ?? 0;
+        const ty = (el as any)._ty ?? 0;
+        voice.sendMessage({
+          type: '__piece_move__',
+          pieceId: (el as any)._id,
+          dx: (currentLeft - tx) / bc,
+          dy: (currentTop - ty) / bc,
+          byName: playerName,
+        });
       }
     };
 
-    const onPointerUp = () => {
+    const onPointerUp = (ev?: PointerEvent) => {
+      if (ev && stageRef.current && typeof stageRef.current.hasPointerCapture === 'function') {
+        try {
+          if (stageRef.current.hasPointerCapture(ev.pointerId)) {
+            stageRef.current.releasePointerCapture(ev.pointerId);
+          }
+        } catch {}
+      }
       if (!dragRef.current) return;
       const el = dragRef.current.el;
       const sx = dragRef.current.sx;
       const sy = dragRef.current.sy;
       dragRef.current = null;
       el.classList.remove('drag');
+      (el as any)._heldBy = null;
 
       const dx = parseFloat(el.style.left) - (el as any)._tx;
       const dy = parseFloat(el.style.top) - (el as any)._ty;
@@ -1073,6 +1133,16 @@ export default function PuzzleGame({
       const rec = recRef.current;
       if (rec && cx > rec.bx && cx < rec.bx + rec.Bc && cy > rec.by && cy < rec.by + rec.Bc) {
         triggerWrong(el, sx, sy);
+      } else {
+        if (playMode === 'duo' && roomRole !== 'none') {
+          const bc = rec?.Bc || 400;
+          voice.sendMessage({
+            type: '__piece_release__',
+            pieceId: (el as any)._id,
+            dx: (parseFloat(el.style.left) - ((el as any)._tx ?? 0)) / bc,
+            dy: (parseFloat(el.style.top) - ((el as any)._ty ?? 0)) / bc,
+          });
+        }
       }
     };
 
@@ -1206,6 +1276,107 @@ export default function PuzzleGame({
           setCustomImageEl(null);
           buildSyncedGame(null);
         }
+      } else if (data.type === '__player_leave__') {
+        showToast('👋 Pemain keluar dari room.');
+        const rec = recRef.current;
+        if (rec) {
+          rec.pcs.forEach((piece) => {
+            if (piece && piece.classList.contains('remote-drag')) {
+              piece.classList.remove('remote-drag');
+              (piece as any)._heldBy = null;
+            }
+          });
+        }
+      } else if (data.type === '__host_returned_to_menu__') {
+        if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
+        cancelAnimationFrame(tlRafRef.current);
+        setIsWinOpen(false);
+        setInMenu(true);
+        showToast('Host kembali ke menu lobi.');
+      } else if (data.type === '__piece_grab__') {
+        const rec = recRef.current;
+        if (!rec || !isPuzzleReady) return;
+        if (!t0Ref.current) {
+          t0Ref.current = Date.now();
+          if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
+          timerIntervalRef.current = setInterval(() => {
+            setTimeStr(fmt(Math.floor((Date.now() - t0Ref.current) / 1000)));
+          }, 500);
+        }
+        const pieceEl = rec.pcs[data.pieceId];
+        if (pieceEl && !pieceEl.classList.contains('ok')) {
+          pieceEl.classList.add('remote-drag');
+          (pieceEl as any)._heldBy = data.byName || 'Teman';
+          pieceEl.style.zIndex = String(++zRef.current);
+        }
+      } else if (data.type === '__piece_move__') {
+        const rec = recRef.current;
+        if (!rec || !isPuzzleReady) return;
+        if (!t0Ref.current) {
+          t0Ref.current = Date.now();
+          if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
+          timerIntervalRef.current = setInterval(() => {
+            setTimeStr(fmt(Math.floor((Date.now() - t0Ref.current) / 1000)));
+          }, 500);
+        }
+        const pieceEl = rec.pcs[data.pieceId];
+        if (pieceEl && !pieceEl.classList.contains('ok')) {
+          if (!pieceEl.classList.contains('remote-drag')) {
+            pieceEl.classList.add('remote-drag');
+          }
+          (pieceEl as any)._heldBy = data.byName || 'Teman';
+          pieceEl.style.zIndex = String(++zRef.current);
+          const bc = rec.Bc || 400;
+          const tx = (pieceEl as any)._tx ?? 0;
+          const ty = (pieceEl as any)._ty ?? 0;
+          pieceEl.style.left = (tx + data.dx * bc) + 'px';
+          pieceEl.style.top = (ty + data.dy * bc) + 'px';
+        }
+      } else if (data.type === '__piece_release__') {
+        const rec = recRef.current;
+        if (!rec || !isPuzzleReady) return;
+        const pieceEl = rec.pcs[data.pieceId];
+        if (pieceEl && !pieceEl.classList.contains('ok')) {
+          pieceEl.classList.remove('remote-drag');
+          (pieceEl as any)._heldBy = null;
+          if (typeof data.dx === 'number' && typeof data.dy === 'number') {
+            const bc = rec.Bc || 400;
+            const tx = (pieceEl as any)._tx ?? 0;
+            const ty = (pieceEl as any)._ty ?? 0;
+            pieceEl.style.left = (tx + data.dx * bc) + 'px';
+            pieceEl.style.top = (ty + data.dy * bc) + 'px';
+          }
+        }
+      } else if (data.type === '__piece_wrong__') {
+        missRef.current++;
+        setMistakes(missRef.current);
+        const rec = recRef.current;
+        if (!rec || !isPuzzleReady) return;
+        const pieceEl = rec.pcs[data.pieceId];
+        if (pieceEl && !pieceEl.classList.contains('ok')) {
+          pieceEl.classList.remove('remote-drag');
+          (pieceEl as any)._heldBy = null;
+          pieceEl.classList.add('bad');
+          const bd = document.getElementById('board');
+          if (bd) bd.classList.add('badflash');
+          setTimeout(() => {
+            const b = document.getElementById('board');
+            if (b) b.classList.remove('badflash');
+          }, 500);
+          setTimeout(() => {
+            pieceEl.classList.add('ret');
+            if (typeof data.dx === 'number' && typeof data.dy === 'number') {
+              const bc = rec.Bc || 400;
+              const tx = (pieceEl as any)._tx ?? 0;
+              const ty = (pieceEl as any)._ty ?? 0;
+              pieceEl.style.left = (tx + data.dx * bc) + 'px';
+              pieceEl.style.top = (ty + data.dy * bc) + 'px';
+            }
+            setTimeout(() => {
+              pieceEl.classList.remove('bad', 'ret');
+            }, 380);
+          }, 520);
+        }
       } else if (data.type === '__piece_placed__') {
         const stage = stageRef.current;
         const rec = recRef.current;
@@ -1214,17 +1385,30 @@ export default function PuzzleGame({
           return;
         }
 
-        const pieceEl = rec.pcs[data.pieceId];
-        if (pieceEl && !pieceEl.classList.contains('ok')) {
-          pieceEl.style.left = (pieceEl as any)._tx + 'px';
-          pieceEl.style.top = (pieceEl as any)._ty + 'px';
-          pieceEl.classList.add('ok');
-          placedRef.current++;
-          setPlacedCount(placedRef.current);
-          showToast(`🧩 ${data.byName || 'Teman'} memasang kepingan!`);
+        if (!t0Ref.current) {
+          t0Ref.current = Date.now();
+          if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
+          timerIntervalRef.current = setInterval(() => {
+            setTimeStr(fmt(Math.floor((Date.now() - t0Ref.current) / 1000)));
+          }, 500);
+        }
 
-          if (placedRef.current === gridN * gridN) {
-            handleWin();
+        const pieceEl = rec.pcs[data.pieceId];
+        if (pieceEl) {
+          pieceEl.classList.remove('remote-drag');
+          (pieceEl as any)._heldBy = null;
+          if (!pieceEl.classList.contains('ok')) {
+            pieceEl.style.left = (pieceEl as any)._tx + 'px';
+            pieceEl.style.top = (pieceEl as any)._ty + 'px';
+            pieceEl.classList.add('ok');
+            placedRef.current++;
+            setPlacedCount(placedRef.current);
+            lg(pieceEl, true);
+            showToast(`🧩 ${data.byName || 'Teman'} memasang kepingan!`);
+
+            if (placedRef.current === gridN * gridN) {
+              handleWin();
+            }
           }
         }
       }
@@ -1281,6 +1465,9 @@ export default function PuzzleGame({
     cancelAnimationFrame(tlRafRef.current);
     setInMenu(true);
     setIsWinOpen(false);
+    if (playMode === 'duo' && roomRole === 'host') {
+      voice.sendMessage({ type: '__host_returned_to_menu__' });
+    }
   };
 
   const togglePeek = () => {

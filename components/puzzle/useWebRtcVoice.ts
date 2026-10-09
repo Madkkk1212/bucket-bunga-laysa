@@ -43,6 +43,19 @@ function safeRoomToken(roomCode: string) {
   return roomCode.trim().toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 24);
 }
 
+function getAudioSender(pc: RTCPeerConnection): RTCRtpSender | undefined {
+  const direct = pc.getSenders().find((s) => s.track && s.track.kind === 'audio');
+  if (direct) return direct;
+  const transceiver = pc.getTransceivers().find(
+    (t) =>
+      t.sender?.track?.kind === 'audio' ||
+      t.receiver?.track?.kind === 'audio' ||
+      (t as any).kind === 'audio'
+  );
+  if (transceiver?.sender) return transceiver.sender;
+  return pc.getSenders().find((s) => !s.track || s.track.kind === 'audio');
+}
+
 export function useWebRtcVoice(
   roomCode: string,
   isActive: boolean,
@@ -70,6 +83,7 @@ export function useWebRtcVoice(
   const onDataMessageRef = useRef(onDataMessage);
   const dataConnectionsRef = useRef<DataConnectionLike[]>([]);
   const mediaCallsRef = useRef<MediaCallLike[]>([]);
+  const setupCallRef = useRef<((call: MediaCallLike) => void) | null>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
   const silentStreamRef = useRef<MediaStream | null>(null);
   const silentAudioContextRef = useRef<AudioContext | null>(null);
@@ -80,8 +94,23 @@ export function useWebRtcVoice(
   const isMicOnRef = useRef(false);
   const isSpeakerOnRef = useRef(true);
   const analyserRefs = useRef<{ local: AnalyserNode | null; remote: AnalyserNode | null }>({ local: null, remote: null });
+  const audioSourceNodesRef = useRef<any[]>([]);
   const rafRef = useRef<number | null>(null);
   const pingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => { isSpeakerOnRef.current = isSpeakerOn; }, [isSpeakerOn]);
+
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (peerRef.current) {
+        try { peerRef.current.destroy(); } catch {}
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, []);
 
   useEffect(() => { roleRef.current = role; }, [role]);
   useEffect(() => {
@@ -94,9 +123,32 @@ export function useWebRtcVoice(
   useEffect(() => { onDataMessageRef.current = onDataMessage; }, [onDataMessage]);
   useEffect(() => { isMicOnRef.current = isMicOn; }, [isMicOn]);
   useEffect(() => {
-    isSpeakerOnRef.current = isSpeakerOn;
     audioElementsRef.current.forEach((audio) => { audio.muted = !isSpeakerOn; });
   }, [isSpeakerOn]);
+
+  // Global user interaction listener to ensure browser Autoplay Policy does not block incoming audio
+  useEffect(() => {
+    const unblockAudio = () => {
+      audioElementsRef.current.forEach((audio) => {
+        if (audio.paused) {
+          audio.play().then(() => setAudioPlaybackBlocked(false)).catch(() => {});
+        }
+      });
+      if (meterAudioContextRef.current && meterAudioContextRef.current.state === 'suspended') {
+        meterAudioContextRef.current.resume().catch(() => {});
+      }
+    };
+    window.addEventListener('click', unblockAudio, { passive: true });
+    window.addEventListener('pointerdown', unblockAudio, { passive: true });
+    window.addEventListener('touchstart', unblockAudio, { passive: true });
+    window.addEventListener('keydown', unblockAudio, { passive: true });
+    return () => {
+      window.removeEventListener('click', unblockAudio);
+      window.removeEventListener('pointerdown', unblockAudio);
+      window.removeEventListener('touchstart', unblockAudio);
+      window.removeEventListener('keydown', unblockAudio);
+    };
+  }, []);
 
   const makeSilentStream = useCallback(() => {
     if (silentStreamRef.current?.getAudioTracks().some((track) => track.readyState === 'live')) {
@@ -129,7 +181,9 @@ export function useWebRtcVoice(
       const analyser = context.createAnalyser();
       analyser.fftSize = 64;
       analyser.smoothingTimeConstant = 0.35;
-      context.createMediaStreamSource(stream).connect(analyser);
+      const sourceNode = context.createMediaStreamSource(stream);
+      sourceNode.connect(analyser);
+      audioSourceNodesRef.current.push(sourceNode);
       if (local) analyserRefs.current.local = analyser;
       else analyserRefs.current.remote = analyser;
       context.resume().catch(() => {});
@@ -176,10 +230,22 @@ export function useWebRtcVoice(
   }, []);
 
   const sendMessage = useCallback((data: Record<string, any>, targetPeerId?: string) => {
-    const connections = dataConnectionsRef.current.filter((connection) =>
-      connection.open && (!targetPeerId || connection.peer === targetPeerId || (connection as any).__remotePeerId === targetPeerId),
-    );
+    let connections = dataConnectionsRef.current.filter((connection) => connection.open);
     if (!connections.length) return false;
+    if (targetPeerId) {
+      const targeted = connections.filter(
+        (connection) => connection.peer === targetPeerId || (connection as any).__remotePeerId === targetPeerId,
+      );
+      if (targeted.length > 0) connections = targeted;
+    }
+
+    // Drop intermediate move frames if WebRTC data channel buffer has backpressure (> 48KB)
+    if (data.type === '__piece_move__') {
+      connections = connections.filter(
+        (c) => !(c.dataChannel && c.dataChannel.bufferedAmount > 48 * 1024),
+      );
+      if (!connections.length) return true;
+    }
 
     const image = typeof data.customImageSrc === 'string' ? data.customImageSrc : '';
     if (image.length > MAX_ASSET_CHARS) {
@@ -261,18 +327,27 @@ export function useWebRtcVoice(
       mediaCallsRef.current = calls;
       call.on('stream', (stream: MediaStream) => {
         if (!alive) return;
-        const audio = document.createElement('audio');
-        audio.autoplay = true;
-        audio.setAttribute('playsinline', 'true');
-        audio.setAttribute('aria-hidden', 'true');
-        audio.style.display = 'none';
+        let audio = (call as any).__audio as HTMLAudioElement | undefined;
+        if (!audio) {
+          audio = document.createElement('audio');
+          audio.autoplay = true;
+          audio.setAttribute('playsinline', 'true');
+          audio.setAttribute('aria-hidden', 'true');
+          audio.style.display = 'none';
+          document.body.appendChild(audio);
+          audioElementsRef.current.push(audio);
+          (call as any).__audio = audio;
+        }
         audio.muted = !isSpeakerOnRef.current;
         audio.srcObject = stream;
-        document.body.appendChild(audio);
-        audioElementsRef.current.push(audio);
-        audio.play().then(() => setAudioPlaybackBlocked(false)).catch(() => setAudioPlaybackBlocked(true));
+        const playStream = () => {
+          audio?.play().then(() => setAudioPlaybackBlocked(false)).catch(() => setAudioPlaybackBlocked(true));
+        };
+        playStream();
+        stream.getAudioTracks().forEach((track) => {
+          track.onunmute = playStream;
+        });
         attachMeter(stream, false);
-        (call as any).__audio = audio;
       });
       const removeCall = () => {
         const audio = (call as any).__audio as HTMLAudioElement | undefined;
@@ -288,6 +363,7 @@ export function useWebRtcVoice(
         if (alive) setConnectionError('Voice terputus. Periksa jaringan dan coba nyalakan mikrofon lagi.');
       });
     };
+    setupCallRef.current = setupCall;
 
     const deliver = (data: any, source?: DataConnectionLike) => {
       if (!data || typeof data !== 'object') return;
@@ -393,7 +469,34 @@ export function useWebRtcVoice(
         transfers.set(id, { message: data, chunks: new Array(total), received: 0, total, timer });
         return;
       }
-      if (role === 'host' && source && data.type === '__piece_placed__') {
+      if (data.type === '__mic_toggle__') {
+        if (data.isMicOn) {
+          audioElementsRef.current.forEach((audio) => {
+            if (audio.paused) {
+              audio.play().then(() => setAudioPlaybackBlocked(false)).catch(() => setAudioPlaybackBlocked(true));
+            }
+          });
+          if (meterAudioContextRef.current && meterAudioContextRef.current.state === 'suspended') {
+            meterAudioContextRef.current.resume().catch(() => {});
+          }
+        }
+        if (role === 'host' && source) {
+          connections.filter((conn) => conn.open && conn !== source).forEach((conn) => {
+            try { conn.send(data); } catch {}
+          });
+        }
+        onDataMessageRef.current?.(data);
+        return;
+      }
+      if (
+        role === 'host' &&
+        source &&
+        (data.type === '__piece_placed__' ||
+          data.type === '__piece_grab__' ||
+          data.type === '__piece_move__' ||
+          data.type === '__piece_release__' ||
+          data.type === '__piece_wrong__')
+      ) {
         connections.filter((connection) => connection.open && connection !== source).forEach((connection) => {
           try { connection.send(data); } catch {}
         });
@@ -546,15 +649,26 @@ export function useWebRtcVoice(
   }, [isActive, role, roomCode, maxPlayers, makeSilentStream, startMeter]);
 
   const toggleMic = useCallback(async (): Promise<ToggleMicResult> => {
+    const token = safeRoomToken(roomCode);
+    const hostId = `lysroom-${token}-host`;
+
     if (isMicOn) {
-      const silentTrack = makeSilentStream().getAudioTracks()[0];
+      const silentStream = makeSilentStream();
+      const silentTrack = silentStream.getAudioTracks()[0];
       mediaCallsRef.current.forEach((call) => {
-        const sender = call.peerConnection?.getSenders().find((item) => item.track?.kind === 'audio');
-        if (sender) void sender.replaceTrack(silentTrack || null).catch(() => {});
+        (call as any).localStream = silentStream;
+        const pc = call.peerConnection;
+        if (pc) {
+          const sender = getAudioSender(pc);
+          if (sender) {
+            void sender.replaceTrack(silentTrack || null).catch(() => {});
+          }
+        }
       });
       localStreamRef.current?.getTracks().forEach((track) => track.stop());
       localStreamRef.current = null;
       setIsMicOn(false);
+      sendMessage({ type: '__mic_toggle__', peerId: localPeerIdRef.current, isMicOn: false });
       return { action: 'turned_off' };
     }
 
@@ -570,13 +684,45 @@ export function useWebRtcVoice(
       setIsMicOn(true);
       startMeter(stream, true);
       const track = stream.getAudioTracks()[0];
+
       mediaCallsRef.current.forEach((call) => {
-        const sender = call.peerConnection?.getSenders().find((item) => item.track?.kind === 'audio');
-        if (sender && track) void sender.replaceTrack(track).catch(() => {});
+        (call as any).localStream = stream;
+        const pc = call.peerConnection;
+        if (pc && track) {
+          const sender = getAudioSender(pc);
+          if (sender) {
+            void sender.replaceTrack(track).catch(() => {});
+          } else {
+            try {
+              pc.addTrack(track, stream);
+            } catch {}
+          }
+          const transceiver = pc.getTransceivers().find(
+            (t) => t.sender === sender || t.receiver?.track?.kind === 'audio'
+          );
+          if (transceiver && transceiver.direction !== 'sendrecv') {
+            transceiver.direction = 'sendrecv';
+          }
+        }
       });
+
+      // If guest has no active media call to host yet, initiate call directly with live mic stream
+      if (roleRef.current === 'guest' && peerRef.current && !mediaCallsRef.current.some((c) => c.peer === hostId)) {
+        try {
+          const mediaCall = peerRef.current.call(hostId, stream);
+          if (mediaCall && setupCallRef.current) setupCallRef.current(mediaCall);
+        } catch (e) {
+          console.warn('Failed to call host on toggleMic', e);
+        }
+      }
+
       audioElementsRef.current.forEach((audio) => {
         audio.play().then(() => setAudioPlaybackBlocked(false)).catch(() => setAudioPlaybackBlocked(true));
       });
+
+      // Notify peer that mic is active so recipient resumes audio element & AudioContext playback
+      sendMessage({ type: '__mic_toggle__', peerId: localPeerIdRef.current, isMicOn: true });
+
       return { action: 'turned_on' };
     } catch (error: any) {
       const errorName = error?.name || 'UnknownError';
@@ -589,7 +735,7 @@ export function useWebRtcVoice(
             : 'Mikrofon gagal diaktifkan. Periksa izin dan perangkat audio.';
       return { action: 'error', errorName, errorMessage: message };
     }
-  }, [isMicOn, makeSilentStream, startMeter]);
+  }, [isMicOn, makeSilentStream, startMeter, roomCode, sendMessage]);
 
   const toggleSpeaker = useCallback(() => {
     setIsSpeakerOn((current) => !current);

@@ -5,7 +5,14 @@ export default function robots(): MetadataRoute.Robots {
     rules: {
       userAgent: '*',
       allow: '/',
-      disallow: ['/admin', '/admin/*', '/api/admin/*', '/api/settings/*'],
+      disallow: [
+        '/lys-atelier-vault-89x',
+        '/lys-atelier-vault-89x/*',
+        '/admin',
+        '/admin/*',
+        '/api/admin/*',
+        '/api/settings/*',
+      ],
     },
     sitemap: 'https://giftbucket.web.id/sitemap.xml',
   };

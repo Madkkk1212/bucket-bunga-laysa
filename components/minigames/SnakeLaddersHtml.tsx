@@ -65,14 +65,15 @@ function SnakeLaddersRoomBridge() {
       return;
     }
     if (message.type === 'snake:start-request' && room.role === 'host') {
-      const np = Number(message.np);
-      if (np !== settingsRef.current.np || room.joinedPlayers.length + 1 !== np || !room.localPeerId) {
+      const requestedNp = Number(message.np) || settingsRef.current.np;
+      const requestedN = Number(message.N) || settingsRef.current.N;
+      settingsRef.current = { np: requestedNp, N: requestedN };
+      const np = requestedNp;
+      if (room.joinedPlayers.length + 1 !== np || !room.localPeerId) {
         const joined = room.joinedPlayers.length + 1;
         const reason = !room.localPeerId
           ? 'Room masih menyambungkan host. Tunggu sebentar lalu tekan Mulai lagi.'
-          : np !== settingsRef.current.np
-            ? 'Pengaturan pemain belum tersinkron. Pilih jumlah pemain lagi.'
-            : `Menunggu peserta · ${joined}/${np} sudah bergabung.`;
+          : `Menunggu peserta · ${joined}/${np} sudah bergabung.`;
         room.postToGame('snake:start-error', { message: reason });
         return;
       }
@@ -128,8 +129,13 @@ function SnakeLaddersRoomBridge() {
       return;
     }
     if (message.type === '__snake_roll_request__' && room.role === 'host') {
-      const currentPlayer = snapshotRef.current?.players?.[snapshotRef.current.turn];
-      if (currentPlayer?.id === message.fromPeerId) room.postToGame('snake:remote-roll', { playerId: message.fromPeerId });
+      const currentTurn = snapshotRef.current?.turn ?? 0;
+      const currentPlayer = snapshotRef.current?.players?.[currentTurn];
+      const fromPeerId = String(message.fromPeerId || '');
+      const playerId = String(message.playerId || '');
+      if (currentPlayer && (currentPlayer.id === fromPeerId || currentPlayer.id === playerId || room.joinedPlayers.some((p) => p.id === fromPeerId))) {
+        room.postToGame('snake:remote-roll', { playerId: currentPlayer.id });
+      }
     }
   }, [room]);
 
