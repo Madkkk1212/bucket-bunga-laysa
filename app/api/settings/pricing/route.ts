@@ -3,6 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import { getSupabase } from '@/lib/supabaseClient';
 import { getAdminClient } from '@/utils/supabase/admin';
+import { verifyAdminSession } from '@/lib/adminAuth';
 
 export type PricingTierKey = 'daily' | 'weekly' | 'lifetime' | string;
 
@@ -36,7 +37,7 @@ export interface PricingConfig {
   tiers: Record<string, TierConfig>;
 }
 
-export const DEFAULT_TIERS: Record<string, TierConfig> = {
+const DEFAULT_TIERS: Record<string, TierConfig> = {
   daily: {
     key: 'daily',
     name: 'Paket Harian (24 Jam)',
@@ -182,7 +183,14 @@ function writeLocalConfig(cfg: PricingConfig) {
 // Menghitung otomatis potongan rupiah & persentase tiap tier tanpa admin harus ngitung
 function computePricing(cfg: PricingConfig) {
   const tiers = cfg.tiers || DEFAULT_TIERS;
-  const computedTiers: Record<string, any> = {};
+  type ComputedTier = TierConfig & {
+    finalPrice: number;
+    hasDiscount: boolean;
+    discountAmount: number;
+    discountPercentage: number;
+    discountBadge: string;
+  };
+  const computedTiers: Record<string, ComputedTier> = {};
 
   Object.keys(tiers).forEach((key) => {
     const tier = tiers[key];
@@ -249,7 +257,7 @@ export async function GET() {
           .maybeSingle();
 
         if (!error && data) {
-          let mergedTiers = { ...currentConfig.tiers };
+          const mergedTiers = { ...currentConfig.tiers };
           if (data.tiers_data && typeof data.tiers_data === 'object') {
             const rawTiers = data.tiers_data;
             if (rawTiers._freeLinkDurationDays !== undefined) {
@@ -287,15 +295,15 @@ export async function GET() {
             tiers: mergedTiers,
           };
         }
-      } catch (sbErr) {
+      } catch {
         // Fallback ke local file jika table belum di-migrate
       }
     }
 
     const computed = computePricing(currentConfig);
     return NextResponse.json({ success: true, pricing: computed });
-  } catch (err: any) {
-    return NextResponse.json({ success: false, message: err.message }, { status: 500 });
+  } catch (error: unknown) {
+    return NextResponse.json({ success: false, message: error instanceof Error ? error.message : 'Gagal membaca pengaturan harga.' }, { status: 500 });
   }
 }
 
@@ -306,13 +314,13 @@ export async function POST(req: Request) {
     if (adminKey) {
       const headerKey = req.headers.get('x-admin-key');
       const cookieHeader = req.headers.get('cookie') || '';
-      const cookieKey = cookieHeader
+      const sessionToken = cookieHeader
         .split(';')
         .map((c) => c.trim())
-        .find((c) => c.startsWith('laysa_admin_key='))
+        .find((c) => c.startsWith('laysa_admin_session='))
         ?.split('=')[1];
 
-      const isAuthorized = headerKey === adminKey || cookieKey === adminKey;
+      const isAuthorized = headerKey === adminKey || verifyAdminSession(sessionToken);
 
       if (!isAuthorized) {
         return NextResponse.json(
@@ -430,7 +438,7 @@ export async function POST(req: Request) {
       message: 'Semua pengaturan harga, masa aktif, dan voucher berhasil disimpan!',
       pricing: computed,
     });
-  } catch (err: any) {
-    return NextResponse.json({ success: false, message: err.message }, { status: 500 });
+  } catch (error: unknown) {
+    return NextResponse.json({ success: false, message: error instanceof Error ? error.message : 'Gagal menyimpan pengaturan harga.' }, { status: 500 });
   }
 }

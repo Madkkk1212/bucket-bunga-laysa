@@ -2,17 +2,17 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 // ════════════════════════════════════════════════════════════
-// LAYSA STUDIO — HARDENED SECURITY & STEALTH GATEWAY MIDDLEWARE
+// LAYSA STUDIO — HARDENED SECURITY & STEALTH REQUEST PROXY
 // ════════════════════════════════════════════════════════════
 // 1. /admin & /admin/*         → DIBLOKIR TOTAL (Return 404, tidak ada jejak admin)
 // 2. Secret Vault Route        → Ditentukan oleh ADMIN_SECRET_PATH (.env.local)
 //                                Default: /lys-atelier-vault-89x
-// 3. /api/admin/*              → Wajib cookie laysa_admin_key (HttpOnly) atau x-admin-key
+// 3. /api/admin/*              → Wajib sesi HMAC HttpOnly atau x-admin-key
 //                                (Kecuali /api/admin/auth untuk login)
 // 4. /api/settings/* (writes)  → Wajib otentikasi admin
 // 5. /api/clean-* dsb          → Wajib otentikasi admin
 // 6. /api/verify-code          → Publik, rate limiting 30 req / 60 detik
-// 7. Vault page itself         → Session check di middleware (cookie-based)
+// 7. Vault page itself         → Session check di proxy (cookie-based)
 // ════════════════════════════════════════════════════════════
 
 const PROTECTED_API_PATHS = [
@@ -51,15 +51,49 @@ function getClientIpFromReq(req: NextRequest): string {
   );
 }
 
-function isAdminAuthenticated(req: NextRequest): boolean {
+function decodeBase64Url(value: string): ArrayBuffer {
+  const base64 = value.replace(/-/g, '+').replace(/_/g, '/');
+  const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, '=');
+  return Uint8Array.from(atob(padded), (char) => char.charCodeAt(0)).buffer as ArrayBuffer;
+}
+
+async function isAdminAuthenticated(req: NextRequest): Promise<boolean> {
   const adminKey = process.env.ADMIN_SECRET_KEY;
 
   // Jika ADMIN_SECRET_KEY tidak dikonfigurasi, tolak semua akses admin
   if (!adminKey) return false;
 
-  // Cek cookie HttpOnly yang dipasang server saat login
-  const cookieKey = req.cookies.get('laysa_admin_key')?.value;
-  if (cookieKey && cookieKey === adminKey) return true;
+  // Cookie berisi sesi HMAC bertanda tangan; jangan menyimpan master secret di browser.
+  const sessionToken = req.cookies.get('laysa_admin_session')?.value;
+  if (sessionToken) {
+    try {
+      const [encodedPayload, encodedSignature, extra] = sessionToken.split('.');
+      if (encodedPayload && encodedSignature && !extra) {
+        const key = await crypto.subtle.importKey(
+          'raw',
+          new TextEncoder().encode(adminKey),
+          { name: 'HMAC', hash: 'SHA-256' },
+          false,
+          ['verify'],
+        );
+        const validSignature = await crypto.subtle.verify(
+          'HMAC',
+          key,
+          decodeBase64Url(encodedSignature),
+          new TextEncoder().encode(encodedPayload),
+        );
+        if (validSignature) {
+          const payload = JSON.parse(new TextDecoder().decode(decodeBase64Url(encodedPayload))) as {
+            role?: string;
+            exp?: number;
+          };
+          if (payload.role === 'atelier_curator' && typeof payload.exp === 'number' && Date.now() <= payload.exp) {
+            return true;
+          }
+        }
+      }
+    } catch { /* Treat malformed or expired cookies as unauthenticated. */ }
+  }
 
   // Cek header untuk akses programmatic / curl
   const headerKey = req.headers.get('x-admin-key');
@@ -72,7 +106,7 @@ function isAdminAuthenticated(req: NextRequest): boolean {
 }
 
 
-export function middleware(req: NextRequest) {
+export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const reqMethod = req.method;
 
@@ -114,7 +148,7 @@ export function middleware(req: NextRequest) {
       return NextResponse.next();
     }
 
-    if (!isAdminAuthenticated(req)) {
+    if (!await isAdminAuthenticated(req)) {
       return NextResponse.json(
         {
           success: false,
@@ -134,7 +168,7 @@ export function middleware(req: NextRequest) {
 
   // ── 4. PROTEKSI SCRIPT MAINTENANCE BERBAHAYA ──
   if (PROTECTED_API_PATHS.some((p) => pathname.startsWith(p))) {
-    if (!isAdminAuthenticated(req)) {
+    if (!await isAdminAuthenticated(req)) {
       return NextResponse.json(
         { success: false, error: 'Akses ditolak.' },
         { status: 401 }
@@ -146,7 +180,7 @@ export function middleware(req: NextRequest) {
   // ── 5. PROTEKSI WRITE KE /api/settings/* ──
   if (PROTECTED_WRITE_PATHS.some((p) => pathname.startsWith(p))) {
     const isWrite = ['POST', 'PATCH', 'PUT', 'DELETE'].includes(reqMethod);
-    if (isWrite && !isAdminAuthenticated(req)) {
+    if (isWrite && !await isAdminAuthenticated(req)) {
       return NextResponse.json(
         { success: false, error: 'Hanya admin yang dapat mengubah pengaturan ini.' },
         { status: 401 }

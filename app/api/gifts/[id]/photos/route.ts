@@ -29,7 +29,7 @@ export async function GET(
       if (!error && photos && photos.length > 0) {
         // Buat signed URL untuk setiap foto (berlaku 1 jam)
         const signedPhotos = await Promise.all(
-          photos.map(async (p: any) => {
+          photos.map(async (p: { id: string; storage_path: string; alt_text: string | null; display_order: number }) => {
             let url = '';
             try {
               const { data: signed } = await dbClient.storage
@@ -60,7 +60,7 @@ export async function GET(
     // Fallback store
     const localPhotos = giftPhotosStore.get(id) || [];
     return NextResponse.json({ success: true, photos: localPhotos });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error fetching gift photos:', error);
     return NextResponse.json(
       { success: false, message: 'Gagal memuat foto hadiah.' },
@@ -98,69 +98,68 @@ export async function POST(
     const dbClient = getAdminClient() || supabase;
 
     if (isSupabaseConfigured && dbClient) {
+      // Upload in small parallel batches; the old serial loop added a full
+      // network round-trip for every image before the share link was shown.
       const insertedPhotos: StoredGiftPhoto[] = [];
+      const batches: Array<typeof trimmedPhotos> = [];
+      for (let index = 0; index < trimmedPhotos.length; index += 3) {
+        batches.push(trimmedPhotos.slice(index, index + 3));
+      }
+      for (let batchIndex = 0; batchIndex < batches.length; batchIndex += 1) {
+        const batch = batches[batchIndex];
+        const batchStart = batchIndex * 3;
+        const results: Array<StoredGiftPhoto | null> = await Promise.all(batch.map(async (item, batchIndex): Promise<StoredGiftPhoto | null> => {
+          const i = batchStart + batchIndex;
+          if (!item.dataUrl) return null;
+          try {
+            const matches = item.dataUrl.match(/^data:image\/(jpeg|png|webp|gif);base64,([A-Za-z0-9+/=]+)$/i);
+            if (matches) {
+              const mime = matches[1].toLowerCase() === 'jpg' ? 'jpeg' : matches[1].toLowerCase();
+              const ext = mime === 'jpeg' ? 'jpg' : mime;
+              const buffer = Buffer.from(matches[2], 'base64');
+              const fileName = `${id}/${Date.now()}_${i}.${ext}`;
+              const { error: uploadErr } = await dbClient.storage
+                .from('gift-photos')
+                .upload(fileName, buffer, { contentType: `image/${mime}`, upsert: true });
 
-      for (let i = 0; i < trimmedPhotos.length; i++) {
-        const item = trimmedPhotos[i];
-        if (!item.dataUrl) continue;
-
-        try {
-          // Parse base64
-          const matches = item.dataUrl.match(/^data:image\/([a-zA-Z0-9]+);base64,(.+)$/);
-          if (matches) {
-            const ext = matches[1] === 'jpeg' ? 'jpg' : matches[1];
-            const buffer = Buffer.from(matches[2], 'base64');
-            const fileName = `${id}/${Date.now()}_${i}.${ext}`;
-
-            // Upload ke Supabase Storage bucket 'gift-photos'
-            const { error: uploadErr } = await dbClient.storage
-              .from('gift-photos')
-              .upload(fileName, buffer, {
-                contentType: `image/${matches[1]}`,
-                upsert: true,
-              });
-
-            if (!uploadErr) {
-              const { data: dbPhoto } = await dbClient
-                .from('gift_photos')
-                .insert([
-                  {
+              if (!uploadErr) {
+                const { data: dbPhoto } = await dbClient
+                  .from('gift_photos')
+                  .insert([{
                     gift_id: id,
                     storage_path: fileName,
                     alt_text: (item.altText || '').slice(0, 100),
                     display_order: item.displayOrder ?? i,
-                  },
-                ])
-                .select()
-                .single();
-
-              if (dbPhoto) {
-                const { data: signed } = await dbClient.storage
-                  .from('gift-photos')
-                  .createSignedUrl(fileName, 3600);
-
-                insertedPhotos.push({
-                  id: dbPhoto.id,
-                  giftId: id,
-                  url: signed?.signedUrl || fileName,
-                  altText: item.altText,
-                  displayOrder: item.displayOrder ?? i,
-                });
-                continue;
+                  }])
+                  .select()
+                  .single();
+                if (dbPhoto) {
+                  const { data: signed } = await dbClient.storage
+                    .from('gift-photos')
+                    .createSignedUrl(fileName, 3600);
+                  return {
+                    id: dbPhoto.id,
+                    giftId: id,
+                    url: signed?.signedUrl || fileName,
+                    altText: item.altText,
+                    displayOrder: item.displayOrder ?? i,
+                  } satisfies StoredGiftPhoto;
+                }
               }
             }
+          } catch (error) {
+            console.warn('[Photo upload failed; retaining fallback photo]', error);
           }
-        } catch (e) {
-          console.warn('[Photo upload to Supabase storage failed, fallback to memory]', e);
-        }
-
-        // Fallback photo
-        insertedPhotos.push({
-          id: `photo_${Date.now()}_${i}`,
-          giftId: id,
-          url: item.dataUrl,
-          altText: item.altText,
-          displayOrder: item.displayOrder ?? i,
+          return {
+            id: `photo_${Date.now()}_${i}`,
+            giftId: id,
+            url: item.dataUrl,
+            altText: item.altText,
+            displayOrder: item.displayOrder ?? i,
+          } satisfies StoredGiftPhoto;
+        }));
+        results.forEach((photo) => {
+          if (photo) insertedPhotos.push(photo);
         });
       }
 
@@ -196,7 +195,7 @@ export async function POST(
       count: fallbackList.length,
       photos: fallbackList,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error uploading gift photos:', error);
     return NextResponse.json(
       { success: false, message: 'Gagal mengunggah foto hadiah.' },

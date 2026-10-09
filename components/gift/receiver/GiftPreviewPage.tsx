@@ -46,6 +46,23 @@ const CUSTOMIZER_TABS = [
   { id: 'music', icon: Music, label: 'Musik' },
 ] as const;
 
+async function copyText(text: string): Promise<void> {
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(text);
+    return;
+  }
+  const input = document.createElement('textarea');
+  input.value = text;
+  input.setAttribute('readonly', '');
+  input.style.position = 'fixed';
+  input.style.opacity = '0';
+  document.body.appendChild(input);
+  input.select();
+  const copied = document.execCommand('copy');
+  input.remove();
+  if (!copied) throw new Error('Clipboard tidak tersedia.');
+}
+
 // ─── Preset Foto Contoh untuk Testing Cepat ────────────────────
 const DEMO_PHOTOS: ClientPhoto[] = [
   {
@@ -168,6 +185,7 @@ export default function GiftPreviewPage({ draftId }: Props) {
 
   // Photos state
   const [livePhotos, setLivePhotos] = useState<ClientPhoto[]>([]);
+  const [photosChanged, setPhotosChanged] = useState(false);
 
   // YouTube audio state
   const [liveYouTubeInput, setLiveYouTubeInput] = useState('');
@@ -194,6 +212,7 @@ export default function GiftPreviewPage({ draftId }: Props) {
 
   // Official link creation modal state
   const [isCreatingOfficial, setIsCreatingOfficial] = useState(false);
+  const [shareStage, setShareStage] = useState<'creating' | 'uploading' | null>(null);
   const [officialGiftUrl, setOfficialGiftUrl] = useState<string | null>(null);
   const [officialModalOpen, setOfficialModalOpen] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
@@ -313,7 +332,6 @@ export default function GiftPreviewPage({ draftId }: Props) {
       melodyRef.current = setInterval(playNote, 700);
       setIsSynthPlaying(true);
     } catch {}
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isSynthPlaying]);
 
   const stopProceduralBGM = useCallback(() => {
@@ -382,6 +400,7 @@ export default function GiftPreviewPage({ draftId }: Props) {
   // Load demo photos
   const handleLoadDemoPhotos = () => {
     setLivePhotos(DEMO_PHOTOS);
+    setPhotosChanged(true);
     setToastMessage('✨ 3 Foto contoh berhasil dimuat!');
     setTimeout(() => setToastMessage(null), 3000);
   };
@@ -442,13 +461,14 @@ export default function GiftPreviewPage({ draftId }: Props) {
           recipientName: liveRecipient.trim() || draft.recipientName,
           message: liveMessage,
           config: updatedConfig,
-          photos: livePhotos.map((p) => ({ dataUrl: p.dataUrl, altText: p.altText })),
+          ...(photosChanged ? { photos: livePhotos.map((p) => ({ dataUrl: p.dataUrl, altText: p.altText })) } : {}),
         }),
       });
 
       const data = await res.json();
       if (data.success && data.draft) {
         setDraft(data.draft);
+        setPhotosChanged(false);
         setSaveSuccess(true);
         setSaveModalOpen(true);
         setTimeout(() => setSaveSuccess(false), 2500);
@@ -475,6 +495,7 @@ export default function GiftPreviewPage({ draftId }: Props) {
       return;
     }
     setIsCreatingOfficial(true);
+    setShareStage('creating');
     try {
       const accessCode =
         typeof window !== 'undefined'
@@ -503,7 +524,6 @@ export default function GiftPreviewPage({ draftId }: Props) {
           musicTrack: liveYouTubeVideoId ? 'youtube' : 'romantic-piano',
           designData: draft.designData,
           accessCode,
-          isVipUser: true,
           config: updatedConfig,
         }),
       });
@@ -512,6 +532,7 @@ export default function GiftPreviewPage({ draftId }: Props) {
       if (data.success && data.id) {
         let photoUploadFailed = false;
         if (livePhotos.length > 0) {
+          setShareStage('uploading');
           const photoResponse = await fetch(`/api/gifts/${data.id}/photos`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -534,20 +555,28 @@ export default function GiftPreviewPage({ draftId }: Props) {
           window.setTimeout(() => setToastMessage(null), 4000);
         }
       } else {
-        alert(data.message || 'Gagal membuat link kado resmi.');
+        setToastMessage(data.message || 'Gagal membuat link kado resmi.');
+        window.setTimeout(() => setToastMessage(null), 4000);
       }
     } catch {
-      alert('Terjadi kesalahan koneksi.');
+      setToastMessage('Koneksi terputus. Link belum berhasil dibuat; coba lagi saat jaringan stabil.');
+      window.setTimeout(() => setToastMessage(null), 4000);
     } finally {
       setIsCreatingOfficial(false);
+      setShareStage(null);
     }
   };
 
-  const copyOfficialUrl = () => {
+  const copyOfficialUrl = async () => {
     if (!officialGiftUrl) return;
-    navigator.clipboard.writeText(officialGiftUrl);
-    setIsCopied(true);
-    setTimeout(() => setIsCopied(false), 2000);
+    try {
+      await copyText(officialGiftUrl);
+      setIsCopied(true);
+      window.setTimeout(() => setIsCopied(false), 2000);
+    } catch {
+      setToastMessage('Link siap, tetapi clipboard tidak tersedia. Tekan lama alamat untuk menyalin.');
+      window.setTimeout(() => setToastMessage(null), 4000);
+    }
   };
 
   // Loading state
@@ -620,6 +649,7 @@ export default function GiftPreviewPage({ draftId }: Props) {
   );
 
   const handleLandingPhotoChange = (slotIndex: number, dataUrl: string) => {
+    setPhotosChanged(true);
     setLivePhotos((current) => {
       const next = [...current];
       const targetIndex = Math.min(slotIndex, next.length);
@@ -807,7 +837,7 @@ export default function GiftPreviewPage({ draftId }: Props) {
               ) : (
                 <Sparkles size={13} />
               )}
-              <span>Bagikan</span>
+              <span>{shareStage === 'uploading' ? 'Menyiapkan foto…' : shareStage === 'creating' ? 'Membuat link…' : 'Bagikan'}</span>
             </button>
           </div>
         </nav>
@@ -1216,16 +1246,16 @@ export default function GiftPreviewPage({ draftId }: Props) {
                           key={obj.id}
                           type="button"
                           onClick={() => setLiveObject(obj.id)}
-                          className={`relative py-3 px-1 rounded-xl border flex flex-col items-center text-center gap-1.5 transition-all cursor-pointer select-none ${
+                          className={`gpv-object-option relative rounded-xl border flex flex-col items-center justify-center text-center transition-all cursor-pointer select-none ${
                             sel ? 'border-pink-400 bg-pink-50 ring-2 ring-pink-100' : 'border-stone-200 hover:border-pink-200 bg-white'
                           }`}
                         >
-                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                          <div className={`gpv-object-option-icon rounded-lg flex items-center justify-center ${
                             sel ? 'bg-pink-100 text-pink-700' : 'bg-stone-100 text-stone-500'
                           }`}>
                             <Icon size={16} />
                           </div>
-                          <span className="text-[10px] font-medium text-stone-700 leading-tight line-clamp-2 w-full">{obj.label}</span>
+                          <span className="gpv-object-option-label text-[10px] font-medium text-stone-700 leading-tight line-clamp-2 w-full">{obj.label}</span>
                           {sel && (
                             <span className="absolute top-1 right-1 w-[14px] h-[14px] rounded-full bg-pink-600 flex items-center justify-center">
                               <Check size={8} className="text-white" strokeWidth={3} />
@@ -1298,7 +1328,14 @@ export default function GiftPreviewPage({ draftId }: Props) {
                     Muat Demo
                   </button>
                 </div>
-                <PhotoUploader photos={livePhotos} onChange={setLivePhotos} maxPhotos={6} />
+                <PhotoUploader
+                  photos={livePhotos}
+                  onChange={(photos) => {
+                    setLivePhotos(photos);
+                    setPhotosChanged(true);
+                  }}
+                  maxPhotos={6}
+                />
               </div>
             )}
 
@@ -1492,11 +1529,16 @@ export default function GiftPreviewPage({ draftId }: Props) {
             <div className="gpv-save-modal-icon" aria-hidden="true">
               <Check size={28} strokeWidth={3} />
             </div>
-            <p className="gpv-save-modal-eyebrow">KADO DIPERBARUI</p>
-            <h2 id="save-modal-title">Perubahanmu tersimpan</h2>
+            <p className="gpv-save-modal-eyebrow"><span className="gpv-save-status-dot" /> TERSIMPAN DENGAN AMAN</p>
+            <h2 id="save-modal-title">Perubahanmu sudah tersimpan</h2>
             <p className="gpv-save-modal-copy">
-              Preview dan kado yang akan kamu bagikan sekarang memakai pengaturan terbaru.
+              Preview dan link yang nanti dibagikan akan memakai desain terbaru ini.
             </p>
+            <div className="gpv-save-summary" aria-label="Ringkasan perubahan">
+              <span><strong>{GIFT_TEMPLATES[liveTemplate]?.name || 'Template kado'}</strong><small>Tampilan kado</small></span>
+              <span><strong>{livePhotos.length} foto</strong><small>Foto kenangan</small></span>
+              <span><strong>{EFFECT_OPTIONS.find((effect) => effect.id === liveEffect)?.label || 'Efek'}</strong><small>Efek pilihan</small></span>
+            </div>
             <div className="gpv-save-modal-actions">
               <button type="button" className="gpv-save-modal-secondary" onClick={() => setSaveModalOpen(false)}>
                 Lanjut Edit
@@ -1514,45 +1556,46 @@ export default function GiftPreviewPage({ draftId }: Props) {
           4. OFFICIAL GIFT LINK MODAL
           ══════════════════════════════════════════════════════════ */}
       {officialModalOpen && officialGiftUrl && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in">
-          <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl border border-stone-100 text-center animate-in zoom-in-95">
+        <div className="gpv-official-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setOfficialModalOpen(false); }}>
+          <section className="gpv-official-modal" role="dialog" aria-modal="true" aria-labelledby="gpv-official-title" aria-describedby="gpv-official-description">
             <div
               style={{ background: 'linear-gradient(135deg, #ec4899 0%, #9333ea 100%)' }}
-              className="w-12 h-12 rounded-2xl flex items-center justify-center text-white mx-auto mb-3 shadow-lg shadow-pink-500/20"
+              className="gpv-official-icon"
             >
               <Sparkles size={24} />
             </div>
 
-            <h3 className="text-lg font-bold text-stone-900 mb-1">Link Kado Resmi Berhasil Dibuat!</h3>
-            <p className="text-xs text-stone-600 mb-5 leading-relaxed">
+            <h3 id="gpv-official-title">Link Kado Berhasil Dibuat</h3>
+            <p id="gpv-official-description" className="gpv-official-copy">
               Kado digital ini sudah siap dikirimkan kepada <strong>{liveRecipient || 'penerima tercinta'}</strong>.
             </p>
 
-            <div className="p-3 bg-stone-50 rounded-2xl border border-stone-200 mb-4 flex items-center justify-between gap-2">
+            <div className="gpv-official-linkbox">
               <input
                 type="text"
                 readOnly
                 value={officialGiftUrl}
-                className="bg-transparent text-xs text-stone-800 font-mono flex-1 outline-none truncate"
+                className="gpv-official-url"
+                aria-label="Tautan kado yang dapat dibagikan"
               />
               <button
                 type="button"
                 onClick={copyOfficialUrl}
-                className="px-3 py-1.5 rounded-xl bg-pink-600 hover:bg-pink-700 text-white font-bold text-xs flex items-center gap-1 shrink-0 transition-colors cursor-pointer"
+                className="gpv-official-copy-button"
               >
                 {isCopied ? <Check size={13} /> : <Copy size={13} />}
                 <span>{isCopied ? 'Tersalin!' : 'Salin'}</span>
               </button>
             </div>
 
-            <div className="flex flex-col gap-2">
+            <div className="gpv-official-actions">
               <a
                 href={`https://api.whatsapp.com/send?text=${encodeURIComponent(
                   `Hai ${liveRecipient || ''}! Ada kejutan buket bunga spesial untukmu: ${officialGiftUrl}`
                 )}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-full py-3 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md transition-all"
+                className="gpv-official-whatsapp"
               >
                 <Share2 size={15} />
                 <span>Kirim via WhatsApp</span>
@@ -1562,7 +1605,7 @@ export default function GiftPreviewPage({ draftId }: Props) {
                 href={officialGiftUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-full py-2.5 px-4 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-800 font-semibold text-xs flex items-center justify-center gap-1.5 transition-colors"
+                className="gpv-official-open"
               >
                 <ExternalLink size={13} />
                 <span>Buka Link Kado Sekarang</span>
@@ -1571,12 +1614,12 @@ export default function GiftPreviewPage({ draftId }: Props) {
               <button
                 type="button"
                 onClick={() => setOfficialModalOpen(false)}
-                className="mt-1 text-xs font-semibold text-stone-400 hover:text-stone-600 cursor-pointer"
+                className="gpv-official-close"
               >
                 Tutup Jendela Ini
               </button>
             </div>
-          </div>
+          </section>
         </div>
       )}
     </div>

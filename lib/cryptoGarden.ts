@@ -7,49 +7,43 @@ import crypto from 'crypto';
  */
 
 // Secret key derivation (AES-256 requires exactly 32 bytes)
-const ENCRYPTION_SECRET = 
-  process.env.GARDEN_ENCRYPTION_KEY || 
-  process.env.ADMIN_SECRET_KEY || 
-  'laysa-boutique-flower-garden-secret-aes256-key-v1!';
+function getEncryptionSecret(): string {
+  const secret = process.env.GARDEN_ENCRYPTION_KEY;
+  if (!secret || secret.length < 32) {
+    throw new Error('GARDEN_ENCRYPTION_KEY harus diatur dan minimal 32 karakter.');
+  }
+  return secret;
+}
 
 const ALGORITHM = 'aes-256-gcm';
 const IV_LENGTH = 12; // Standard recommended IV length for AES-GCM
-const AUTH_TAG_LENGTH = 16;
 
 /**
  * Menghasilkan kunci 32-byte konsisten dari secret menggunakan SHA-256
  */
 function getMasterKey(): Buffer {
-  return crypto.createHash('sha256').update(ENCRYPTION_SECRET).digest();
+  return crypto.createHash('sha256').update(getEncryptionSecret()).digest();
 }
 
 /**
  * Enkripsi data sensitif menjadi string terlindungi: iv:authTag:ciphertext
  */
-export function encryptGardenData(data: any): string {
-  try {
-    if (data === null || data === undefined) return '';
-    const plaintext = typeof data === 'string' ? data : JSON.stringify(data);
-    const iv = crypto.randomBytes(IV_LENGTH);
-    const cipher = crypto.createCipheriv(ALGORITHM, getMasterKey(), iv);
-    
-    let encrypted = cipher.update(plaintext, 'utf8', 'hex');
-    encrypted += cipher.final('hex');
-    const authTag = cipher.getAuthTag().toString('hex');
-
-    // Format aman tersimpan di DB / file: {iv}:{authTag}:{ciphertext}
-    return `${iv.toString('hex')}:${authTag}:${encrypted}`;
-  } catch (error) {
-    console.error('[Garden Crypto] Encryption failed:', error);
-    // Fallback aman jika terjadi anomali runtime
-    return typeof data === 'string' ? data : JSON.stringify(data);
-  }
+export function encryptGardenData(data: unknown): string {
+  if (data === null || data === undefined) return '';
+  const plaintext = typeof data === 'string' ? data : JSON.stringify(data);
+  if (plaintext === undefined) throw new Error('Data kebun tidak dapat diserialisasi.');
+  const iv = crypto.randomBytes(IV_LENGTH);
+  const cipher = crypto.createCipheriv(ALGORITHM, getMasterKey(), iv);
+  let encrypted = cipher.update(plaintext, 'utf8', 'hex');
+  encrypted += cipher.final('hex');
+  const authTag = cipher.getAuthTag().toString('hex');
+  return `${iv.toString('hex')}:${authTag}:${encrypted}`;
 }
 
 /**
  * Dekripsi string data sensitif ke format aslinya
  */
-export function decryptGardenData<T = any>(cipherString: string, fallback?: T): T {
+export function decryptGardenData<T = unknown>(cipherString: string, fallback?: T): T {
   try {
     if (!cipherString || typeof cipherString !== 'string') {
       return (cipherString as unknown) as T;
@@ -83,6 +77,7 @@ export function decryptGardenData<T = any>(cipherString: string, fallback?: T): 
     }
   } catch (error) {
     console.warn('[Garden Crypto] Decryption verification failed or data corrupted:', error);
-    return fallback !== undefined ? fallback : ((cipherString as unknown) as T);
+    if (fallback !== undefined) return fallback;
+    throw new Error('Data kebun tidak dapat didekripsi dengan kunci yang dikonfigurasi.');
   }
 }

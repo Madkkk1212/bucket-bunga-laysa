@@ -47,12 +47,14 @@ export function useWebRtcVoice(
   roomCode: string,
   isActive: boolean,
   role: PuzzleRoomRole,
+  maxPlayers: number,
   playerName: string,
   onDataMessage?: (data: any) => void,
 ) {
   const [connectionStatus, setConnectionStatus] = useState<PuzzleRoomStatus>('idle');
   const [connectionError, setConnectionError] = useState<string | null>(null);
   const [isMicOn, setIsMicOn] = useState(false);
+  const [isSpeakerOn, setIsSpeakerOn] = useState(true);
   const [pingMs, setPingMs] = useState<number | null>(null);
   const [playerList, setPlayerList] = useState<string[]>([playerName]);
   const [localVolume, setLocalVolume] = useState(0);
@@ -60,6 +62,7 @@ export function useWebRtcVoice(
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [remoteVolume, setRemoteVolume] = useState(0);
   const [audioPlaybackBlocked, setAudioPlaybackBlocked] = useState(false);
+  const [localPeerId, setLocalPeerId] = useState('');
 
   const peerRef = useRef<any>(null);
   const roleRef = useRef(role);
@@ -73,7 +76,9 @@ export function useWebRtcVoice(
   const meterAudioContextRef = useRef<AudioContext | null>(null);
   const audioElementsRef = useRef<HTMLAudioElement[]>([]);
   const transferMapRef = useRef(new Map<string, AssetTransfer>());
+  const localPeerIdRef = useRef('');
   const isMicOnRef = useRef(false);
+  const isSpeakerOnRef = useRef(true);
   const analyserRefs = useRef<{ local: AnalyserNode | null; remote: AnalyserNode | null }>({ local: null, remote: null });
   const rafRef = useRef<number | null>(null);
   const pingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -88,6 +93,10 @@ export function useWebRtcVoice(
   }, [playerName]);
   useEffect(() => { onDataMessageRef.current = onDataMessage; }, [onDataMessage]);
   useEffect(() => { isMicOnRef.current = isMicOn; }, [isMicOn]);
+  useEffect(() => {
+    isSpeakerOnRef.current = isSpeakerOn;
+    audioElementsRef.current.forEach((audio) => { audio.muted = !isSpeakerOn; });
+  }, [isSpeakerOn]);
 
   const makeSilentStream = useCallback(() => {
     if (silentStreamRef.current?.getAudioTracks().some((track) => track.readyState === 'live')) {
@@ -166,8 +175,10 @@ export function useWebRtcVoice(
     }
   }, []);
 
-  const sendMessage = useCallback((data: Record<string, any>) => {
-    const connections = dataConnectionsRef.current.filter((connection) => connection.open);
+  const sendMessage = useCallback((data: Record<string, any>, targetPeerId?: string) => {
+    const connections = dataConnectionsRef.current.filter((connection) =>
+      connection.open && (!targetPeerId || connection.peer === targetPeerId || (connection as any).__remotePeerId === targetPeerId),
+    );
     if (!connections.length) return false;
 
     const image = typeof data.customImageSrc === 'string' ? data.customImageSrc : '';
@@ -214,6 +225,7 @@ export function useWebRtcVoice(
       setConnectionError(null);
       setPingMs(null);
       setPlayerList([playerNameRef.current]);
+      setLocalPeerId('');
       return;
     }
 
@@ -254,6 +266,7 @@ export function useWebRtcVoice(
         audio.setAttribute('playsinline', 'true');
         audio.setAttribute('aria-hidden', 'true');
         audio.style.display = 'none';
+        audio.muted = !isSpeakerOnRef.current;
         audio.srcObject = stream;
         document.body.appendChild(audio);
         audioElementsRef.current.push(audio);
@@ -276,29 +289,73 @@ export function useWebRtcVoice(
       });
     };
 
-    const deliver = (data: any) => {
+    const deliver = (data: any, source?: DataConnectionLike) => {
       if (!data || typeof data !== 'object') return;
       if (data.type === '__ping__') {
-        const connection = connections.find((item) => item.open);
-        try { connection?.send({ type: '__pong__', ts: data.ts }); } catch {}
+        try { source?.send({ type: '__pong__', ts: data.ts }); } catch {}
         return;
       }
       if (data.type === '__pong__') {
         if (typeof data.ts === 'number') setPingMs(Math.max(1, Date.now() - data.ts));
         return;
       }
+      if (data.type === '__room_full__') {
+        source?.close?.();
+        setConnectionStatus('error');
+        setConnectionError(String(data.message || 'Kursi pemain di room ini sudah penuh.'));
+        onDataMessageRef.current?.(data);
+        return;
+      }
       if (data.type === '__hello__') {
         const remoteName = String(data.name || 'Teman').slice(0, 24);
-        setPlayerList([playerNameRef.current, remoteName]);
-        const connection = connections.find((item) => item.peer === data.peerId) || connections[0];
-        try { connection?.send({ type: '__welcome__', name: playerNameRef.current }); } catch {}
-        onDataMessageRef.current?.({ ...data, type: '__player_join__', name: remoteName });
+        const sourceConnection = source || connections.find((item) => (item as any).__remotePeerId === data.peerId);
+        if (sourceConnection) {
+          (sourceConnection as any).__remotePeerId = String(data.peerId || sourceConnection.peer || '');
+          (sourceConnection as any).__remoteName = remoteName;
+        }
+        if (role === 'host') {
+          const currentPlayers = [
+            { id: localPeerIdRef.current || hostId, name: playerNameRef.current },
+            ...connections.filter((item) => item.open).map((item) => ({
+              id: String((item as any).__remotePeerId || item.peer || ''),
+              name: String((item as any).__remoteName || 'Teman'),
+            })),
+          ].filter((item, index, list) => item.id && list.findIndex((peerItem) => peerItem.id === item.id) === index);
+          const names = currentPlayers.map((item) => item.name);
+          setPlayerList(names);
+          connections.filter((item) => item.open).forEach((connection) => {
+            try { connection.send({ type: '__peer_list__', players: currentPlayers, maxPlayers }); } catch {}
+          });
+          try { sourceConnection?.send({ type: '__welcome__', name: playerNameRef.current, maxPlayers }); } catch {}
+        }
+        onDataMessageRef.current?.({ ...data, type: '__player_join__', name: remoteName, fromPeerId: sourceConnection?.peer });
         return;
       }
       if (data.type === '__welcome__') {
         const remoteName = String(data.name || 'Host').slice(0, 24);
         setPlayerList([playerNameRef.current, remoteName]);
         onDataMessageRef.current?.({ ...data, type: '__player_welcome__', name: remoteName, players: [remoteName] });
+        return;
+      }
+      if (data.type === '__peer_list__') {
+        const peers = Array.isArray(data.players) ? data.players : [];
+        const names = peers.map((item: any) => String(item?.name || '')).filter(Boolean);
+        setPlayerList(Array.from(new Set(names)));
+        if (role === 'guest' && peer && localPeerIdRef.current) {
+          peers.forEach((item: any) => {
+            const remoteId = String(item?.id || '');
+            if (!remoteId || remoteId === localPeerIdRef.current || remoteId === hostId) return;
+            if (localPeerIdRef.current.localeCompare(remoteId) < 0 && !calls.some((call) => call.peer === remoteId)) {
+              try {
+                const mediaCall = peer.call(remoteId, localStreamRef.current || makeSilentStream());
+                if (mediaCall) setupCall(mediaCall);
+              } catch {
+                setConnectionError(`Voice langsung ke ${item?.name || 'teman'} gagal dimulai.`);
+              }
+            }
+          });
+        }
+        onDataMessageRef.current?.(data);
         return;
       }
       if (data.type === '__asset_error__') {
@@ -317,7 +374,7 @@ export function useWebRtcVoice(
           transfers.delete(data.transferId);
           const image = transfer.chunks.join('');
           if (image.length <= MAX_ASSET_CHARS) {
-            onDataMessageRef.current?.({ ...transfer.message, customImageSrc: image });
+            onDataMessageRef.current?.({ ...transfer.message, customImageSrc: image, fromPeerId: source?.peer });
           } else {
             onDataMessageRef.current?.({ type: '__asset_error__', message: 'Foto yang diterima terlalu besar.' });
           }
@@ -336,7 +393,12 @@ export function useWebRtcVoice(
         transfers.set(id, { message: data, chunks: new Array(total), received: 0, total, timer });
         return;
       }
-      onDataMessageRef.current?.(data);
+      if (role === 'host' && source && data.type === '__piece_placed__') {
+        connections.filter((connection) => connection.open && connection !== source).forEach((connection) => {
+          try { connection.send(data); } catch {}
+        });
+      }
+      onDataMessageRef.current?.({ ...data, fromPeerId: source?.peer });
     };
 
     const setupDataConnection = (connection: DataConnectionLike) => {
@@ -344,14 +406,14 @@ export function useWebRtcVoice(
       dataConnectionsRef.current = connections;
       connection.on('open', () => {
         if (!alive) return;
-        if (role === 'host' && connections.filter((item) => item.open).length > 1) {
+        if (role === 'host' && connections.filter((item) => item.open).length > maxPlayers - 1) {
           try { connection.send({ type: '__room_full__' }); connection.close?.(); } catch {}
           return;
         }
         setConnectionStatus('connected');
         setConnectionError(null);
         try {
-          connection.send({ type: '__hello__', name: playerNameRef.current, peerId: connection.peer });
+          connection.send({ type: '__hello__', name: playerNameRef.current, peerId: localPeerIdRef.current });
         } catch {
           statusError('Koneksi room terbuka, tetapi pesan awal gagal dikirim. Coba gabung ulang.');
         }
@@ -364,7 +426,7 @@ export function useWebRtcVoice(
           }
         }
       });
-      connection.on('data', deliver);
+      connection.on('data', (data: any) => deliver(data, connection));
       connection.on('error', (error: any) => {
         const errorText = error?.type === 'peer-unavailable'
           ? 'Room belum tersedia. Pastikan host sudah membuat room dan masih online.'
@@ -378,7 +440,9 @@ export function useWebRtcVoice(
         if (!alive) return;
         if (role === 'host') {
           setConnectionStatus('hosting');
-          setPlayerList([playerNameRef.current]);
+          const remainingPlayers = [playerNameRef.current, ...connections.filter((item) => item.open).map((item) => String((item as any).__remoteName || 'Teman'))];
+          setPlayerList(remainingPlayers);
+          onDataMessageRef.current?.({ type: '__player_leave__', fromPeerId: connection.peer });
         } else {
           setConnectionStatus('error');
           setConnectionError('Koneksi host terputus. Gabung kembali dengan kode room.');
@@ -397,7 +461,7 @@ export function useWebRtcVoice(
       try {
         const { default: Peer } = await import('peerjs');
         if (!alive) return;
-        peer = new Peer(role === 'host' ? hostId : guestId, {
+      peer = new Peer(role === 'host' ? hostId : guestId, {
           debug: 0,
           config: {
             iceServers: [
@@ -408,8 +472,10 @@ export function useWebRtcVoice(
         });
         peerRef.current = peer;
 
-        peer.on('open', () => {
+        peer.on('open', (peerId: string) => {
           if (!alive) return;
+          localPeerIdRef.current = peerId;
+          setLocalPeerId(peerId);
           if (role === 'host') {
             setConnectionStatus('hosting');
             setConnectionError(null);
@@ -477,7 +543,7 @@ export function useWebRtcVoice(
       setPingMs(null);
       setRemoteVolume(0);
     };
-  }, [isActive, role, roomCode, makeSilentStream, startMeter]);
+  }, [isActive, role, roomCode, maxPlayers, makeSilentStream, startMeter]);
 
   const toggleMic = useCallback(async (): Promise<ToggleMicResult> => {
     if (isMicOn) {
@@ -525,6 +591,10 @@ export function useWebRtcVoice(
     }
   }, [isMicOn, makeSilentStream, startMeter]);
 
+  const toggleSpeaker = useCallback(() => {
+    setIsSpeakerOn((current) => !current);
+  }, []);
+
   useEffect(() => () => {
     localStreamRef.current?.getTracks().forEach((track) => track.stop());
     silentStreamRef.current?.getTracks().forEach((track) => track.stop());
@@ -541,6 +611,8 @@ export function useWebRtcVoice(
     isHosting: role === 'host' && connectionStatus === 'hosting',
     isMicOn,
     toggleMic,
+    isSpeakerOn,
+    toggleSpeaker,
     pingMs,
     pingQuality: pingMs === null ? 'offline' as const : pingMs < 80 ? 'good' as const : pingMs < 160 ? 'medium' as const : 'bad' as const,
     connectedPlayers: playerList.length,
@@ -553,5 +625,6 @@ export function useWebRtcVoice(
     playerList,
     sendMessage,
     audioPlaybackBlocked,
+    localPeerId,
   };
 }

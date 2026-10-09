@@ -3,9 +3,9 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  Crown, ArrowLeft, Users, Mic, MicOff, Volume2,
+  Crown, ArrowLeft, Users, Mic, MicOff, Volume2, VolumeX,
   RefreshCw, Eye, Sparkles, Trophy, Download, Play, Copy, Check,
-  Maximize, Minimize
+  Maximize, Minimize, X
 } from 'lucide-react';
 import PremiumUnlockModal from '../designer/PremiumUnlockModal';
 import { useWebRtcVoice, type PuzzleRoomRole } from './useWebRtcVoice';
@@ -138,6 +138,7 @@ export default function PuzzleGame({
   const [isPuzzleReady, setIsPuzzleReady] = useState(false);
   const [inputJoinCode, setInputJoinCode] = useState<string>('');
   const [isCopied, setIsCopied] = useState<boolean>(false);
+  const [hostWaitingOpen, setHostWaitingOpen] = useState(false);
   const [micGuideModalOpen, setMicGuideModalOpen] = useState<boolean>(false);
   const [adjustModalOpen, setAdjustModalOpen] = useState<boolean>(false);
   const [rawPhotoSrc, setRawPhotoSrc] = useState<string | null>(null);
@@ -154,7 +155,14 @@ export default function PuzzleGame({
   }, []);
 
   // WebRTC Voice Chat Engine & Real-time Ping Latency
-  const voice = useWebRtcVoice(roomCode, roomRole !== 'none' && playMode === 'duo', roomRole, playerName, handleIncomingData);
+  const voice = useWebRtcVoice(
+    roomCode,
+    roomRole !== 'none' && playMode === 'duo',
+    roomRole,
+    roomRole === 'host' ? playerLimit : 2,
+    playerName,
+    handleIncomingData,
+  );
 
   // Hydrate player name from localStorage or generate on client only (prevents SSR mismatch)
   useEffect(() => {
@@ -458,7 +466,10 @@ export default function PuzzleGame({
   // ═══════════════════════════════════════════════════
 
   const handleSelectPartyMode = (count: number) => {
-    if (count > 2) return;
+    if (count > 2 && !isPremium) {
+      setIsVipModalOpen(true);
+      return;
+    }
     setPlayerLimit(count);
     setPlayMode(count === 1 ? 'solo' : 'duo');
     if (count === 1) {
@@ -505,11 +516,12 @@ export default function PuzzleGame({
     const randomCode = `LYS-${Math.floor(1000 + Math.random() * 9000)}`;
     setRoomCode(randomCode);
     setRoomRole('host');
-    setPlayerLimit(2);
+    setPlayerLimit((current) => current > 1 ? current : 2);
     setPlayMode('duo');
     setInMenu(true);
     setIsPuzzleReady(false);
     setIsCopied(false);
+    setHostWaitingOpen(true);
     showToast(`Menyiapkan room ${randomCode}...`);
   };
 
@@ -740,6 +752,13 @@ export default function PuzzleGame({
       if (!stage) return;
 
       const buildToken = ++buildTokenRef.current;
+      // The lobby hides the stage with display:none. Measure only after the
+      // game view is committed, or the host can get a zero-sized board.
+      const initialRect = stage.getBoundingClientRect();
+      if (initialRect.width === 0 || initialRect.height === 0) {
+        await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+        if (buildToken !== buildTokenRef.current || !stageRef.current) return;
+      }
       const effectiveGridN = overrideGridN || gridN;
 
       if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
@@ -1118,6 +1137,7 @@ export default function PuzzleGame({
       if (!data || typeof data !== 'object') return;
       if (data.type === '__player_join__' || data.type === '__request_sync__') {
         if (roomRole !== 'host') return;
+        setHostWaitingOpen(false);
         showToast(`👋 ${data.name || 'Teman'} terhubung ke room!`);
         const placedIds: number[] = [];
         if (recRef.current) {
@@ -1140,7 +1160,11 @@ export default function PuzzleGame({
           edgeSeed: sessionSeedRef.current,
           customImageSrc,
           inGame: true,
-        });
+        }, data.fromPeerId);
+      } else if (data.type === '__player_welcome__' || data.type === '__peer_list__') {
+        if (Number.isInteger(data.maxPlayers) && data.maxPlayers >= 2 && data.maxPlayers <= 8) {
+          setPlayerLimit(data.maxPlayers);
+        }
       } else if (data.type === '__room_waiting__') {
         setIsPuzzleReady(false);
         showToast(`${data.hostName || 'Host'} belum memulai puzzle. Menunggu host...`);
@@ -1215,7 +1239,7 @@ export default function PuzzleGame({
     if (playMode === 'duo' && roomRole === 'none') {
       setRoomCode(`LYS-${Math.floor(1000 + Math.random() * 9000)}`);
       setRoomRole('host');
-      setPlayerLimit(2);
+      setPlayerLimit((current) => current > 1 ? current : 2);
     }
     const seed = createPuzzleSeed();
     sessionSeedRef.current = seed;
@@ -1360,6 +1384,19 @@ export default function PuzzleGame({
             )}
           </button>
 
+          <button
+            type="button"
+            className={`pj-btn pj-btn-speaker ${voice.isSpeakerOn ? 'pj-btn-speaker--on' : ''}`}
+            onClick={voice.toggleSpeaker}
+            aria-pressed={!voice.isSpeakerOn}
+            aria-label={voice.isSpeakerOn ? 'Bisukan suara teman' : 'Nyalakan suara teman'}
+            title={voice.isSpeakerOn ? 'Bisukan suara teman' : 'Nyalakan suara teman'}
+            id="btn-header-speaker"
+          >
+            {voice.isSpeakerOn ? <Volume2 size={15} /> : <VolumeX size={15} />}
+            <span>{voice.isSpeakerOn ? 'Suara' : 'Bisukan'}</span>
+          </button>
+
           {!inMenu && (
             <div className="pj-action-bar">
               <button type="button" className="pj-btn" onClick={restartGame} disabled={playMode === 'duo' && roomRole === 'guest'} title="Acak Ulang">
@@ -1420,6 +1457,24 @@ export default function PuzzleGame({
           </div>
         </div>
       )}
+      {hostWaitingOpen && inMenu && roomRole === 'host' && (
+        <div className="mg-room-wait-backdrop" role="presentation">
+          <section className="mg-room-wait-dialog" role="dialog" aria-modal="true" aria-labelledby="mg-room-wait-title">
+            <button type="button" className="mg-room-wait-close" onClick={() => setHostWaitingOpen(false)} aria-label="Tutup popup menunggu"><X size={18} /></button>
+            <div className="mg-room-wait-icon"><Users size={25} /><Sparkles size={14} /></div>
+            <span className="mg-room-wait-kicker"><i /> ROOM SIAP</span>
+            <h2 id="mg-room-wait-title">Menunggu teman bergabung</h2>
+            <p>Bagikan kode room Puzzle. Begitu teman masuk, popup ini tertutup dan kalian bisa mulai bersama.</p>
+            <div className="mg-room-wait-code-label">KODE ROOM</div>
+            <strong className="mg-room-wait-code">{roomCode}</strong>
+            <button type="button" className="mg-room-wait-share" onClick={() => void copyRoomCode()} disabled={!voice.isHosting && voice.connectionStatus !== 'connected'}>
+              {isCopied ? <Check size={17} /> : <Copy size={17} />}{isCopied ? 'Undangan tersalin' : 'Salin tautan undangan'}
+            </button>
+            <button type="button" className="mg-room-wait-later" onClick={() => setHostWaitingOpen(false)}>Lanjut ke lobby sambil menunggu</button>
+            <div className="mg-room-wait-pulse" aria-hidden="true"><span /><span /><span /></div>
+          </section>
+        </div>
+      )}
 
       {/* ── MENU / LOBBY (From puzzle.html + VIP Perks & Multiplayer) ── */}
       {inMenu && (
@@ -1462,7 +1517,7 @@ export default function PuzzleGame({
                     />
                   </div>
 
-                  {/* Mode Selector: only supported multiplayer mode is one-to-one. */}
+                  {/* Capacity options: 4/8 player rooms remain VIP-gated. */}
                   <div className="pj-mode-selector">
                     <button
                       type="button"
@@ -1480,6 +1535,24 @@ export default function PuzzleGame({
                       <span>2 Pemain</span>
                       <small className="text-emerald-500 font-bold">Gratis</small>
                     </button>
+                    <button
+                      type="button"
+                      className={`pj-mode-btn pj-mode-btn--vip ${playerLimit === 4 ? 'on' : ''}`}
+                      onClick={() => handleSelectPartyMode(4)}
+                      title="Room hingga 4 pemain · VIP"
+                    >
+                      <span>4 Pemain</span>
+                      <small className="text-amber-600 font-bold"><Crown size={10} className="inline" /> VIP</small>
+                    </button>
+                    <button
+                      type="button"
+                      className={`pj-mode-btn pj-mode-btn--vip ${playerLimit === 8 ? 'on' : ''}`}
+                      onClick={() => handleSelectPartyMode(8)}
+                      title="Room hingga 8 pemain · VIP"
+                    >
+                      <span>8 Pemain</span>
+                      <small className="text-amber-600 font-bold"><Crown size={10} className="inline" /> VIP</small>
+                    </button>
                   </div>
 
                   {/* Multiplayer Room Code & Join Box — Selalu Tampil agar mudah mabar & masukkan kode */}
@@ -1491,7 +1564,7 @@ export default function PuzzleGame({
                         <span className="pj-room-lbl">Room:</span>
                         <span className="pj-room-code-tag">{roomCode || 'Belum dibuat'}</span>
                         <span className="pj-room-players-pill">
-                          {voice.playerList.length}/2 Pemain
+                          {voice.playerList.length}/{playerLimit} Pemain
                         </span>
                       </div>
                       <div className="pj-room-btn-group">
@@ -1551,34 +1624,10 @@ export default function PuzzleGame({
                   </form>
                 </div>
 
-                {/* Voice Chat On-Mic Toggle right in the Lobby */}
+                {/* Mic and speaker remain in one shared location in the header. */}
                 <div className="pj-lobby-voice-strip">
-                  <div className="flex items-center gap-2">
-                    <span className="pj-lobby-voice-lbl">Voice Chat:</span>
-                    <button
-                      type="button"
-                      className={`pj-btn pj-btn-mic ${voice.isMicOn ? 'pj-btn-mic--on' : ''}`}
-                      onClick={toggleMic}
-                      id="btn-lobby-mic"
-                    >
-                      {voice.isMicOn ? (
-                        <>
-                          <Mic size={14} />
-                          <span className={`pj-voice-wave ${voice.isSpeaking ? 'is-speaking' : ''}`} title="Mikrofon aktif">
-                            <span style={{ height: `${Math.max(3, Math.min(18, Math.round((voice.voiceBands[0] / 100) * 18)))}px` }} />
-                            <span style={{ height: `${Math.max(3, Math.min(22, Math.round((voice.voiceBands[1] / 100) * 22)))}px` }} />
-                            <span style={{ height: `${Math.max(3, Math.min(19, Math.round((voice.voiceBands[2] / 100) * 19)))}px` }} />
-                            <span style={{ height: `${Math.max(3, Math.min(15, Math.round((voice.voiceBands[3] / 100) * 15)))}px` }} />
-                          </span>
-                          <span>On-Mic</span>
-                        </>
-                      ) : (
-                        <>
-                          <MicOff size={14} />
-                          <span>Nyalakan Mic</span>
-                        </>
-                      )}
-                    </button>
+                  <div className="pj-lobby-voice-lbl">
+                    Mic dan speaker diatur dari kontrol atas agar statusnya tetap satu.
                   </div>
                   <div className={`pj-ping-badge pj-ping-badge--${voice.pingQuality}`}>
                     <span className="pj-ping-dot" />

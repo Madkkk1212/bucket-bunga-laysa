@@ -4,8 +4,9 @@ import path from 'path';
 import { supabase, isSupabaseConfigured } from '@/lib/supabaseClient';
 import { getAdminClient } from '@/utils/supabase/admin';
 import { LANDING_TEXT_KEYS, type GiftConfig, type LandingPageTemplateId, type LandingTextConfig } from '@/types/giftConfig';
-import { DEFAULT_FREE_LIMITS, DEFAULT_PREMIUM_LIMITS } from '@/types/giftConfig';
+import { DEFAULT_FREE_LIMITS } from '@/types/giftConfig';
 import { sanitizeText, containsProfanity } from '@/utils/textSanitize';
+import { isMasterAccessCode } from '@/lib/masterAccessCodes';
 
 // ─── Batas karakter yang divalidasi server ────────────────────────────────
 const LIMITS = {
@@ -90,21 +91,10 @@ export async function POST(req: Request) {
     }
 
     const cleanCode = (accessCode || '').trim().toUpperCase();
-    const isVipClient = Boolean(body?.isVipUser);
-
-    const FALLBACK_MASTER_CODES = [
-      'LAYSA-VIP',
-      'BUKET2026',
-      'PREMIUM-LOVE',
-      'VIP-BOUQUET',
-      'LAYSA-PREMIUM',
-      'TISUWKWK',
-    ];
-
     const dbClient = getAdminClient() || supabase;
 
     // 1. Cek apakah menggunakan Master VIP Code
-    if (cleanCode && FALLBACK_MASTER_CODES.includes(cleanCode)) {
+    if (cleanCode && isMasterAccessCode(cleanCode)) {
       tierLimits = {
         maxPhotos: 6,
         canUseYouTube: true,
@@ -139,24 +129,6 @@ export async function POST(req: Request) {
           linkDurationDays: durationDays,
         };
       }
-    }
-
-    // 3. Jika client menandai user sudah VIP atau memasukkan kode akses apapun
-    if (isVipClient) {
-      tierLimits = {
-        ...tierLimits,
-        maxPhotos: 6,
-        canUseYouTube: true,
-        allowedTemplates: 'all',
-        linkDurationDays: null, // VIP langsung terus-terusan (aktif selamanya tanpa batas)
-      };
-    } else if (cleanCode) {
-      tierLimits = {
-        ...tierLimits,
-        maxPhotos: 6,
-        canUseYouTube: true,
-        allowedTemplates: 'all',
-      };
     }
 
     // ─── Custom duration days dari input pengirim (jika diatur) ─────────

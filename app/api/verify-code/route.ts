@@ -1,15 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getSupabase } from '@/lib/supabaseClient';
 import { getAdminClient } from '@/utils/supabase/admin';
-
-const FALLBACK_MASTER_CODES = [
-  'LAYSA-VIP',
-  'BUKET2026',
-  'PREMIUM-LOVE',
-  'VIP-BOUQUET',
-  'LAYSA-PREMIUM',
-  'TISUWKWK',
-];
+import { isMasterAccessCode } from '@/lib/masterAccessCodes';
 
 // Ambil IP dari request headers (support proxy/Vercel)
 function getClientIp(req: Request): string {
@@ -200,7 +192,7 @@ export async function POST(req: Request) {
             }
 
             // 3. Device tidak ada di daftar (dihapus per-device atau di-reset)
-            if (!isKnownDevice && !FALLBACK_MASTER_CODES.includes(cleanCode)) {
+            if (!isKnownDevice && !isMasterAccessCode(cleanCode)) {
               return NextResponse.json({
                 valid: false,
                 revoked: true,
@@ -515,7 +507,7 @@ export async function POST(req: Request) {
     }
 
     // ── Fallback kode master (tanpa database) ──
-    if (FALLBACK_MASTER_CODES.includes(cleanCode)) {
+    if (isMasterAccessCode(cleanCode)) {
       if (checkSession) {
         return NextResponse.json({
           valid: true,

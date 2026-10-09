@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { ChevronLeft, ChevronRight, Play, Lock, Star, Sparkles, Plus, Gamepad2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Play, Lock, Star, Sparkles, Gamepad2, Puzzle, Dice5 } from 'lucide-react';
 
 // ═══════════════════════════════════════════════════
 // GAME CATALOG & PLACEHOLDERS
@@ -21,6 +21,8 @@ interface MiniGame {
   status: 'play' | 'soon';
   isPlaceholder?: boolean;
   glowColor: string;
+  route: string;
+  artwork: 'puzzle' | 'snakes' | 'congklak' | 'soon';
 }
 
 const GAMES: MiniGame[] = [
@@ -30,29 +32,46 @@ const GAMES: MiniGame[] = [
     badge: 'PUZZLE',
     badgeBg: '#6366f1',
     rating: '9.5',
-    posterUrl: 'https://images.unsplash.com/photo-1518895949257-7621c3c786d7?w=800&q=85',
+    posterUrl: '/images/home.png',
     year: 'Siap Main',
     genre: 'Susun Foto · Solo',
     tagline: 'Pilih foto bunga atau upload fotomu sendiri, lalu susun potongan puzzle hingga utuh!',
     status: 'play',
     glowColor: 'rgba(99, 102, 241, 0.45)',
+    route: '/minigames/puzzle',
+    artwork: 'puzzle',
   },
   {
-    id: 'slot-2',
-    title: 'Game Baru',
-    badge: 'SLOT 2',
-    badgeBg: 'rgba(255, 255, 255, 0.15)',
-    rating: '—',
-    year: 'Segera',
-    genre: 'Slot Kosong',
-    tagline: 'Ruang untuk mini game berikutnya. Sedang disiapkan!',
-    status: 'soon',
-    isPlaceholder: true,
-    glowColor: 'rgba(148, 163, 184, 0.25)',
+    id: 'ular-tangga',
+    title: 'Ular Tangga',
+    badge: 'ULAR TANGGA',
+    badgeBg: '#10b981',
+    rating: 'Baru',
+    year: 'Siap Main',
+    genre: 'Dadu · Lokal & Online',
+    tagline: 'Lempar dadu, naiki tangga, hindari ular, dan balapan sampai kotak 100 bersama teman.',
+    status: 'play',
+    glowColor: 'rgba(16, 185, 129, 0.32)',
+    route: '/minigames/ular-tangga',
+    artwork: 'snakes',
+  },
+  {
+    id: 'congklak',
+    title: 'Congklak 3D',
+    badge: 'CONGKLAK',
+    badgeBg: '#9b6b37',
+    rating: 'Baru',
+    year: 'Siap Main',
+    genre: 'Strategi · 2 Pemain',
+    tagline: 'Sebarkan biji, kumpulkan ke rumahmu, dan tantang teman di papan congklak 3D.',
+    status: 'play',
+    glowColor: 'rgba(201, 162, 92, 0.35)',
+    route: '/minigames/congklak',
+    artwork: 'congklak',
   },
   {
     id: 'slot-3',
-    title: 'Game Baru',
+    title: 'Segera Hadir',
     badge: 'SLOT 3',
     badgeBg: 'rgba(255, 255, 255, 0.15)',
     rating: '—',
@@ -62,10 +81,12 @@ const GAMES: MiniGame[] = [
     status: 'soon',
     isPlaceholder: true,
     glowColor: 'rgba(148, 163, 184, 0.25)',
+    route: '#',
+    artwork: 'soon',
   },
   {
     id: 'slot-4',
-    title: 'Game Baru',
+    title: 'Segera Hadir',
     badge: 'SLOT 4',
     badgeBg: 'rgba(255, 255, 255, 0.15)',
     rating: '—',
@@ -75,6 +96,8 @@ const GAMES: MiniGame[] = [
     status: 'soon',
     isPlaceholder: true,
     glowColor: 'rgba(148, 163, 184, 0.25)',
+    route: '#',
+    artwork: 'soon',
   },
 ];
 
@@ -95,18 +118,15 @@ export default function MiniGamesHub() {
   // Direct navigation to /{gamenya}
   const handlePlay = useCallback((game: MiniGame) => {
     if (game.status === 'soon' || game.isPlaceholder) return;
-    router.push(`/${game.id}`);
+    router.push(game.route);
   }, [router]);
 
   // Keyboard navigation
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLElement && (e.target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName))) return;
       if (e.key === 'ArrowLeft') prev();
       if (e.key === 'ArrowRight') next();
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        handlePlay(GAMES[active]);
-      }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
@@ -151,7 +171,7 @@ export default function MiniGamesHub() {
       <div
         className="mg-cinema-ambient"
         style={{
-          background: `radial-gradient(circle 500px at 50% 50%, ${activeGame.glowColor} 0%, rgba(5,5,12,0.85) 60%, #05050c 100%)`
+          background: `radial-gradient(circle 560px at 50% 50%, ${activeGame.glowColor} 0%, rgba(255,250,253,0.82) 62%, #fffafd 100%)`
         }}
         aria-hidden
       />
@@ -185,7 +205,7 @@ export default function MiniGamesHub() {
             const isNear = Math.abs(offset) <= 2;
 
             // 3D Cover Flow Transform matching reference screenshot
-            const translateX = offset * 240;
+            const translateX = offset * 210;
             const rotateY = offset * -22;
             const scale = isActive ? 1 : Math.max(0.72, 0.85 - Math.abs(offset) * 0.08);
             const opacity = isActive ? 1 : Math.max(0.35, 0.6 - Math.abs(offset) * 0.15);
@@ -210,6 +230,12 @@ export default function MiniGamesHub() {
                     }
                   }
                 }}
+                onKeyDown={(event) => {
+                  if (event.key !== 'Enter' && event.key !== ' ') return;
+                  event.preventDefault();
+                  if (isActive) handlePlay(game);
+                  else setActive(idx);
+                }}
                 role="button"
                 tabIndex={isActive ? 0 : -1}
                 aria-label={`${game.title} — ${game.status === 'play' ? 'Main sekarang' : 'Segera hadir'}`}
@@ -227,11 +253,27 @@ export default function MiniGamesHub() {
                     <div className="mg-poster-overlay" />
                   </div>
                 ) : (
-                  <div className="mg-poster-placeholder-body">
+                  <div className={`mg-poster-placeholder-body mg-poster-art--${game.artwork}`}>
                     <div className="mg-placeholder-grid-pattern" aria-hidden />
-                    <div className="mg-placeholder-icon-box">
-                      <Gamepad2 size={36} className="text-white/30" />
-                    </div>
+                    {game.artwork === 'snakes' ? (
+                      <div className="mg-snake-art" aria-hidden="true">
+                        <div className="mg-snake-art-board">
+                          {Array.from({ length: 25 }, (_, cell) => <i key={cell} />)}
+                          <span className="mg-snake-art-ladder" />
+                          <span className="mg-snake-art-snake" />
+                        </div>
+                        <Dice5 size={54} strokeWidth={1.5} className="mg-snake-art-dice" />
+                      </div>
+                    ) : game.artwork === 'congklak' ? (
+                      <div className="mg-congklak-art" aria-hidden="true">
+                        {Array.from({ length: 7 }, (_, pit) => <i key={pit} />)}
+                        <span className="mg-congklak-store" />
+                      </div>
+                    ) : (
+                      <div className="mg-placeholder-icon-box">
+                        {game.artwork === 'puzzle' ? <Puzzle size={36} /> : <Gamepad2 size={36} />}
+                      </div>
+                    )}
                   </div>
                 )}
 

@@ -20,13 +20,12 @@ function getClientIp(req: NextRequest): string {
 // ── GET: Cek status autentikasi sesi saat ini ──
 export async function GET(req: NextRequest) {
   const adminKey = process.env.ADMIN_SECRET_KEY;
-  const cookieKey = req.cookies.get('laysa_admin_key')?.value;
   const sessionToken = req.cookies.get('laysa_admin_session')?.value;
   const headerKey = req.headers.get('x-admin-key');
 
   // Jika key tidak dikonfigurasi, anggap tidak terautentikasi
   const isValidSession = adminKey
-    ? (cookieKey === adminKey || headerKey === adminKey || verifyAdminSession(sessionToken))
+    ? (headerKey === adminKey || verifyAdminSession(sessionToken))
     : false;
 
   return NextResponse.json({
@@ -94,25 +93,13 @@ export async function POST(req: NextRequest) {
     // 3. Berhasil: Reset catatan kegagalan & terbitkan sesi
     recordLoginSuccess(ip);
     const { token, maxAgeSeconds } = createAdminSession();
-    // ADMIN_SECRET_KEY sudah divalidasi wajib ada di lib/adminAuth.ts saat startup
-    const adminKey = process.env.ADMIN_SECRET_KEY!;
-
     const res = NextResponse.json({
       success: true,
       message: 'Otorisasi atelier terverifikasi. Membuka konsol...',
     });
 
-    // Pasang HttpOnly cookie yang aman dan tidak bisa dicuri script client (XSS-proof)
+    // Simpan token sesi, bukan master secret admin, di browser.
     const isProd = process.env.NODE_ENV === 'production';
-
-    res.cookies.set('laysa_admin_key', adminKey, {
-      httpOnly: true,
-      secure: isProd,
-      sameSite: 'strict',
-      path: '/',
-      maxAge: maxAgeSeconds,
-    });
-
     res.cookies.set('laysa_admin_session', token, {
       httpOnly: true,
       secure: isProd,
@@ -120,9 +107,16 @@ export async function POST(req: NextRequest) {
       path: '/',
       maxAge: maxAgeSeconds,
     });
+    res.cookies.set('laysa_admin_key', '', {
+      httpOnly: true,
+      secure: isProd,
+      sameSite: 'strict',
+      path: '/',
+      maxAge: 0,
+    });
 
     return res;
-  } catch (err: any) {
+  } catch {
     return NextResponse.json(
       { success: false, error: 'Format permintaan tidak valid.' },
       { status: 400 }

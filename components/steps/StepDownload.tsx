@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import {
   Download,
   RotateCcw,
@@ -6,7 +6,6 @@ import {
   Edit3,
   Sparkles,
   Gift,
-  Share2,
   Copy,
   ExternalLink,
   MessageCircle,
@@ -15,7 +14,6 @@ import {
   Send,
   QrCode,
   Check,
-  Crown,
   Eye,
   Loader2,
 } from 'lucide-react';
@@ -46,8 +44,6 @@ export default function StepDownload({ canvasRef }: StepDownloadProps) {
     exportResolution,
     setExportResolution,
     isPremiumUnlocked,
-    premiumTier,
-    premiumExpiresAt,
   } = useDesign();
 
   // Active Tab: 'gift-link' | 'download-image'
@@ -79,9 +75,9 @@ export default function StepDownload({ canvasRef }: StepDownloadProps) {
 
   // Generating & Ticket State
   const [isCreatingGift, setIsCreatingGift] = useState(false);
+  const [giftCreationStage, setGiftCreationStage] = useState<'creating' | 'uploading' | null>(null);
   const [giftShareUrl, setGiftShareUrl] = useState<string | null>(null);
   const [giftId, setGiftId] = useState<string | null>(null);
-  const [giftExpiresAt, setGiftExpiresAt] = useState<string | null>(null);
   const [giftError, setGiftError] = useState<string | null>(null);
   const [isCopied, setIsCopied] = useState(false);
   const [isPreviewLoading, setIsPreviewLoading] = useState(false);
@@ -97,20 +93,6 @@ export default function StepDownload({ canvasRef }: StepDownloadProps) {
     }
     return false;
   }, [isPremiumUnlocked]);
-
-  // Dynamic Pricing Settings from Admin
-  const [pricingSettings, setPricingSettings] = useState<any>(null);
-
-  useEffect(() => {
-    fetch('/api/settings/pricing')
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success && data.pricing) {
-          setPricingSettings(data.pricing);
-        }
-      })
-      .catch(() => {});
-  }, []);
 
   // Change default object & effect when template changes
   const handleSelectTemplate = (tmplId: GiftTemplateId) => {
@@ -191,6 +173,7 @@ export default function StepDownload({ canvasRef }: StepDownloadProps) {
       return;
     }
     setIsCreatingGift(true);
+    setGiftCreationStage('creating');
     setGiftError(null);
 
     try {
@@ -212,7 +195,6 @@ export default function StepDownload({ canvasRef }: StepDownloadProps) {
           musicTrack: youtubeData.videoId ? 'youtube' : 'romantic-piano',
           designData: design,
           accessCode,
-          isVipUser,
           config: {
             version: 2,
             templateId: selectedTemplateId,
@@ -231,14 +213,12 @@ export default function StepDownload({ canvasRef }: StepDownloadProps) {
       const data = await res.json();
       if (data.success && data.shareUrl) {
         const fullUrl = `${window.location.origin}${data.shareUrl}`;
-        setGiftShareUrl(fullUrl);
-        setGiftId(data.id);
-        setGiftExpiresAt(data.expiresAt || null);
 
         // Upload photos if any
         if (photos.length > 0) {
+          setGiftCreationStage('uploading');
           try {
-            await fetch(`/api/gifts/${data.id}/photos`, {
+            const photoResponse = await fetch(`/api/gifts/${data.id}/photos`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
@@ -249,10 +229,17 @@ export default function StepDownload({ canvasRef }: StepDownloadProps) {
                 })),
               }),
             });
+            const photoResult = await photoResponse.json().catch(() => null);
+            if (!photoResponse.ok || !photoResult?.success) {
+              setGiftError(isEn ? 'The link is ready, but some photos could not be saved. Please re-upload them.' : 'Link sudah siap, tetapi foto belum semuanya tersimpan. Coba unggah ulang foto.');
+            }
           } catch (uploadErr) {
             console.warn('Failed to upload photos:', uploadErr);
+            setGiftError(isEn ? 'The link is ready, but photo upload was interrupted.' : 'Link sudah siap, tetapi unggahan foto terputus. Coba unggah ulang foto.');
           }
         }
+        setGiftShareUrl(fullUrl);
+        setGiftId(data.id);
       } else {
         setGiftError(data.message || (isEn ? 'Failed to create digital gift.' : 'Gagal membuat kado digital.'));
       }
@@ -260,14 +247,20 @@ export default function StepDownload({ canvasRef }: StepDownloadProps) {
       setGiftError(isEn ? 'Connection error while creating gift link.' : 'Terjadi kesalahan koneksi saat membuat link kado.');
     } finally {
       setIsCreatingGift(false);
+      setGiftCreationStage(null);
     }
   };
 
-  const handleCopyLink = () => {
+  const handleCopyLink = async () => {
     if (!giftShareUrl) return;
-    navigator.clipboard.writeText(giftShareUrl);
-    setIsCopied(true);
-    setTimeout(() => setIsCopied(false), 2000);
+    try {
+      if (navigator.clipboard?.writeText) await navigator.clipboard.writeText(giftShareUrl);
+      else throw new Error('Clipboard tidak tersedia.');
+      setIsCopied(true);
+      window.setTimeout(() => setIsCopied(false), 2000);
+    } catch {
+      setGiftError(isEn ? 'Clipboard is unavailable. Select and copy the link manually.' : 'Clipboard tidak tersedia. Pilih lalu salin link secara manual.');
+    }
   };
 
   const today = new Date().toISOString().slice(0, 10).replace(/-/g, '_');
@@ -509,7 +502,9 @@ export default function StepDownload({ canvasRef }: StepDownloadProps) {
                 {isCreatingGift ? (
                   <>
                     <span className="spinner" />
-                    <span>{isEn ? 'Crafting Magical Gift Link...' : 'Menyiapkan Kado Link Ajaib...'}</span>
+                    <span>{giftCreationStage === 'uploading'
+                      ? (isEn ? `Uploading ${photos.length} photo${photos.length === 1 ? '' : 's'}...` : `Mengunggah ${photos.length} foto...`)
+                      : (isEn ? 'Creating your gift link...' : 'Membuat link kado...')}</span>
                   </>
                 ) : (
                   <>
@@ -590,6 +585,11 @@ export default function StepDownload({ canvasRef }: StepDownloadProps) {
               </div>
 
               {/* QR Stub Section */}
+              {giftError && (
+                <p role="alert" className="mb-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-relaxed text-amber-800">
+                  {giftError}
+                </p>
+              )}
               <div className="gift-ticket-stub">
                 <div className="gift-ticket-stub-header">
                   <QrCode size={13} className="text-pink-700" />
