@@ -48,6 +48,7 @@ type HtmlGameRoomProps = {
   backHref?: string;
   maxPlayers?: number;
   initialRoomCode?: string;
+  initialRole?: PuzzleRoomRole;
   roomNote?: string;
   roomEntryMode?: 'external' | 'game';
   children?: ReactNode;
@@ -61,15 +62,17 @@ export default function HtmlGameRoom({
   backHref = '/minigames',
   maxPlayers = 4,
   initialRoomCode = '',
+  initialRole,
   roomNote = 'Buat room lalu bagikan undangannya agar teman dapat bergabung.',
   roomEntryMode = 'external',
   children,
 }: HtmlGameRoomProps) {
   const router = useRouter();
   const prefix = roomPrefix.toUpperCase().replace(/[^A-Z0-9]/g, '');
+  const sessionKey = `bucket_game_session_${prefix}`;
   const normalizedInitialRoom = normalizeRoom(initialRoomCode, prefix);
   const [roomCode, setRoomCode] = useState(normalizedInitialRoom);
-  const [role, setRole] = useState<PuzzleRoomRole>(normalizedInitialRoom ? 'guest' : 'none');
+  const [role, setRole] = useState<PuzzleRoomRole>(initialRole || (normalizedInitialRoom ? 'guest' : 'none'));
   const [playerName, setPlayerName] = useState('Pemain');
   const [joinCode, setJoinCode] = useState('');
   const [joinedPlayers, setJoinedPlayers] = useState<HtmlGameRoomPeer[]>([]);
@@ -77,6 +80,55 @@ export default function HtmlGameRoom({
   const [notice, setNotice] = useState('');
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [waitingOpen, setWaitingOpen] = useState(false);
+
+  // Restore room state if page reloads (e.g. mobile Chrome discards background tab when replying to WhatsApp)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const stored = sessionStorage.getItem(sessionKey);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed.roomCode && (parsed.role === 'host' || parsed.role === 'guest')) {
+          setRoomCode(parsed.roomCode);
+          setRole(parsed.role);
+          if (parsed.playerName) setPlayerName(parsed.playerName);
+          return;
+        }
+      }
+      const search = new URLSearchParams(window.location.search);
+      const urlRoom = search.get('room');
+      const urlRole = search.get('role');
+      if (urlRoom) {
+        const norm = normalizeRoom(urlRoom, prefix);
+        if (norm) {
+          setRoomCode(norm);
+          setRole(urlRole === 'host' ? 'host' : 'guest');
+        }
+      }
+    } catch {}
+  }, [sessionKey, prefix]);
+
+  // Synchronize active room session with sessionStorage and URL query params
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (role !== 'none' && roomCode) {
+      try {
+        sessionStorage.setItem(sessionKey, JSON.stringify({ roomCode, role, playerName }));
+        const url = new URL(window.location.href);
+        url.searchParams.set('room', roomCode);
+        url.searchParams.set('role', role);
+        window.history.replaceState({}, '', url.toString());
+      } catch {}
+    } else if (role === 'none') {
+      try {
+        sessionStorage.removeItem(sessionKey);
+        const url = new URL(window.location.href);
+        url.searchParams.delete('room');
+        url.searchParams.delete('role');
+        window.history.replaceState({}, '', url.toString());
+      } catch {}
+    }
+  }, [role, roomCode, playerName, sessionKey]);
   const frameRef = useRef<HTMLDivElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const roomHandlerRef = useRef<((data: HtmlGameRoomMessage) => void) | null>(null);
@@ -221,6 +273,7 @@ export default function HtmlGameRoom({
     joinRoomWithCode(joinCode);
   };
   const leaveRoom = () => {
+    try { sessionStorage.removeItem(sessionKey); } catch {}
     peersRef.current = [];
     setJoinedPlayers([]);
     setRoomCode('');

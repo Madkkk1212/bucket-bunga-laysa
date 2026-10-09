@@ -13,7 +13,8 @@ export default async function SnakeLaddersPage({
   searchParams: Promise<{ room?: string | string[]; role?: string | string[] }>;
 }) {
   const params = await searchParams;
-  const room = typeof params.room === 'string' && params.role === 'guest' ? params.room : '';
+  const room = typeof params.room === 'string' ? params.room : '';
+  const role = params.role === 'host' ? 'host' : params.role === 'guest' ? 'guest' : undefined;
 
-  return <SnakeLaddersHtml initialRoomCode={room} />;
+  return <SnakeLaddersHtml initialRoomCode={room} initialRole={role} />;
 }

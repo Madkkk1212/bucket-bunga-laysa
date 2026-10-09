@@ -423,11 +423,26 @@ function renderStartedGame(){
 function exportGameState(){return{N,np,L,S,elev,players:players.map(({id,name,color,pos,cpu})=>({id,name,color,pos,cpu:false})),turn,moves,over,winnerId:over?players[turn]?.id:null}}
 function startOnline(snapshot){
   cancelCpuTurn();turnActionId++;
-  onlineGame=true;gameSnapshot=snapshot;N=snapshot.N;np=snapshot.np;L=snapshot.L;S=snapshot.S;elev=snapshot.elev;jump={};L.forEach(([a,b])=>jump[a]=b);S.forEach(([h,t])=>jump[h]=t);
-  players=snapshot.players.map((p,i)=>({...p,cpu:false,color:p.color||PCOL[i%PCOL.length]}));turn=0;moves=0;over=false;busy=false;
+  onlineGame=true;onlineIntent='online';gameSnapshot=snapshot;N=snapshot.N;np=snapshot.np;L=snapshot.L;S=snapshot.S;elev=snapshot.elev;jump={};L.forEach(([a,b])=>jump[a]=b);S.forEach(([h,t])=>jump[h]=t);
+  players=snapshot.players.map((p,i)=>({...p,cpu:false,color:p.color||PCOL[i%PCOL.length]}));turn=snapshot.turn||0;moves=snapshot.moves||0;over=Boolean(snapshot.over);busy=false;
   $('menu').classList.add('hide');$('win').classList.remove('on');renderStartedGame();
-  showTurnAlert(players[0],false);
-  publishGameState();
+  players.forEach((p,i)=>place(i,p.pos||1,0));
+  showTurnAlert(players[turn],false);
+  if(onlineRole==='host')publishGameState();
+}
+function restartGame(){
+  if(onlineGame||onlineRole==='host'){
+    if(onlineRole==='host'){
+      gen();
+      sendParent('snake:start-request',{np:Math.max(2,players.length),N,L,S,elev});
+    }else{
+      say('Mengirim permintaan mengulang game ke Host…');
+      sendParent('snake:restart-request');
+    }
+    return;
+  }
+  gen();
+  start();
 }
 function applyGameState(snapshot){
   if(!snapshot?.players?.length)return;
@@ -532,7 +547,7 @@ function finish(P){
 }
 
 $('roll').onclick=roll;
-$('go').onclick=start;$('redo').onclick=()=>{gen();start()};$('again').onclick=()=>{gen();start()};
+$('go').onclick=start;$('redo').onclick=restartGame;$('again').onclick=restartGame;
 $('localMode').onclick=()=>{onlineIntent='local';updateOnlineAvailability()};
 $('onlineMode').onclick=()=>{onlineIntent='online';announceSettings();updateOnlineAvailability()};
 $('createRoom').onclick=()=>{onlineIntent='online';sendParent('html-room:create-room');$('onlineNote').textContent='Room sedang disiapkan…'};
@@ -567,6 +582,8 @@ window.addEventListener('message',event=>{
     applyGameState(data.state);
   }else if(data.type==='snake:remote-roll'&&onlineRole==='host'){
     if(players[turn]?.id===data.playerId){authorizedRemoteRoll=true;void roll()}
+  }else if(data.type==='snake:host-restart'&&onlineRole==='host'){
+    restartGame();
   }else if(data.type==='snake:player-name-update'){
     const pId=String(data.playerId||'');
     const nName=String(data.name||'').slice(0,24);

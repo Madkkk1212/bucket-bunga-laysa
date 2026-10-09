@@ -7,7 +7,15 @@ import { HTML_MINIGAME_CATALOG } from '@/components/minigames/htmlMiniGameCatalo
 type SnakePlayer = { id: string; name: string; color: string; pos: number };
 type SnakeSnapshot = { N: number; np: number; L: number[][]; S: number[][]; elev: number[]; players: SnakePlayer[]; turn: number; moves: number; over: boolean; winnerId: string | null };
 
-export default function SnakeLaddersHtml({ initialRoomCode = '', invitePath = '/minigames/ular-tangga' }: { initialRoomCode?: string; invitePath?: string }) {
+export default function SnakeLaddersHtml({
+  initialRoomCode = '',
+  initialRole,
+  invitePath = '/minigames/ular-tangga',
+}: {
+  initialRoomCode?: string;
+  initialRole?: 'host' | 'guest' | 'none';
+  invitePath?: string;
+}) {
   const game = HTML_MINIGAME_CATALOG['ular-tangga'];
   return (
     <HtmlGameRoom
@@ -16,6 +24,7 @@ export default function SnakeLaddersHtml({ initialRoomCode = '', invitePath = '/
       roomPrefix={game.roomPrefix}
       invitePath={invitePath}
       initialRoomCode={initialRoomCode}
+      initialRole={initialRole}
       maxPlayers={game.maxPlayers}
       roomNote={game.roomNote}
       roomEntryMode="game"
@@ -65,26 +74,22 @@ function SnakeLaddersRoomBridge() {
       syncRoomState();
       return;
     }
+    if (message.type === 'snake:restart-request' && room.role === 'guest') {
+      room.sendRoomMessage({ type: '__snake_restart_request__' });
+      return;
+    }
     if (message.type === 'snake:start-request' && room.role === 'host') {
-      const requestedNp = Number(message.np) || settingsRef.current.np;
       const requestedN = Number(message.N) || settingsRef.current.N;
-      settingsRef.current = { np: requestedNp, N: requestedN };
-      const np = requestedNp;
-      if (room.joinedPlayers.length + 1 !== np || !room.localPeerId) {
-        const joined = room.joinedPlayers.length + 1;
-        const reason = !room.localPeerId
-          ? 'Room masih menyambungkan host. Tunggu sebentar lalu tekan Mulai lagi.'
-          : `Menunggu peserta · ${joined}/${np} sudah bergabung.`;
-        room.postToGame('snake:start-error', { message: reason });
-        return;
-      }
+      const joinedCount = room.joinedPlayers.length + 1;
+      const np = Math.max(2, joinedCount);
+      settingsRef.current = { np, N: requestedN };
       const colors = ['#e4572e', '#2e86ab', '#f2b134', '#4f9d69'];
       const players = [
         { id: room.localPeerId, name: room.playerName || 'Host', color: colors[0], pos: 1 },
         ...room.joinedPlayers.map((peer, index) => ({ id: peer.id, name: peer.name, color: colors[(index + 1) % colors.length], pos: 1 })),
       ];
       const state: SnakeSnapshot = {
-        N: Number(message.N), np, L: message.L as number[][], S: message.S as number[][],
+        N: requestedN, np: players.length, L: message.L as number[][], S: message.S as number[][],
         elev: message.elev as number[], players, turn: 0, moves: 0, over: false, winnerId: null,
       };
       snapshotRef.current = state;
@@ -115,12 +120,15 @@ function SnakeLaddersRoomBridge() {
     if (message.type === '__player_join__' && room.role === 'host') {
       const peerId = String(message.fromPeerId || '');
       if (!peerId) return;
-      if (room.joinedPlayers.length >= settingsRef.current.np - 1) {
-        room.sendRoomMessage({ type: '__room_full__', message: 'Jumlah kursi permainan sudah penuh.' }, peerId);
-        return;
-      }
       room.sendRoomMessage({ type: '__snake_settings__', ...settingsRef.current }, peerId);
-      if (snapshotRef.current) room.sendRoomMessage({ type: '__snake_start__', state: snapshotRef.current }, peerId);
+      if (snapshotRef.current) {
+        // Send active snapshot to reconnecting/joining peer
+        room.sendRoomMessage({ type: '__snake_start__', state: snapshotRef.current }, peerId);
+      }
+      return;
+    }
+    if (message.type === '__snake_restart_request__' && room.role === 'host') {
+      room.postToGame('snake:host-restart');
       return;
     }
     if (message.type === '__snake_settings__' && room.role === 'guest') {
