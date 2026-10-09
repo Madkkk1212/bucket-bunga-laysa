@@ -61,6 +61,27 @@ async function getRobustAudioStream(): Promise<MediaStream> {
   }
 }
 
+async function getNativeRttMs(pc?: RTCPeerConnection): Promise<number | null> {
+  if (!pc || typeof pc.getStats !== 'function') return null;
+  try {
+    const stats = await pc.getStats();
+    let selectedRtt: number | null = null;
+    stats.forEach((report) => {
+      if (
+        report.type === 'candidate-pair' &&
+        report.state === 'succeeded' &&
+        typeof report.currentRoundTripTime === 'number' &&
+        report.currentRoundTripTime > 0
+      ) {
+        selectedRtt = Math.round(report.currentRoundTripTime * 1000);
+      }
+    });
+    return selectedRtt;
+  } catch {
+    return null;
+  }
+}
+
 function applyAudioBitrateOptimization(pc: RTCPeerConnection) {
   try {
     const sender = getAudioSender(pc);
@@ -430,7 +451,14 @@ export function useWebRtcVoice(
         return;
       }
       if (data.type === '__pong__') {
-        if (typeof data.ts === 'number') setPingMs(Math.max(1, Date.now() - data.ts));
+        if (typeof data.ts === 'number') {
+          const rawRtt = Math.max(1, Date.now() - data.ts);
+          setPingMs((prev) => {
+            if (prev === null) return rawRtt;
+            if (rawRtt > prev * 2.8 && prev < 200) return prev;
+            return Math.round(prev * 0.5 + rawRtt * 0.5);
+          });
+        }
         return;
       }
       if (data.type === '__room_full__') {
@@ -626,14 +654,16 @@ export function useWebRtcVoice(
           debug: 0,
           config: {
             iceServers: [
-              // 1. Dedicated Singapore TURN Relay (Prioritas Utama: Langsung tembus < 20ms tanpa lag)
+              // 1. Direct Low-Latency STUN (Prioritas 1: Direct P2P 15ms - 35ms ultra low ping)
+              { urls: 'stun:stun.l.google.com:19302' },
+              { urls: 'stun:stun1.l.google.com:19302' },
+              { urls: 'stun:stun.relay.metered.ca:80' },
+              { urls: 'stun:stun.relay.metered.ca:443' },
+              { urls: 'stun:stun.cloudflare.com:3478' },
+
+              // 2. High-speed Singapore TURN Relay UDP (45ms - 75ms jika butuh relay CGNAT)
               {
                 urls: 'turn:sg.relay.metered.ca:443',
-                username: '41a1c8a977fea4ccb5f38235',
-                credential: '+v+MPqS3XPKujs6B',
-              },
-              {
-                urls: 'turns:sg.relay.metered.ca:443?transport=tcp',
                 username: '41a1c8a977fea4ccb5f38235',
                 credential: '+v+MPqS3XPKujs6B',
               },
@@ -642,18 +672,18 @@ export function useWebRtcVoice(
                 username: '41a1c8a977fea4ccb5f38235',
                 credential: '+v+MPqS3XPKujs6B',
               },
+
+              // 3. Fallback TURN Relay TCP (hanya sebagai cadangan darurat jika UDP diblokir)
               {
                 urls: 'turn:sg.relay.metered.ca:80?transport=tcp',
                 username: '41a1c8a977fea4ccb5f38235',
                 credential: '+v+MPqS3XPKujs6B',
               },
-
-              // 2. Fast STUN Servers (Untuk deteksi direct P2P jika 1 WiFi)
-              { urls: 'stun:stun.relay.metered.ca:80' },
-              { urls: 'stun:stun.relay.metered.ca:443' },
-              { urls: 'stun:stun.l.google.com:19302' },
-              { urls: 'stun:stun1.l.google.com:19302' },
-              { urls: 'stun:stun.cloudflare.com:3478' },
+              {
+                urls: 'turns:sg.relay.metered.ca:443?transport=tcp',
+                username: '41a1c8a977fea4ccb5f38235',
+                credential: '+v+MPqS3XPKujs6B',
+              },
             ],
             iceCandidatePoolSize: 10,
             iceTransportPolicy: 'all',
@@ -704,16 +734,26 @@ export function useWebRtcVoice(
       }
     })();
 
-    pingTimerRef.current = setInterval(() => {
+    pingTimerRef.current = setInterval(async () => {
       const openConns = connections.filter((item) => item.open);
       if (openConns.length > 0) {
+        // Cek hardware/native RTT langsung dari engine WebRTC browser (bebas dari lag rendering JavaScript)
+        const activePc = mediaCallsRef.current[0]?.peerConnection || (openConns[0] as any)?.peerConnection;
+        if (activePc) {
+          const nativeRtt = await getNativeRttMs(activePc);
+          if (typeof nativeRtt === 'number' && nativeRtt > 0) {
+            setPingMs((prev) => (prev === null ? nativeRtt : Math.round(prev * 0.4 + nativeRtt * 0.6)));
+          }
+        }
+
+        // Tetap kirim ping-pong SCTP untuk menjaga NAT pinhole terbuka dua arah
         openConns.forEach((conn) => {
           try { conn.send({ type: '__ping__', ts: Date.now() }); } catch {}
         });
       } else {
         setPingMs(null);
       }
-    }, 2_000);
+    }, 1_000);
 
     return () => {
       alive = false;
