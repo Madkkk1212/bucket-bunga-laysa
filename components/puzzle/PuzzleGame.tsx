@@ -180,24 +180,61 @@ export default function PuzzleGame({
     }
   }, []);
 
-  // Auto-detect Room invite link (?room=LYS-XXXX)
+  // Auto-detect Room invite link or restore session from sessionStorage
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const p = new URLSearchParams(window.location.search);
       const r = p.get('room');
-      if (r && p.get('role') === 'guest') {
+      const roleParam = p.get('role');
+      if (r) {
         const finalCode = r.toUpperCase().replace(/[^A-Z0-9-]/g, '').slice(0, 24);
         setRoomCode(finalCode);
         setPlayMode('duo');
         setPlayerLimit(2);
-        setRoomRole('guest');
+        setRoomRole(roleParam === 'host' ? 'host' : 'guest');
         setIsPuzzleReady(false);
         setInMenu(false);
         setToastMsg(`Menghubungkan ke room ${finalCode}...`);
         setTimeout(() => setToastMsg(null), 3500);
+        return;
       }
+      try {
+        const stored = sessionStorage.getItem('bucket_puzzle_session');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (parsed.roomCode && (parsed.roomRole === 'host' || parsed.roomRole === 'guest')) {
+            setRoomCode(parsed.roomCode);
+            setPlayMode('duo');
+            setRoomRole(parsed.roomRole);
+            setIsPuzzleReady(false);
+            setInMenu(false);
+          }
+        }
+      } catch {}
     }
   }, []);
+
+  // Synchronize puzzle room session to sessionStorage & URL query params
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (roomRole !== 'none' && roomCode) {
+      try {
+        sessionStorage.setItem('bucket_puzzle_session', JSON.stringify({ roomCode, roomRole, playerName }));
+        const url = new URL(window.location.href);
+        url.searchParams.set('room', roomCode);
+        url.searchParams.set('role', roomRole);
+        window.history.replaceState({}, '', url.toString());
+      } catch {}
+    } else if (roomRole === 'none') {
+      try {
+        sessionStorage.removeItem('bucket_puzzle_session');
+        const url = new URL(window.location.href);
+        url.searchParams.delete('room');
+        url.searchParams.delete('role');
+        window.history.replaceState({}, '', url.toString());
+      } catch {}
+    }
+  }, [roomRole, roomCode, playerName]);
 
   // Refs
   const stageRef = useRef<HTMLDivElement>(null);

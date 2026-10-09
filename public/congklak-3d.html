@@ -963,8 +963,24 @@ function applyRoomState(data){
     renderCards();announceTurn('');
   }
 }
+function restartCongklak(){
+  ensureAudio();
+  if(onlineRole==='host'){
+    newGame(null,false);
+    sendRoom({kind:'snapshot',h:state.h,turn:state.turn});
+  }else if(onlineRole==='guest'){
+    setStatus('Mengirim permintaan mulai ulang ke Host…');
+    sendRoom({kind:'restart-request'});
+  }else{
+    newGame(null,false);
+  }
+}
 function applyRoomMessage(data){
   if(!data||data.game!=='congklak')return;
+  if(data.kind==='restart-request'&&onlineRole==='host'){
+    restartCongklak();
+    return;
+  }
   if(data.kind==='sync-request'&&onlineRole==='host'&&onlineReady){
     if(busy)pendingRoomSync=true;
     else sendRoom({kind:'snapshot',h:state.h,turn:state.turn});
@@ -1040,8 +1056,8 @@ $('onlineTwo').addEventListener('click',()=>{$('roomJoinForm').hidden=false;$('c
 $('createRoom').addEventListener('click',()=>{window.parent.postMessage({type:'html-room:create-room'},location.origin);$('modeChoice').hidden=true;});
 $('joinRoom').addEventListener('click',()=>{const code=$('roomCodeInput').value.trim();if(!code){$('roomCodeInput').focus();$('roomStatus').hidden=false;$('roomStatus').textContent='Masukkan kode room CGK dari teman.';return;}window.parent.postMessage({type:'html-room:join-room',code},location.origin);$('modeChoice').hidden=true;});
 $('closeModeChoice').addEventListener('click',()=>{$('modeChoice').hidden=true;});
-$('bNew').addEventListener('click',()=>{ensureAudio();newGame(null,false);});
-$('resAgain').addEventListener('click',()=>newGame(null,false));
+$('bNew').addEventListener('click',restartCongklak);
+$('resAgain').addEventListener('click',restartCongklak);
 $('bRules').addEventListener('click',()=>{$('rules').hidden=false;});
 $('rulesClose').addEventListener('click',()=>{$('rules').hidden=true;});
 $('bSound').addEventListener('click',()=>{
