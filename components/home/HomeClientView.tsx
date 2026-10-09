@@ -1,9 +1,9 @@
 'use client';
 
-import Image from 'next/image';
 import Navbar from '@/components/layout/Navbar';
 import HeroActions from '@/components/home/HeroActions';
 import HomeBackgroundVideo from '@/components/home/HomeBackgroundVideo';
+import HomeDesktopDecor from '@/components/home/HomeDesktopDecor';
 import { useLanguage } from '@/context/LanguageContext';
 
 export default function HomeClientView() {
@@ -19,27 +19,8 @@ export default function HomeClientView() {
 
       {/* ── 3. FLOATING FLORAL PARTICLES (GAME PARTICLES EFFECT) ── */}
       <div className="floral-frame-decor" aria-hidden="true">
-        <div className="decor-flower decor-tl-1 hidden md:block">
-          <Image src="/images/flowers/rose_pink.png" alt="" width={130} height={130} loading="lazy" sizes="130px" />
-        </div>
-        <div className="decor-flower decor-tl-2 hidden md:block">
-          <Image src="/images/flowers/babysbreath_white.png" alt="" width={95} height={95} loading="lazy" sizes="95px" />
-        </div>
-        <div className="decor-flower decor-tl-3 hidden md:block">
-          <Image src="/images/flowers/eucalyptus.png" alt="" width={110} height={110} loading="lazy" sizes="110px" />
-        </div>
-        <div className="decor-flower decor-tr-1 hidden md:block">
-          <Image src="/images/flowers/hydrangea_pink.png" alt="" width={140} height={140} loading="lazy" sizes="140px" />
-        </div>
-        <div className="decor-flower decor-tr-2 hidden md:block">
-          <Image src="/images/flowers/lily_pink.png" alt="" width={105} height={105} loading="lazy" sizes="105px" />
-        </div>
-        <div className="decor-flower decor-bl-1 hidden md:block">
-          <Image src="/images/flowers/tulip_pink.png" alt="" width={120} height={120} loading="lazy" sizes="120px" />
-        </div>
-        <div className="decor-flower decor-bl-2 hidden md:block">
-          <Image src="/images/flowers/ranunculus_pink.png" alt="" width={100} height={100} loading="lazy" sizes="100px" />
-        </div>
+        {/* Dekorasi bunga besar hanya di-render di layar desktop (>= 768px) agar mobile hemat 1.5MB data */}
+        <HomeDesktopDecor />
         <span className="floating-petal petal-1">🌸</span>
         <span className="floating-petal petal-2">✨</span>
         <span className="floating-petal petal-3">🌺</span>
@@ -87,19 +68,23 @@ export default function HomeClientView() {
                 <div className="aura-sparkle aura-sp-3">✦</div>
               </div>
 
-              {/* Floating Bouquet Item */}
+              {/* Floating Bouquet Item with responsive mobile LCP optimization */}
               <div className="hero-image-wrapper game-floating-item">
-                <Image
-                  src="/images/home.webp"
-                  alt="Bucket Bunga Laysa — Buket Bunga Cantik"
-                  width={640}
-                  height={640}
-                  priority
-                  fetchPriority="high"
-                  sizes="(max-width: 640px) 320px, (max-width: 1024px) 440px, 640px"
-                  quality={80}
-                  className="hero-bouquet-img"
-                />
+                <picture>
+                  <source media="(max-width: 640px)" srcSet="/images/home-mobile.webp" type="image/webp" />
+                  <source media="(min-width: 641px)" srcSet="/images/home.webp" type="image/webp" />
+                  <img
+                    src="/images/home.webp"
+                    alt="Bucket Bunga Laysa — Buket Bunga Cantik"
+                    width={640}
+                    height={640}
+                    fetchPriority="high"
+                    loading="eager"
+                    decoding="async"
+                    className="hero-bouquet-img"
+                    style={{ width: '100%', height: 'auto', display: 'block' }}
+                  />
+                </picture>
               </div>
 
               {/* Floating Benefit Highlights Card */}

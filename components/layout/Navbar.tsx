@@ -17,26 +17,33 @@ export default function Navbar() {
 
   return (
     <nav className="navbar navbar-centered">
-      <div className="navbar-inner-centered" style={{ position: 'relative' }}>
-        {!isHome && (
-          <Link
-            href="/"
-            className="navbar-sub-nav-btn navbar-nav-left"
-            aria-label={t('nav_home')}
-            id="nav-btn-home"
-          >
-            <ArrowLeft size={15} />
-            <span>{t('nav_home')}</span>
-          </Link>
-        )}
+      <div className="navbar-inner-centered">
+        {/* SISI KIRI: TOMBOL KEMBALI */}
+        <div className="navbar-left-cluster">
+          {!isHome ? (
+            <Link
+              href="/"
+              className="navbar-sub-nav-btn navbar-nav-left"
+              aria-label={t('nav_home')}
+              title={t('nav_home')}
+              id="nav-btn-home"
+            >
+              <ArrowLeft size={16} />
+              <span className="nav-btn-text">{t('nav_home')}</span>
+            </Link>
+          ) : (
+            <div className="navbar-spacer" aria-hidden="true" />
+          )}
+        </div>
 
+        {/* TENGAH: LOGO BRAND UTAMA */}
         <Link
           href="/"
           className="navbar-brand-centered"
           aria-label="Bucket Bunga Laysa Home"
         >
           <span className="navbar-brand-icon-wrap">
-            <Flower size={20} className="navbar-brand-icon" />
+            <Flower size={18} className="navbar-brand-icon" />
           </span>
           <span className="navbar-brand-text">
             <span className="brand-title">Bucket Bunga</span>
@@ -50,16 +57,18 @@ export default function Navbar() {
           </span>
         </Link>
 
-        <div className="navbar-right-cluster" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        {/* SISI KANAN: TUTORIAL & GANTI BAHASA */}
+        <div className="navbar-right-cluster">
           {!isHome && pathname !== '/tutorial' && (
             <Link
               href="/tutorial"
-              className="navbar-sub-nav-btn navbar-nav-right"
+              className="navbar-sub-nav-btn navbar-nav-right nav-tutorial-desktop"
               aria-label={t('nav_tutorial')}
+              title={t('nav_tutorial')}
               id="nav-btn-tutorial"
             >
               <BookOpen size={15} />
-              <span>{t('nav_tutorial')}</span>
+              <span className="nav-btn-text">{t('nav_tutorial')}</span>
             </Link>
           )}
           <LanguageSwitcher variant="compact" />

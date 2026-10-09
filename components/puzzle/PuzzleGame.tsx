@@ -147,6 +147,7 @@ export default function PuzzleGame({
   // Incoming data message handler reference
   const gameDataHandlerRef = useRef<(data: any) => void>(() => {});
   const buildTokenRef = useRef(0);
+  const relayoutTokenRef = useRef(0);
   const sessionSeedRef = useRef<number>(0);
   const sessionStartedRef = useRef(false);
   const pendingPieceIdsRef = useRef(new Set<number>());
@@ -674,18 +675,47 @@ export default function PuzzleGame({
 
   const getLayout = (stage: HTMLDivElement) => {
     const r = stage.getBoundingClientRect();
-    const sw = r.width;
-    const sh = r.height;
-    const wide = sw >= 760 && sw > sh * 1.1;
+    const sw = Math.round(r.width);
+    const sh = Math.round(r.height);
+
+    // Support both widescreen desktop and mobile landscape (width > height * 1.25)
+    const wide = (sw >= 760 && sw > sh * 1.1) || (sw > sh * 1.25 && sw >= 500);
     if (wide) {
-      const B = Math.min(sh - 24, sw * 0.52, 780);
+      const B = Math.min(sh - 20, sw * 0.48, 780);
       const bx = 16;
-      return { B, bx, by: (sh - B) / 2, tray: { x: bx + B + 24, y: 12, w: sw - (bx + B + 24) - 12, h: sh - 24 } };
+      return {
+        B,
+        bx,
+        by: (sh - B) / 2,
+        tray: {
+          x: bx + B + 18,
+          y: 10,
+          w: Math.max(120, sw - (bx + B + 18) - 14),
+          h: sh - 20,
+        },
+      };
     }
-    const B = Math.min(sw - 16, sh * 0.56, 580);
+
+    // Portrait mode (mobile portrait, tablet portrait): board at top, tray at bottom
+    const maxBoardH = Math.max(160, sh * 0.52);
+    const maxBoardW = Math.max(160, sw - 16);
+    const B = Math.min(maxBoardW, maxBoardH, 560);
     const bx = (sw - B) / 2;
-    const by = 6;
-    return { B, bx, by, tray: { x: 8, y: by + B + 12, w: sw - 16, h: sh - (by + B + 12) - 6 } };
+    const by = 8;
+    const trayY = by + B + 12;
+    const trayH = Math.max(120, sh - trayY - 8);
+
+    return {
+      B,
+      bx,
+      by,
+      tray: {
+        x: 8,
+        y: trayY,
+        w: sw - 16,
+        h: trayH,
+      },
+    };
   };
 
   const lg = (el: any, ok?: boolean) => {
@@ -805,7 +835,9 @@ export default function PuzzleGame({
       const renderedSrc = await renderSelectedImage(Wd, overrideCustomImg, overridePresetIdx);
       if (buildToken !== buildTokenRef.current || !stageRef.current) return;
       srcCanvasRef.current = renderedSrc;
-      const E = genE(effectiveGridN, edgeSeed);
+      const seedToUse = edgeSeed !== undefined ? edgeSeed : (sessionSeedRef.current || createPuzzleSeed());
+      sessionSeedRef.current = seedToUse;
+      const E = genE(effectiveGridN, seedToUse);
 
       // Tray area
       const tr = document.createElement('div');
@@ -925,11 +957,13 @@ export default function PuzzleGame({
   );
 
   // Smart Relayout: adjusts layout proportionally when fullscreen/resizing WITHOUT wiping placed pieces!
-  const relayoutGame = useCallback(() => {
+  // Completely synchronizes board template and piece canvases to the exact new scale.
+  const relayoutGame = useCallback(async () => {
     const stage = stageRef.current;
     const rec = recRef.current;
     if (!stage || inMenu || !rec || rec.pcs.length === 0) return;
 
+    const relayoutToken = ++relayoutTokenRef.current;
     const L = getLayout(stage);
     const s = Math.max(8, Math.round((L.B * dpr) / gridN));
     const Wd = s * gridN;
@@ -959,6 +993,24 @@ export default function PuzzleGame({
       bd.style.height = `${Bc}px`;
     }
 
+    const renderedSrc = await renderSelectedImage(Wd);
+    if (relayoutToken !== relayoutTokenRef.current || !stageRef.current) return;
+    srcCanvasRef.current = renderedSrc;
+
+    // Re-render preview background inside board
+    if (bd) {
+      const im = bd.querySelector('img') as HTMLImageElement | null;
+      if (im) {
+        im.src = renderedSrc.toDataURL('image/jpeg', 0.85);
+      }
+      // Re-render guide canvas on board
+      if (rec.guide) {
+        rec.guide.width = rec.guide.height = Wd;
+        guide(rec.guide, s, gridN, genE(gridN, sessionSeedRef.current), 0.2, 0.9);
+      }
+    }
+
+    const E = genE(gridN, sessionSeedRef.current);
     const cw = s + 2 * pad;
     const pcs = Math.round(cw / dpr);
     const oldT = rec.T;
@@ -975,8 +1027,34 @@ export default function PuzzleGame({
       (cv as any)._S = S;
       (cv as any)._pw = pcs;
 
+      // Update piece canvas pixel resolution and CSS display size
+      cv.width = cv.height = cw;
+      cv.style.width = pcs + 'px';
+      cv.style.height = pcs + 'px';
+
+      // Redraw piece canvas content with sharp new scale
+      const x = cv.getContext('2d');
+      if (x) {
+        x.clearRect(0, 0, cw, cw);
+        x.translate(pad, pad);
+        path(x, s, r, c, E, gridN);
+        x.save();
+        x.clip();
+        x.drawImage(renderedSrc, -c * s, -r * s);
+        x.restore();
+
+        const lw = Math.max(1, s * 0.03);
+        x.lineJoin = 'round';
+        x.strokeStyle = 'rgba(31,41,55,.3)';
+        x.lineWidth = lw * 1.8;
+        x.stroke();
+        x.strokeStyle = 'rgba(255,255,255,.7)';
+        x.lineWidth = lw * 0.7;
+        x.stroke();
+      }
+
       if (cv.classList.contains('ok')) {
-        // Locked in place: keep exactly on the board!
+        // Locked in place: snap directly to the updated slot
         cv.style.left = `${newTx}px`;
         cv.style.top = `${newTy}px`;
       } else {
@@ -995,7 +1073,7 @@ export default function PuzzleGame({
     rec.Bc = Bc;
     rec.T = T;
     rec.pw = pcs;
-  }, [inMenu, gridN, dpr]);
+  }, [inMenu, gridN, dpr, renderSelectedImage]);
 
   // Pointer event listeners on stage
   useEffect(() => {
@@ -1159,7 +1237,27 @@ export default function PuzzleGame({
     };
   }, [inMenu, gridN, playMode, roomRole, playerName, voice]);
 
-  // Recalculate stage on window resize or fullscreen toggle (WITHOUT resetting pieces!)
+  // Synchronize layout when fullscreen toggles (preserves all placed pieces!)
+  useEffect(() => {
+    if (inMenu) return;
+    let t1: any;
+    let t2: any;
+    const syncLayout = () => {
+      if (!stageRef.current) return;
+      if (recRef.current && recRef.current.pcs.length > 0) {
+        relayoutGame();
+      }
+    };
+    // Debounce to allow CSS / viewport changes to settle in mobile browsers
+    t1 = setTimeout(syncLayout, 80);
+    t2 = setTimeout(syncLayout, 280);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+    };
+  }, [isFullscreen, inMenu, relayoutGame]);
+
+  // Recalculate stage on window resize, orientation change, or viewport change
   useEffect(() => {
     let timeoutId: any;
     const handleResize = () => {
@@ -1175,9 +1273,11 @@ export default function PuzzleGame({
       }, 150);
     };
     window.addEventListener('resize', handleResize);
+    window.addEventListener('orientationchange', handleResize);
     return () => {
       clearTimeout(timeoutId);
       window.removeEventListener('resize', handleResize);
+      window.removeEventListener('orientationchange', handleResize);
     };
   }, [inMenu, buildGame, relayoutGame]);
 
@@ -1561,12 +1661,12 @@ export default function PuzzleGame({
                   <span style={{ height: `${Math.max(3, Math.min(19, Math.round((voice.voiceBands[2] / 100) * 19)))}px` }} />
                   <span style={{ height: `${Math.max(3, Math.min(15, Math.round((voice.voiceBands[3] / 100) * 15)))}px` }} />
                 </span>
-                <span>On-Mic</span>
+                <span>Mic Aktif</span>
               </>
             ) : (
               <>
                 <MicOff size={15} />
-                <span>On-Mic</span>
+                <span>Mic Mati</span>
               </>
             )}
           </button>
@@ -2005,7 +2105,7 @@ export default function PuzzleGame({
             title={voice.isMicOn ? 'Matikan Mikrofon' : 'Nyalakan Mikrofon'}
           >
             {voice.isMicOn ? <Mic size={13} className="text-emerald-400" /> : <MicOff size={13} />}
-            <span>{voice.isMicOn ? 'On-Mic' : 'Mic Off'}</span>
+            <span>{voice.isMicOn ? 'Mic Aktif' : 'Mic Mati'}</span>
           </button>
 
           <button type="button" className="pj-copy-btn" onClick={copyRoomCode}>

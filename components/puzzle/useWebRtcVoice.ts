@@ -43,6 +43,21 @@ function safeRoomToken(roomCode: string) {
   return roomCode.trim().toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 24);
 }
 
+function applyAudioBitrateOptimization(pc: RTCPeerConnection) {
+  try {
+    const sender = getAudioSender(pc);
+    if (!sender) return;
+    const params = sender.getParameters();
+    if (!params.encodings || params.encodings.length === 0) {
+      params.encodings = [{}];
+    }
+    // Set maxBitrate 24kbps: jernih untuk suara manusia, hemat data 75% sehingga game tidak ngelag
+    params.encodings[0].maxBitrate = 24_000;
+    params.encodings[0].priority = 'low';
+    sender.setParameters(params).catch(() => {});
+  } catch {}
+}
+
 function getAudioSender(pc: RTCPeerConnection): RTCRtpSender | undefined {
   const direct = pc.getSenders().find((s) => s.track && s.track.kind === 'audio');
   if (direct) return direct;
@@ -242,7 +257,7 @@ export function useWebRtcVoice(
     // Drop intermediate move frames if WebRTC data channel buffer has backpressure (> 48KB)
     if (data.type === '__piece_move__') {
       connections = connections.filter(
-        (c) => !(c.dataChannel && c.dataChannel.bufferedAmount > 48 * 1024),
+        (c) => !(c.dataChannel && c.dataChannel.bufferedAmount > 16 * 1024),
       );
       if (!connections.length) return true;
     }
@@ -325,6 +340,7 @@ export function useWebRtcVoice(
       }
       calls.push(call);
       mediaCallsRef.current = calls;
+      if (call.peerConnection) applyAudioBitrateOptimization(call.peerConnection);
       call.on('stream', (stream: MediaStream) => {
         if (!alive) return;
         let audio = (call as any).__audio as HTMLAudioElement | undefined;
@@ -568,9 +584,35 @@ export function useWebRtcVoice(
           debug: 0,
           config: {
             iceServers: [
+              // Fast STUN Servers (Direct P2P detection)
+              { urls: 'stun:stun.relay.metered.ca:80' },
               { urls: 'stun:stun.l.google.com:19302' },
-              { urls: 'stun:global.stun.twilio.com:3478' },
+              { urls: 'stun:stun1.l.google.com:19302' },
+              { urls: 'stun:stun.cloudflare.com:3478' },
+
+              // Dedicated Singapore TURN Relay Server (Anti-lag, 100% bypass CGNAT Telkomsel/XL/Indosat)
+              {
+                urls: 'turn:sg.relay.metered.ca:80',
+                username: '41a1c8a977fea4ccb5f38235',
+                credential: '+v+MPqS3XPKujs6B',
+              },
+              {
+                urls: 'turn:sg.relay.metered.ca:80?transport=tcp',
+                username: '41a1c8a977fea4ccb5f38235',
+                credential: '+v+MPqS3XPKujs6B',
+              },
+              {
+                urls: 'turn:sg.relay.metered.ca:443',
+                username: '41a1c8a977fea4ccb5f38235',
+                credential: '+v+MPqS3XPKujs6B',
+              },
+              {
+                urls: 'turns:sg.relay.metered.ca:443?transport=tcp',
+                username: '41a1c8a977fea4ccb5f38235',
+                credential: '+v+MPqS3XPKujs6B',
+              },
             ],
+            iceCandidatePoolSize: 4,
           },
         });
         peerRef.current = peer;
@@ -680,7 +722,13 @@ export function useWebRtcVoice(
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+          channelCount: 1, // Mono: hemat 50% data dibanding stereo
+          sampleRate: 24000, // Optimal speech sample rate
+        },
       });
       localStreamRef.current = stream;
       setIsMicOn(true);
@@ -696,6 +744,7 @@ export function useWebRtcVoice(
           const sender = getAudioSender(pc);
           if (sender) {
             void sender.replaceTrack(track).catch(() => {});
+            applyAudioBitrateOptimization(pc);
           } else {
             try {
               pc.addTrack(track, stream);

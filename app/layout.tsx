@@ -308,6 +308,22 @@ export default function RootLayout({
       className={`${montserrat.variable} ${playfair.variable} ${cormorant.variable} ${greatVibes.variable}`}
     >
       <head>
+        <link
+          rel="preload"
+          as="image"
+          href="/images/home-mobile.webp"
+          type="image/webp"
+          media="(max-width: 640px)"
+          fetchPriority="high"
+        />
+        <link
+          rel="preload"
+          as="image"
+          href="/images/home.webp"
+          type="image/webp"
+          media="(min-width: 641px)"
+          fetchPriority="high"
+        />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdStructuredData) }}
