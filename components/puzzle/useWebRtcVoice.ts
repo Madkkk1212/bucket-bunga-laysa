@@ -656,7 +656,9 @@ export function useWebRtcVoice(
       const silentStream = makeSilentStream();
       const silentTrack = silentStream.getAudioTracks()[0];
       mediaCallsRef.current.forEach((call) => {
-        (call as any).localStream = silentStream;
+        try {
+          (call as any)._localStream = silentStream;
+        } catch {}
         const pc = call.peerConnection;
         if (pc) {
           const sender = getAudioSender(pc);
@@ -673,7 +675,7 @@ export function useWebRtcVoice(
     }
 
     if (!navigator.mediaDevices?.getUserMedia) {
-      return { action: 'error', errorName: 'NotSupportedError', errorMessage: 'Browser tidak mendukung mikrofon. Buka situs melalui HTTPS atau localhost.' };
+      return { action: 'error', errorName: 'NotSupportedError', errorMessage: 'Browser tidak mendukung mikrofon. Pastikan Anda membuka situs melalui koneksi aman (HTTPS).' };
     }
 
     try {
@@ -686,7 +688,9 @@ export function useWebRtcVoice(
       const track = stream.getAudioTracks()[0];
 
       mediaCallsRef.current.forEach((call) => {
-        (call as any).localStream = stream;
+        try {
+          (call as any)._localStream = stream;
+        } catch {}
         const pc = call.peerConnection;
         if (pc && track) {
           const sender = getAudioSender(pc);

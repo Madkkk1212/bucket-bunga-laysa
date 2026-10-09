@@ -163,11 +163,12 @@ function GameMenuContent() {
               <div className="game-card-aura aura-craft" />
               <div className="game-card-img-box">
                 <Image
-                  src="/images/home.png"
+                  src="/images/home.webp"
                   alt={t('menu_card1_title')}
                   width={130}
                   height={130}
                   className="game-card-img-float"
+                  quality={80}
                   priority
                 />
               </div>

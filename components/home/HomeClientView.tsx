@@ -19,25 +19,25 @@ export default function HomeClientView() {
 
       {/* ── 3. FLOATING FLORAL PARTICLES (GAME PARTICLES EFFECT) ── */}
       <div className="floral-frame-decor" aria-hidden="true">
-        <div className="decor-flower decor-tl-1">
+        <div className="decor-flower decor-tl-1 hidden md:block">
           <Image src="/images/flowers/rose_pink.png" alt="" width={130} height={130} loading="lazy" sizes="130px" />
         </div>
-        <div className="decor-flower decor-tl-2">
+        <div className="decor-flower decor-tl-2 hidden md:block">
           <Image src="/images/flowers/babysbreath_white.png" alt="" width={95} height={95} loading="lazy" sizes="95px" />
         </div>
-        <div className="decor-flower decor-tl-3">
+        <div className="decor-flower decor-tl-3 hidden md:block">
           <Image src="/images/flowers/eucalyptus.png" alt="" width={110} height={110} loading="lazy" sizes="110px" />
         </div>
-        <div className="decor-flower decor-tr-1">
+        <div className="decor-flower decor-tr-1 hidden md:block">
           <Image src="/images/flowers/hydrangea_pink.png" alt="" width={140} height={140} loading="lazy" sizes="140px" />
         </div>
-        <div className="decor-flower decor-tr-2">
+        <div className="decor-flower decor-tr-2 hidden md:block">
           <Image src="/images/flowers/lily_pink.png" alt="" width={105} height={105} loading="lazy" sizes="105px" />
         </div>
-        <div className="decor-flower decor-bl-1">
+        <div className="decor-flower decor-bl-1 hidden md:block">
           <Image src="/images/flowers/tulip_pink.png" alt="" width={120} height={120} loading="lazy" sizes="120px" />
         </div>
-        <div className="decor-flower decor-bl-2">
+        <div className="decor-flower decor-bl-2 hidden md:block">
           <Image src="/images/flowers/ranunculus_pink.png" alt="" width={100} height={100} loading="lazy" sizes="100px" />
         </div>
         <span className="floating-petal petal-1">🌸</span>
@@ -90,13 +90,14 @@ export default function HomeClientView() {
               {/* Floating Bouquet Item */}
               <div className="hero-image-wrapper game-floating-item">
                 <Image
-                  src="/images/home.png"
+                  src="/images/home.webp"
                   alt="Bucket Bunga Laysa — Buket Bunga Cantik"
                   width={640}
                   height={640}
                   priority
                   fetchPriority="high"
-                  sizes="(max-width: 1024px) 440px, 640px"
+                  sizes="(max-width: 640px) 320px, (max-width: 1024px) 440px, 640px"
+                  quality={80}
                   className="hero-bouquet-img"
                 />
               </div>

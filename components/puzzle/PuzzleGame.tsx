@@ -2086,7 +2086,7 @@ export default function PuzzleGame({
                   1
                 </span>
                 <span>
-                  Periksa <b>Address Bar (URL)</b> di browser Anda (sebelah kiri <code>localhost:3000</code>).
+                  Periksa <b>Address Bar (URL)</b> di bagian atas browser Anda.
                 </span>
               </div>
               <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
