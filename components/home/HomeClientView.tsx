@@ -32,33 +32,41 @@ export default function HomeClientView() {
       {/* ── 4. MAIN GAME ARENA STAGE (HERO) ── */}
       <section className="hero-section game-arena-section" aria-label="Game Stage">
         <div className="hero-content game-arena-grid">
-          {/* SISI KIRI: GAME TITLE & MISSION BRIEFING */}
+          {/* SISI KIRI: TITLE, DESKRIPSI & TOMBOL UTAMA */}
           <div className="hero-text game-hero-text">
-            {/* Massive 3D Extruded Game Title Logo */}
-            <h1 className="game-theme-title">
-              {t('home_hero_title_1')}<br />
-              {t('home_hero_title_2')}<br />
-              <span className="game-theme-title-accent">{t('home_hero_title_3')}</span>
-            </h1>
+            <div className="hero-glass-card">
+              <div className="hero-kicker-badge">
+                <span className="hero-kicker-icon">🌸</span>
+                <span className="hero-kicker-text">STUDIO BUKET BUNGA VIRTUAL #1</span>
+              </div>
 
-            {/* Subheadline Penjelas Produk */}
-            <p className="hero-subtitle text-slate-700 font-medium text-sm sm:text-base mt-3 mb-6 leading-relaxed max-w-md">
-              {t('home_hero_subtitle')}
-            </p>
+              {/* Modern & High-Contrast Aesthetic Title */}
+              <h1 className="game-theme-title">
+                {t('home_hero_title_1')}<br />
+                {t('home_hero_title_2')}<br />
+                <span className="game-theme-title-accent">{t('home_hero_title_3')}</span>
+              </h1>
 
-            {/* 3D Action Command Button (Buat Buket Sekarang) */}
-            <HeroActions />
+              {/* Subheadline Penjelas Produk */}
+              <p className="hero-subtitle">
+                {t('home_hero_subtitle')}
+              </p>
+
+              {/* Action Command Button (Buat Buket Sekarang) */}
+              <HeroActions />
+            </div>
           </div>
 
           {/* SISI KANAN: 3D MYTHIC ITEM SHOWCASE (PEDESTAL) */}
           <div className="hero-visual game-visual-stage">
             <div className="game-pedestal-showcase">
-              {/* Rarity Banner */}
+              {/* Feature Step Pill */}
               <div className="game-rarity-pill">
+                <span className="game-rarity-sparkle">🎀</span>
                 <span>{t('home_ssr_badge')}</span>
               </div>
 
-              {/* Magical Aura Rings */}
+              {/* Magical Soft Radial Aura */}
               <div className="hero-backdrop-aura" aria-hidden="true">
                 <div className="aura-sunburst-glow" />
                 <div className="game-magic-circle" />
@@ -88,10 +96,8 @@ export default function HomeClientView() {
               </div>
 
               {/* Floating Benefit Highlights Card */}
-              <div className="game-item-stats-card" style={{ width: 'auto', padding: '10px 18px', textAlign: 'center' }}>
-                <div style={{ fontSize: '11px', fontWeight: 700, color: '#fbcfe8', letterSpacing: '0.02em', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
-                  <span>{t('home_stat_benefits')}</span>
-                </div>
+              <div className="game-item-stats-card">
+                <span className="game-item-stats-text">{t('home_stat_benefits')}</span>
               </div>
             </div>
           </div>
@@ -101,6 +107,7 @@ export default function HomeClientView() {
       {/* ── 5. BOTTOM HUD FOOTER (TICKER) ── */}
       <footer className="game-bottom-hud" aria-label="Status Bar">
         <div className="game-hud-hint">
+          <span className="game-hud-icon">🎁</span>
           <span>{t('home_hud_hint')}</span>
         </div>
         <div className="game-hud-version">

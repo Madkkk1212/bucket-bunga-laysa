@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Flower, ArrowLeft, BookOpen, Crown } from 'lucide-react';
+import { Flower, ArrowLeft, BookOpen, Crown, Gamepad2, Sparkles } from 'lucide-react';
 import { useOptionalDesign } from '@/context/DesignContext';
 import { useLanguage } from '@/context/LanguageContext';
 import LanguageSwitcher from '../ui/LanguageSwitcher';
@@ -18,7 +18,7 @@ export default function Navbar() {
   return (
     <nav className="navbar navbar-centered">
       <div className="navbar-inner-centered">
-        {/* SISI KIRI: TOMBOL KEMBALI */}
+        {/* SISI KIRI: LINK NAVIGASI / TOMBOL KEMBALI */}
         <div className="navbar-left-cluster">
           {!isHome ? (
             <Link
@@ -32,7 +32,24 @@ export default function Navbar() {
               <span className="nav-btn-text">{t('nav_home')}</span>
             </Link>
           ) : (
-            <div className="navbar-spacer" aria-hidden="true" />
+            <div className="navbar-nav-links flex items-center gap-2">
+              <Link
+                href="/minigames"
+                className="navbar-sub-nav-btn"
+                title={t('nav_minigames')}
+              >
+                <Gamepad2 size={15} className="text-rose-600" />
+                <span className="hidden sm:inline">{t('nav_minigames')}</span>
+              </Link>
+              <Link
+                href="/tutorial"
+                className="navbar-sub-nav-btn hidden md:inline-flex"
+                title={t('nav_tutorial')}
+              >
+                <BookOpen size={15} className="text-rose-600" />
+                <span>{t('nav_tutorial')}</span>
+              </Link>
+            </div>
           )}
         </div>
 
@@ -57,9 +74,18 @@ export default function Navbar() {
           </span>
         </Link>
 
-        {/* SISI KANAN: TUTORIAL & GANTI BAHASA */}
+        {/* SISI KANAN: CTA, TUTORIAL & GANTI BAHASA */}
         <div className="navbar-right-cluster">
-          {!isHome && pathname !== '/tutorial' && (
+          {isHome ? (
+            <Link
+              href="/menu"
+              className="navbar-sub-nav-btn navbar-cta-nav hidden sm:inline-flex"
+              title="Buat Buket"
+            >
+              <Sparkles size={14} className="text-rose-500" />
+              <span>Buat Buket</span>
+            </Link>
+          ) : pathname !== '/tutorial' ? (
             <Link
               href="/tutorial"
               className="navbar-sub-nav-btn navbar-nav-right nav-tutorial-desktop"
@@ -70,7 +96,7 @@ export default function Navbar() {
               <BookOpen size={15} />
               <span className="nav-btn-text">{t('nav_tutorial')}</span>
             </Link>
-          )}
+          ) : null}
           <LanguageSwitcher variant="compact" />
         </div>
       </div>

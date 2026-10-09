@@ -238,12 +238,14 @@ export const TRANSLATIONS = {
     // Global Navbar & Brand
     nav_home: 'Beranda',
     nav_tutorial: 'Tutorial',
+    nav_minigames: 'Mini Games',
+    nav_garden: 'Kebun Bunga',
     nav_vip_account: 'Status Akun VIP Aktif',
 
     // Home Page (/)
     home_hero_title_1: 'Bikin Buket',
     home_hero_title_2: 'Bunga Virtual',
-    home_hero_title_3: 'Gratis.',
+    home_hero_title_3: 'Gratis',
     home_hero_subtitle: 'Pilih bunga, tulis kartu ucapan, lalu unduh gambarnya untuk dikirim ke orang tersayang.',
     home_hero_start_btn: 'Buat Buket Sekarang',
     home_ssr_badge: 'Susun, tulis ucapan, kirim',
@@ -620,12 +622,14 @@ export const TRANSLATIONS = {
     // Global Navbar & Brand
     nav_home: 'Home',
     nav_tutorial: 'Tutorial',
+    nav_minigames: 'Mini Games',
+    nav_garden: 'Flower Garden',
     nav_vip_account: 'Active VIP Account',
 
     // Home Page (/)
     home_hero_title_1: 'Make a Free',
     home_hero_title_2: 'Virtual Flower',
-    home_hero_title_3: 'Bouquet.',
+    home_hero_title_3: 'Bouquet',
     home_hero_subtitle: 'Pick your flowers, write a greeting card, and download the image to send to someone you love.',
     home_hero_start_btn: 'Create Your Bouquet',
     home_ssr_badge: 'Arrange, write, send',

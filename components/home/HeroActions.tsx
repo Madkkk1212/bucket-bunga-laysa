@@ -29,6 +29,22 @@ export default function HeroActions() {
         <span>{t('home_hero_start_btn')}</span>
         <ArrowRight size={22} className="game-arrow-pulse" />
       </Link>
+
+      {/* ── BENEFIT HIGHLIGHTS UNDER BUTTON ── */}
+      <div className="hero-trust-row" aria-label="Keunggulan Layanan">
+        <span className="hero-trust-chip">
+          <Sparkles size={13} className="text-amber-500" />
+          <span>100% Gratis</span>
+        </span>
+        <span className="hero-trust-dot">•</span>
+        <span className="hero-trust-chip">
+          <span>Tanpa Daftar</span>
+        </span>
+        <span className="hero-trust-dot">•</span>
+        <span className="hero-trust-chip">
+          <span>Unduh Kualitas HD</span>
+        </span>
+      </div>
     </div>
   );
 }

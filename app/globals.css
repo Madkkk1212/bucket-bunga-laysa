@@ -586,16 +586,19 @@ input, select, textarea { font-family: inherit; }
   will-change: transform;
 }
 
-/* Subtle Game Canvas Vignette Overlay */
+/* Subtle Ambient Backdrop Overlay */
 .home-video-overlay {
   position: absolute;
   inset: 0;
-  background: linear-gradient(
-    180deg,
-    rgba(255, 240, 245, 0.32) 0%,
-    rgba(255, 255, 255, 0.08) 45%,
-    rgba(244, 114, 182, 0.28) 100%
-  );
+  background: 
+    radial-gradient(circle at 75% 50%, rgba(255, 255, 255, 0.2) 0%, transparent 60%),
+    linear-gradient(
+      90deg,
+      rgba(255, 246, 249, 0.9) 0%,
+      rgba(255, 248, 250, 0.75) 45%,
+      rgba(255, 255, 255, 0.25) 75%,
+      rgba(255, 240, 245, 0.4) 100%
+    );
   pointer-events: none;
 }
 
@@ -604,7 +607,7 @@ input, select, textarea { font-family: inherit; }
    ═════════════════════════════════════════════════════════════ */
 .game-theme-arena {
   position: relative;
-  font-family: 'Fredoka', 'Outfit', sans-serif;
+  font-family: 'Outfit', sans-serif;
   overflow-x: hidden;
 }
 
@@ -613,47 +616,92 @@ input, select, textarea { font-family: inherit; }
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  min-height: calc(100vh - 64px);
-  padding: 80px 24px 70px;
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: 80px 24px 64px;
   position: relative;
   z-index: 5;
+  box-sizing: border-box;
 }
 
 .game-arena-grid {
   display: grid !important;
   grid-template-columns: 1.15fr 0.85fr;
   align-items: center;
-  gap: clamp(24px, 4vw, 56px);
+  gap: clamp(24px, 4vw, 52px);
   width: 100%;
-  max-width: 1300px;
+  max-width: 1260px;
   margin: 0 auto;
 }
 
-/* ── 3D EXTRUDED GAME TITLE ── */
-.game-theme-title {
-  font-family: 'Righteous', 'Fredoka', cursive, sans-serif !important;
-  font-size: clamp(42px, 5.8vw, 76px);
-  font-weight: 900;
-  color: #ffffff;
-  line-height: 1.02;
-  letter-spacing: 1.5px;
+/* ── HERO FROSTED GLASS CARD (PREVENTS CONTRAST ISSUES & NOISE) ── */
+.hero-glass-card {
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1.5px solid rgba(255, 255, 255, 0.95);
+  border-radius: 28px;
+  padding: clamp(22px, 3.2vw, 36px);
+  box-shadow:
+    0 20px 45px -10px rgba(225, 29, 72, 0.12),
+    0 0 0 1px rgba(244, 114, 182, 0.15);
+  max-width: 580px;
+}
+
+.hero-kicker-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: rgba(244, 114, 182, 0.14);
+  border: 1px solid rgba(244, 114, 182, 0.35);
+  padding: 5px 14px;
+  border-radius: 9999px;
   margin-bottom: 14px;
-  text-shadow:
-    0 2px 0 #f43f5e,
-    0 4px 0 #e11d48,
-    0 7px 0 #be123c,
-    0 10px 0 #881337,
-    0 14px 28px rgba(0, 0, 0, 0.5);
+}
+
+.hero-kicker-icon {
+  font-size: 13px;
+  line-height: 1;
+}
+
+.hero-kicker-text {
+  font-family: 'Outfit', sans-serif;
+  font-size: 11px;
+  font-weight: 800;
+  color: #be185d;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* ── MODERN & LUXURIOUS TITLE ── */
+.game-theme-title {
+  font-family: 'Plus Jakarta Sans', 'Outfit', sans-serif !important;
+  font-size: clamp(32px, 4.2vw, 54px);
+  font-weight: 900;
+  color: #1e1b4b;
+  line-height: 1.08;
+  letter-spacing: -0.02em;
+  margin-bottom: 12px;
   text-transform: uppercase;
   user-select: none;
+  text-shadow: none !important;
 }
 
 .game-theme-title-accent {
-  background: linear-gradient(135deg, #fef08a 0%, #fde047 30%, #f59e0b 70%, #d97706 100%);
+  background: linear-gradient(135deg, #e11d48 0%, #f43f5e 45%, #fb7185 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  filter: drop-shadow(0 3px 10px rgba(245, 158, 11, 0.65));
+  filter: drop-shadow(0 2px 10px rgba(225, 29, 72, 0.25));
   font-style: normal;
+}
+
+.hero-subtitle {
+  font-family: 'Outfit', sans-serif;
+  font-size: clamp(14px, 1.1vw, 15.5px);
+  color: #475569;
+  line-height: 1.6;
+  margin: 0 0 20px 0;
+  font-weight: 500;
 }
 
 /* ── GAME QUEST DIALOGUE BOX ── */
@@ -846,24 +894,33 @@ input, select, textarea { font-family: inherit; }
 
 .game-rarity-pill {
   position: absolute;
-  top: -24px;
+  top: -16px;
   z-index: 10;
-  background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
-  border: 2px solid #fbbf24;
-  color: #fbbf24;
-  padding: 5px 16px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1.5px solid rgba(244, 114, 182, 0.45);
+  color: #be185d;
+  padding: 6px 18px;
   border-radius: 9999px;
-  font-family: 'Righteous', 'Fredoka', cursive;
-  font-size: 11px;
-  letter-spacing: 0.1em;
-  box-shadow: 0 0 20px rgba(251, 191, 36, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  font-family: 'Outfit', sans-serif;
+  font-size: 11.5px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  box-shadow: 0 8px 24px rgba(225, 29, 72, 0.16);
   text-transform: uppercase;
-  animation: gameRarityPulse 2.5s ease-in-out infinite;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.game-rarity-sparkle {
+  font-size: 13px;
 }
 
 .game-floating-item {
   animation: gameItemBob 4s ease-in-out infinite;
-  filter: drop-shadow(0 20px 35px rgba(190, 24, 93, 0.35));
+  filter: drop-shadow(0 25px 35px rgba(225, 29, 72, 0.22));
 }
 
 .game-magic-circle {
@@ -871,27 +928,33 @@ input, select, textarea { font-family: inherit; }
   width: 440px;
   height: 440px;
   border-radius: 50%;
-  border: 2px dashed rgba(244, 114, 182, 0.45);
-  box-shadow: 0 0 40px rgba(244, 114, 182, 0.25);
-  animation: gameSpin 28s linear infinite;
+  border: 2px dashed rgba(244, 114, 182, 0.35);
+  box-shadow: 0 0 40px rgba(244, 114, 182, 0.18);
+  animation: gameSpin 32s linear infinite;
   pointer-events: none;
 }
 
-/* Floating RPG Stats Card */
+/* Floating Benefit Highlights Card */
 .game-item-stats-card {
   position: absolute;
-  bottom: -20px;
-  background: rgba(15, 23, 42, 0.85);
-  backdrop-filter: blur(14px);
-  border: 1.5px solid rgba(244, 114, 182, 0.45);
-  border-radius: 16px;
-  padding: 10px 16px;
-  width: 240px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  bottom: -10px;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1.5px solid rgba(244, 114, 182, 0.35);
+  border-radius: 9999px;
+  padding: 8px 22px;
+  box-shadow: 0 10px 28px rgba(219, 39, 119, 0.15);
   z-index: 10;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+  text-align: center;
+}
+
+.game-item-stats-text {
+  font-family: 'Outfit', sans-serif;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #9d174d;
+  letter-spacing: 0.02em;
 }
 
 .game-stat-row {
@@ -947,16 +1010,21 @@ input, select, textarea { font-family: inherit; }
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 24px;
-  background: rgba(15, 23, 42, 0.82);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border-top: 1px solid rgba(244, 114, 182, 0.3);
+  padding: 10px 28px;
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-top: 1px solid rgba(244, 114, 182, 0.25);
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.04);
   font-family: 'Outfit', sans-serif;
-  font-size: 11px;
-  font-weight: 700;
-  color: #e2e8f0;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #475569;
   user-select: none;
+}
+
+.game-hud-icon {
+  font-size: 13px;
 }
 
 .game-hud-status {
@@ -1082,36 +1150,67 @@ input, select, textarea { font-family: inherit; }
 /* ── SINGLE MASSIVE START BUTTON ON HOME SCREEN ── */
 .game-actions-single {
   display: flex;
-  align-items: center;
-  margin-top: 14px;
-  margin-bottom: 24px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  margin-top: 6px;
+  margin-bottom: 8px;
 }
 
 .game-btn-massive {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 14px;
-  background: linear-gradient(180deg, #fb7185 0%, #f43f5e 40%, #e11d48 70%, #be123c 100%) !important;
+  gap: 12px;
+  background: linear-gradient(135deg, #f43f5e 0%, #e11d48 50%, #be123c 100%) !important;
   color: #ffffff !important;
-  padding: 20px 44px !important;
-  border-radius: 28px !important;
-  font-family: 'Righteous', 'Fredoka', 'Outfit', sans-serif !important;
-  font-size: 19px !important;
-  font-weight: 900 !important;
-  letter-spacing: 0.08em !important;
+  padding: 15px 36px !important;
+  border-radius: 9999px !important;
+  font-family: 'Outfit', sans-serif !important;
+  font-size: 16px !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.03em !important;
   text-transform: uppercase !important;
-  border: 3px solid #fecdd3 !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.45) !important;
   box-shadow:
-    0 8px 0 #881337,
-    0 22px 44px rgba(190, 18, 60, 0.55),
-    inset 0 3px 0 rgba(255, 255, 255, 0.6) !important;
+    0 8px 24px -2px rgba(225, 29, 72, 0.42),
+    inset 0 1px 0 rgba(255, 255, 255, 0.45) !important;
   cursor: pointer;
   position: relative;
   overflow: hidden;
   text-decoration: none !important;
-  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
   user-select: none;
+}
+
+.game-btn-massive:hover {
+  transform: translateY(-2px) scale(1.02) !important;
+  box-shadow:
+    0 14px 32px -2px rgba(225, 29, 72, 0.52),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6) !important;
+  background: linear-gradient(135deg, #fb7185 0%, #f43f5e 50%, #be123c 100%) !important;
+}
+
+.hero-trust-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  flex-wrap: wrap;
+}
+
+.hero-trust-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #475569;
+}
+
+.hero-trust-dot {
+  color: #cbd5e1;
 }
 
 .game-btn-massive:hover {
@@ -2211,10 +2310,11 @@ body:has(.game-tutorial-container) {
 
 /* Bottom-Left Cluster */
 .decor-bl-1 {
-  bottom: 15px;
-  left: 20px;
+  bottom: 55px;
+  left: 10px;
   transform: rotate(18deg);
   animation: floatFlowerSlow 7.5s 0.5s ease-in-out infinite;
+  opacity: 0.85;
 }
 .decor-bl-2 {
   bottom: 115px;
