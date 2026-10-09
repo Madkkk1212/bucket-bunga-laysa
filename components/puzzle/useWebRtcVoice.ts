@@ -43,6 +43,24 @@ function safeRoomToken(roomCode: string) {
   return roomCode.trim().toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 24);
 }
 
+
+async function getRobustAudioStream(): Promise<MediaStream> {
+  if (typeof navigator === 'undefined' || !navigator.mediaDevices?.getUserMedia) {
+    throw new Error('NOT_SUPPORTED');
+  }
+  try {
+    return await navigator.mediaDevices.getUserMedia({
+      audio: {
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true,
+      },
+    });
+  } catch {
+    return await navigator.mediaDevices.getUserMedia({ audio: true });
+  }
+}
+
 function applyAudioBitrateOptimization(pc: RTCPeerConnection) {
   try {
     const sender = getAudioSender(pc);
@@ -53,7 +71,8 @@ function applyAudioBitrateOptimization(pc: RTCPeerConnection) {
     }
     // Set maxBitrate 24kbps: jernih untuk suara manusia, hemat data 75% sehingga game tidak ngelag
     params.encodings[0].maxBitrate = 24_000;
-    params.encodings[0].priority = 'low';
+    (params.encodings[0] as any).priority = 'high';
+    (params.encodings[0] as any).networkPriority = 'high';
     sender.setParameters(params).catch(() => {});
   } catch {}
 }
@@ -350,7 +369,14 @@ export function useWebRtcVoice(
       }
       calls.push(call);
       mediaCallsRef.current = calls;
-      if (call.peerConnection) applyAudioBitrateOptimization(call.peerConnection);
+      if (call.peerConnection) {
+        applyAudioBitrateOptimization(call.peerConnection);
+        call.peerConnection.oniceconnectionstatechange = () => {
+          if (call.peerConnection?.iceConnectionState === 'failed') {
+            try { (call.peerConnection as any).restartIce?.(); } catch {}
+          }
+        };
+      }
       call.on('stream', (stream: MediaStream) => {
         if (!alive) return;
         let audio = (call as any).__audio as HTMLAudioElement | undefined;
@@ -359,7 +385,13 @@ export function useWebRtcVoice(
           audio.autoplay = true;
           audio.setAttribute('playsinline', 'true');
           audio.setAttribute('aria-hidden', 'true');
-          audio.style.display = 'none';
+          audio.style.position = 'fixed';
+          audio.style.top = '-9999px';
+          audio.style.left = '-9999px';
+          audio.style.width = '1px';
+          audio.style.height = '1px';
+          audio.style.opacity = '0.01';
+          audio.style.pointerEvents = 'none';
           document.body.appendChild(audio);
           audioElementsRef.current.push(audio);
           (call as any).__audio = audio;
@@ -618,11 +650,15 @@ export function useWebRtcVoice(
 
               // 2. Fast STUN Servers (Untuk deteksi direct P2P jika 1 WiFi)
               { urls: 'stun:stun.relay.metered.ca:80' },
+              { urls: 'stun:stun.relay.metered.ca:443' },
               { urls: 'stun:stun.l.google.com:19302' },
               { urls: 'stun:stun1.l.google.com:19302' },
               { urls: 'stun:stun.cloudflare.com:3478' },
             ],
-            iceCandidatePoolSize: 4,
+            iceCandidatePoolSize: 10,
+            iceTransportPolicy: 'all',
+            bundlePolicy: 'max-bundle',
+            rtcpMuxPolicy: 'require',
           },
         });
         peerRef.current = peer;
@@ -669,9 +705,11 @@ export function useWebRtcVoice(
     })();
 
     pingTimerRef.current = setInterval(() => {
-      const connection = connections.find((item) => item.open);
-      if (connection) {
-        try { connection.send({ type: '__ping__', ts: Date.now() }); } catch {}
+      const openConns = connections.filter((item) => item.open);
+      if (openConns.length > 0) {
+        openConns.forEach((conn) => {
+          try { conn.send({ type: '__ping__', ts: Date.now() }); } catch {}
+        });
       } else {
         setPingMs(null);
       }
@@ -704,72 +742,64 @@ export function useWebRtcVoice(
     const token = safeRoomToken(roomCode);
     const hostId = `lysroom-${token}-host`;
 
-    if (isMicOn) {
-      const silentStream = makeSilentStream();
-      const silentTrack = silentStream.getAudioTracks()[0];
-      mediaCallsRef.current.forEach((call) => {
-        try {
-          (call as any)._localStream = silentStream;
-        } catch {}
-        const pc = call.peerConnection;
-        if (pc) {
-          const sender = getAudioSender(pc);
-          if (sender) {
-            void sender.replaceTrack(silentTrack || null).catch(() => {});
-          }
-        }
-      });
-      localStreamRef.current?.getTracks().forEach((track) => track.stop());
-      localStreamRef.current = null;
+    // ── Matikan Mic (Mute) ──
+    if (isMicOnRef.current) {
+      // PENTING UNTUK BEDA JARINGAN: Jangan destroy track atau kirim silent oscillator!
+      // Cukup set track.enabled = false agar WebRTC tetap kirim keepalive packet (~1kbps),
+      // sehingga port NAT mapping di Telkomsel/XL/Indosat TIDAK KADALUARSA / DROP!
+      if (localStreamRef.current) {
+        localStreamRef.current.getAudioTracks().forEach((track) => {
+          track.enabled = false;
+        });
+      }
       setIsMicOn(false);
+      isMicOnRef.current = false;
+      setVoiceBands([0, 0, 0, 0]);
+      setLocalVolume(0);
+      setIsSpeaking(false);
       sendMessage({ type: '__mic_toggle__', peerId: localPeerIdRef.current, isMicOn: false });
       return { action: 'turned_off' };
     }
 
-    if (!navigator.mediaDevices?.getUserMedia) {
-      return { action: 'error', errorName: 'NotSupportedError', errorMessage: 'Browser tidak mendukung mikrofon. Pastikan Anda membuka situs melalui koneksi aman (HTTPS).' };
-    }
-
+    // ── Nyalakan Mic (Unmute) ──
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true,
-          channelCount: 1, // Mono: hemat 50% data dibanding stereo
-          sampleRate: 24000, // Optimal speech sample rate
-        },
-      });
-      localStreamRef.current = stream;
-      setIsMicOn(true);
-      startMeter(stream, true);
-      const track = stream.getAudioTracks()[0];
+      let stream = localStreamRef.current;
+      const liveTrack = stream?.getAudioTracks().find((t) => t.readyState === 'live');
 
+      if (liveTrack && stream) {
+        // Track sudah ada, nyalakan kembali seketika (0ms delay, zero packet loss)
+        liveTrack.enabled = true;
+        setIsMicOn(true);
+        isMicOnRef.current = true;
+        startMeter(stream, true);
+        sendMessage({ type: '__mic_toggle__', peerId: localPeerIdRef.current, isMicOn: true });
+        return { action: 'turned_on' };
+      }
+
+      // Track belum pernah diizinkan, minta akses mic pertama kali
+      stream = await getRobustAudioStream();
+      localStreamRef.current = stream;
+      const newTrack = stream.getAudioTracks()[0];
+      if (newTrack) newTrack.enabled = true;
+      setIsMicOn(true);
+      isMicOnRef.current = true;
+      startMeter(stream, true);
+
+      // Pasang track ke semua call aktif
       mediaCallsRef.current.forEach((call) => {
-        try {
-          (call as any)._localStream = stream;
-        } catch {}
         const pc = call.peerConnection;
-        if (pc && track) {
+        if (pc && newTrack) {
           const sender = getAudioSender(pc);
           if (sender) {
-            void sender.replaceTrack(track).catch(() => {});
+            void sender.replaceTrack(newTrack).catch(() => {});
             applyAudioBitrateOptimization(pc);
           } else {
-            try {
-              pc.addTrack(track, stream);
-            } catch {}
-          }
-          const transceiver = pc.getTransceivers().find(
-            (t) => t.sender === sender || t.receiver?.track?.kind === 'audio'
-          );
-          if (transceiver && transceiver.direction !== 'sendrecv') {
-            transceiver.direction = 'sendrecv';
+            try { pc.addTrack(newTrack, stream!); } catch {}
           }
         }
       });
 
-      // If guest has no active media call to host yet, initiate call directly with live mic stream
+      // Jika guest belum punya media call ke host, mulai call langsung dengan mic aktif
       if (roleRef.current === 'guest' && peerRef.current && !mediaCallsRef.current.some((c) => c.peer === hostId)) {
         try {
           const mediaCall = peerRef.current.call(hostId, stream);
@@ -783,22 +813,20 @@ export function useWebRtcVoice(
         audio.play().then(() => setAudioPlaybackBlocked(false)).catch(() => setAudioPlaybackBlocked(true));
       });
 
-      // Notify peer that mic is active so recipient resumes audio element & AudioContext playback
       sendMessage({ type: '__mic_toggle__', peerId: localPeerIdRef.current, isMicOn: true });
-
       return { action: 'turned_on' };
     } catch (error: any) {
       const errorName = error?.name || 'UnknownError';
       const message = errorName === 'NotAllowedError' || errorName === 'PermissionDeniedError'
         ? 'Izin mikrofon diblokir. Izinkan mikrofon di pengaturan browser.'
         : errorName === 'NotFoundError'
-          ? 'Mikrofon tidak terdeteksi.'
+          ? 'Mikrofon tidak terdeteksi pada perangkat ini.'
           : errorName === 'NotReadableError'
             ? 'Mikrofon sedang digunakan aplikasi lain.'
-            : 'Mikrofon gagal diaktifkan. Periksa izin dan perangkat audio.';
+            : 'Mikrofon gagal diaktifkan. Pastikan izin browser diberikan.';
       return { action: 'error', errorName, errorMessage: message };
     }
-  }, [isMicOn, makeSilentStream, startMeter, roomCode, sendMessage]);
+  }, [roomCode, sendMessage, startMeter]);
 
   const toggleSpeaker = useCallback(() => {
     setIsSpeakerOn((current) => !current);
