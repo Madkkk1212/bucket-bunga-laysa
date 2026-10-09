@@ -634,18 +634,19 @@ input, select, textarea { font-family: inherit; }
   margin: 0 auto;
 }
 
-/* ── HERO FROSTED GLASS CARD (PREVENTS CONTRAST ISSUES & NOISE) ── */
+/* ── HERO TEXT CONTAINER (CLEAN, NO OPAQUE BACKGROUND BOX) ── */
+.hero-text-container,
 .hero-glass-card {
-  background: rgba(255, 255, 255, 0.88);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border: 1.5px solid rgba(255, 255, 255, 0.95);
-  border-radius: 28px;
-  padding: clamp(22px, 3.2vw, 36px);
-  box-shadow:
-    0 20px 45px -10px rgba(225, 29, 72, 0.12),
-    0 0 0 1px rgba(244, 114, 182, 0.15);
-  max-width: 580px;
+  background: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border: none !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
+  box-shadow: none !important;
+  max-width: 620px;
+  position: relative;
+  z-index: 10;
 }
 
 .hero-kicker-badge {
@@ -673,35 +674,42 @@ input, select, textarea { font-family: inherit; }
   text-transform: uppercase;
 }
 
-/* ── MODERN & LUXURIOUS TITLE ── */
+/* ── MODERN & LUXURIOUS TITLE (NO WHITE BOX, HALO CONTRAST) ── */
 .game-theme-title {
   font-family: 'Plus Jakarta Sans', 'Outfit', sans-serif !important;
-  font-size: clamp(32px, 4.2vw, 54px);
+  font-size: clamp(34px, 4.3vw, 56px);
   font-weight: 900;
   color: #1e1b4b;
   line-height: 1.08;
   letter-spacing: -0.02em;
-  margin-bottom: 12px;
+  margin-bottom: 14px;
   text-transform: uppercase;
   user-select: none;
-  text-shadow: none !important;
+  text-shadow:
+    0 2px 4px rgba(255, 255, 255, 0.95),
+    0 4px 18px rgba(255, 255, 255, 0.8),
+    0 0 32px rgba(255, 255, 255, 0.9) !important;
 }
 
 .game-theme-title-accent {
   background: linear-gradient(135deg, #e11d48 0%, #f43f5e 45%, #fb7185 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  filter: drop-shadow(0 2px 10px rgba(225, 29, 72, 0.25));
+  filter: drop-shadow(0 2px 8px rgba(255, 255, 255, 0.95)) drop-shadow(0 4px 14px rgba(225, 29, 72, 0.3));
   font-style: normal;
 }
 
 .hero-subtitle {
   font-family: 'Outfit', sans-serif;
-  font-size: clamp(14px, 1.1vw, 15.5px);
-  color: #475569;
+  font-size: clamp(14.5px, 1.15vw, 16.5px);
+  color: #1f2937;
   line-height: 1.6;
-  margin: 0 0 20px 0;
-  font-weight: 500;
+  margin: 0 0 22px 0;
+  font-weight: 600;
+  max-width: 480px;
+  text-shadow:
+    0 1px 3px rgba(255, 255, 255, 0.95),
+    0 2px 10px rgba(255, 255, 255, 0.85);
 }
 
 /* ── GAME QUEST DIALOGUE BOX ── */
@@ -806,6 +814,36 @@ input, select, textarea { font-family: inherit; }
     0 4px 12px rgba(190, 18, 60, 0.35);
 }
 
+.hero-actions.game-actions-single {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.hero-trust-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #1f2937;
+  text-shadow: 0 1px 4px rgba(255, 255, 255, 0.95);
+  user-select: none;
+}
+
+.hero-trust-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.hero-trust-dot {
+  color: #e11d48;
+  font-weight: 800;
+}
+
 .game-btn-garden {
   display: inline-flex;
   align-items: center;
@@ -877,12 +915,13 @@ input, select, textarea { font-family: inherit; }
   box-shadow: 0 2px 0 #be185d;
 }
 
-/* ── SISI KANAN: 3D PEDESTAL SHOWCASE ── */
+/* ── SISI KANAN: 3D PEDESTAL SHOWCASE (SCALED & RAISED UP) ── */
 .game-visual-stage {
   display: flex;
   justify-content: center;
   align-items: center;
   position: relative;
+  transform: translateY(-26px); /* RAISE UP TO PREVENT SINKING INTO FOOTER */
 }
 
 .game-pedestal-showcase {
@@ -890,6 +929,27 @@ input, select, textarea { font-family: inherit; }
   display: flex;
   flex-direction: column;
   align-items: center;
+  max-width: 430px; /* SLIGHTLY SMALLER */
+  width: 100%;
+  margin: 0 auto;
+}
+
+.hero-image-wrapper {
+  max-width: 420px;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.hero-bouquet-img {
+  width: 100% !important;
+  max-width: 410px !important;
+  max-height: 50vh !important;
+  height: auto !important;
+  object-fit: contain !important;
+  display: block !important;
+  margin: 0 auto !important;
 }
 
 .game-rarity-pill {
@@ -1044,9 +1104,9 @@ input, select, textarea { font-family: inherit; }
 }
 
 .game-hud-hint {
-  color: #fbcfe8;
-  letter-spacing: 0.05em;
-  font-weight: 800;
+  color: #9d174d;
+  letter-spacing: 0.03em;
+  font-weight: 700;
 }
 
 .game-hud-version {
@@ -2310,8 +2370,8 @@ body:has(.game-tutorial-container) {
 
 /* Bottom-Left Cluster */
 .decor-bl-1 {
-  bottom: 55px;
-  left: 10px;
+  bottom: 78px;
+  left: 14px;
   transform: rotate(18deg);
   animation: floatFlowerSlow 7.5s 0.5s ease-in-out infinite;
   opacity: 0.85;

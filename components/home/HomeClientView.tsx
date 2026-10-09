@@ -34,7 +34,7 @@ export default function HomeClientView() {
         <div className="hero-content game-arena-grid">
           {/* SISI KIRI: TITLE, DESKRIPSI & TOMBOL UTAMA */}
           <div className="hero-text game-hero-text">
-            <div className="hero-glass-card">
+            <div className="hero-text-container">
               <div className="hero-kicker-badge">
                 <span className="hero-kicker-icon">🌸</span>
                 <span className="hero-kicker-text">STUDIO BUKET BUNGA VIRTUAL #1</span>
