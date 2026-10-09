@@ -131,6 +131,18 @@ function SnakeLaddersRoomBridge() {
       room.postToGame('snake:host-restart');
       return;
     }
+    if (message.type === '__player_leave__') {
+      const peerId = String(message.fromPeerId || '');
+      if (room.role === 'host' && snapshotRef.current && peerId) {
+        const target = snapshotRef.current.players.find((p) => p.id === peerId);
+        if (target) {
+          target.name = `${target.name} (Keluar)`;
+          room.sendRoomMessage({ type: '__snake_game_state__', state: snapshotRef.current });
+          room.postToGame('snake:player-name-update', { playerId: peerId, name: target.name });
+        }
+      }
+      return;
+    }
     if (message.type === '__snake_settings__' && room.role === 'guest') {
       room.postToGame('snake:settings', { np: message.np, N: message.N });
       return;

@@ -937,8 +937,12 @@ function sendRoom(payload){
   window.parent.postMessage({type:'html-room:broadcast',payload:{game:'congklak',...payload}},location.origin);
 }
 function applyRoomState(data){
+  const prevOnlineRole = onlineRole;
   onlineRole=data.role==='host'||data.role==='guest'?data.role:'none';
   onlineSide=onlineRole==='guest'?1:0;
+  if(onlineRole==='none'&&prevOnlineRole!=='none'){
+    setStatus('Room telah selesai atau ditutup.');
+  }
   const joined=Array.isArray(data.joinedPlayers)?data.joinedPlayers:[];
   const names=Array.isArray(data.playerNames)?data.playerNames:[];
   const localName=String(data.playerName||'Pemain').trim()||'Pemain';

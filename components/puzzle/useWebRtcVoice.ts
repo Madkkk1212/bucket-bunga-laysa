@@ -396,6 +396,8 @@ export function useWebRtcVoice(
     const guestId = `lysroom-${token}-guest-${Math.random().toString(36).slice(2, 9)}`;
     const startedAt = Date.now();
     const transferTimeouts: ReturnType<typeof setTimeout>[] = [];
+    const disconnectTimers = new Map<string, ReturnType<typeof setTimeout>>();
+    let guestReconnectTimer: ReturnType<typeof setTimeout> | null = null;
 
     setConnectionStatus(role === 'host' ? 'connecting' : 'connecting');
     setConnectionError(null);
@@ -524,6 +526,39 @@ export function useWebRtcVoice(
         const remoteName = String(data.name || 'Host').slice(0, 24);
         setPlayerList([playerNameRef.current, remoteName]);
         onDataMessageRef.current?.({ ...data, type: '__player_welcome__', name: remoteName, players: [remoteName] });
+        return;
+      }
+      if (data.type === '__player_leave__') {
+        const leavePeerId = String(data.fromPeerId || source?.peer || '');
+        if (leavePeerId) {
+          const oldTimer = disconnectTimers.get(leavePeerId);
+          if (oldTimer) {
+            clearTimeout(oldTimer);
+            disconnectTimers.delete(leavePeerId);
+          }
+        }
+        if (role === 'host') {
+          const connIdx = connections.findIndex((c) => c.peer === leavePeerId || (c as any).__remotePeerId === leavePeerId);
+          if (connIdx >= 0) {
+            try { connections[connIdx].close?.(); } catch {}
+            connections.splice(connIdx, 1);
+            dataConnectionsRef.current = connections;
+          }
+          const remainingPlayers = [
+            playerNameRef.current,
+            ...connections.filter((item) => item.open && item.peer !== leavePeerId).map((item) => String((item as any).__remoteName || 'Teman')),
+          ];
+          setPlayerList(remainingPlayers);
+          connections.filter((item) => item.open && item.peer !== leavePeerId).forEach((conn) => {
+            try { conn.send({ type: '__player_leave__', fromPeerId: leavePeerId }); } catch {}
+          });
+        } else if (role === 'guest') {
+          if (data.isHost || leavePeerId === hostId) {
+            setConnectionStatus('error');
+            setConnectionError('Host telah keluar atau menutup room.');
+          }
+        }
+        onDataMessageRef.current?.({ ...data, fromPeerId: leavePeerId });
         return;
       }
       if (data.type === '__player_name_update__') {
@@ -681,8 +716,6 @@ export function useWebRtcVoice(
           : 'Koneksi data room gagal. Coba gabung ulang.';
         statusError(errorText);
       });
-      const disconnectTimers = new Map<string, ReturnType<typeof setTimeout>>();
-
       connection.on('close', () => {
         const index = connections.indexOf(connection);
         if (index >= 0) connections.splice(index, 1);
@@ -690,29 +723,41 @@ export function useWebRtcVoice(
         if (!alive) return;
         if (role === 'host') {
           setConnectionStatus('hosting');
-          // Grace period: Beri waktu 25 detik jika teman hanya membalas chat / beralih aplikasi sebentar
-          const peerId = String(connection.peer || '');
+          // Grace period: Beri waktu 12 detik jika teman hanya beralih aplikasi sebentar (balas chat WA)
+          const peerId = String(connection.peer || (connection as any).__remotePeerId || '');
           if (peerId) {
+            setConnectionError('Teman terputus sebentar (menunggu s/d 12 detik)…');
             const oldTimer = disconnectTimers.get(peerId);
             if (oldTimer) clearTimeout(oldTimer);
             const timer = setTimeout(() => {
               if (!alive) return;
               const remainingPlayers = [playerNameRef.current, ...connections.filter((item) => item.open).map((item) => String((item as any).__remoteName || 'Teman'))];
               setPlayerList(remainingPlayers);
+              setConnectionError(null);
               onDataMessageRef.current?.({ type: '__player_leave__', fromPeerId: peerId });
               disconnectTimers.delete(peerId);
-            }, 25_000);
+            }, 12_000);
             disconnectTimers.set(peerId, timer);
           }
         } else {
-          // Guest: Jangan langsung error permanen! Otomatis coba sambung kembali ke host
+          // Guest: Jika host terputus, coba reconnect maksimal 12 detik sebelum otomatis keluar dari room
           setConnectionStatus('connecting');
-          setConnectionError('Koneksi terputus sebentar. Menyambungkan kembali ke host…');
-          setTimeout(() => {
-            if (alive && roleRef.current === 'guest') {
-              reconnectGuest();
+          setConnectionError('Koneksi ke host terputus sebentar. Menyambungkan kembali (12s)…');
+          if (guestReconnectTimer) clearTimeout(guestReconnectTimer);
+          const reconnectDeadline = Date.now() + 12_000;
+          const attemptReconnect = () => {
+            if (!alive || roleRef.current !== 'guest') return;
+            if (connections.some((c) => c.open)) return;
+            if (Date.now() >= reconnectDeadline) {
+              setConnectionStatus('error');
+              setConnectionError('Host telah keluar atau room ditutup. Silakan buat atau gabung room baru.');
+              onDataMessageRef.current?.({ type: '__player_leave__', isHost: true, fromPeerId: hostId });
+              return;
             }
-          }, 1500);
+            reconnectGuest();
+            guestReconnectTimer = setTimeout(attemptReconnect, 2000);
+          };
+          guestReconnectTimer = setTimeout(attemptReconnect, 1500);
         }
       });
     };
@@ -746,6 +791,22 @@ export function useWebRtcVoice(
     };
     document.addEventListener('visibilitychange', handleVisibility);
     window.addEventListener('pageshow', handleVisibility);
+
+    const handleUnload = () => {
+      try {
+        const leaveMsg = {
+          type: '__player_leave__',
+          intentional: true,
+          isHost: role === 'host',
+          fromPeerId: localPeerIdRef.current,
+        };
+        connections.filter((c) => c.open).forEach((conn) => {
+          try { conn.send(leaveMsg); } catch {}
+        });
+      } catch {}
+    };
+    window.addEventListener('beforeunload', handleUnload);
+    window.addEventListener('pagehide', handleUnload);
 
     const timeout = setTimeout(() => {
       if (alive && role === 'guest' && Date.now() - startedAt >= 12_000 && !connections.some((connection) => connection.open)) {
@@ -866,7 +927,12 @@ export function useWebRtcVoice(
       alive = false;
       document.removeEventListener('visibilitychange', handleVisibility);
       window.removeEventListener('pageshow', handleVisibility);
+      window.removeEventListener('beforeunload', handleUnload);
+      window.removeEventListener('pagehide', handleUnload);
       clearTimeout(timeout);
+      if (guestReconnectTimer) clearTimeout(guestReconnectTimer);
+      disconnectTimers.forEach((timer) => clearTimeout(timer));
+      disconnectTimers.clear();
       if (pingTimerRef.current) clearInterval(pingTimerRef.current);
       transferTimeouts.forEach(clearTimeout);
       transfers.forEach((transfer) => clearTimeout(transfer.timer));

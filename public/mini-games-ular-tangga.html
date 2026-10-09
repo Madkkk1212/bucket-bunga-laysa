@@ -568,6 +568,11 @@ window.addEventListener('message',event=>{
   const data=event.data;
   if(data.type==='snake:room-state'){
     onlineRole=data.role||'none';onlinePeers=Array.isArray(data.joinedPeers)?data.joinedPeers:[];localPeerId=data.localPeerId||'';if(onlineRole!=='none')onlineIntent='online';updateOnlineAvailability();
+    if(onlineRole==='none'&&onlineGame){
+      onlineGame=false;
+      showMenu();
+      say('Room telah selesai atau ditutup.');
+    }
     if(data.playerName&&players.length){
       const me=players.find(p=>p.id===localPeerId);
       if(me&&me.name!==data.playerName){me.name=data.playerName;ui()}

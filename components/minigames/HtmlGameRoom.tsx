@@ -88,36 +88,42 @@ export default function HtmlGameRoom({
       const stored = sessionStorage.getItem(sessionKey);
       if (stored) {
         const parsed = JSON.parse(stored);
-        if (parsed.roomCode && (parsed.role === 'host' || parsed.role === 'guest')) {
+        const ageMs = Date.now() - (parsed.savedAt || 0);
+        // Pulihkan hanya jika session masih segar (< 90 detik, untuk skenario balas WA kilat di HP RAM kecil)
+        if (parsed.roomCode && (parsed.role === 'host' || parsed.role === 'guest') && ageMs < 90_000) {
           setRoomCode(parsed.roomCode);
           setRole(parsed.role);
           if (parsed.playerName) setPlayerName(parsed.playerName);
           return;
+        } else {
+          sessionStorage.removeItem(sessionKey);
         }
       }
       const search = new URLSearchParams(window.location.search);
       const urlRoom = search.get('room');
       const urlRole = search.get('role');
-      if (urlRoom) {
+      // Hanya join otomatis dari URL jika ini adalah tautan undangan Guest
+      if (urlRoom && urlRole === 'guest') {
         const norm = normalizeRoom(urlRoom, prefix);
         if (norm) {
           setRoomCode(norm);
-          setRole(urlRole === 'host' ? 'host' : 'guest');
+          setRole('guest');
+          // Bersihkan query string dari address bar agar jika tab ditutup tidak terjebak di room lama
+          const cleanUrl = new URL(window.location.href);
+          cleanUrl.searchParams.delete('room');
+          cleanUrl.searchParams.delete('role');
+          window.history.replaceState({}, '', cleanUrl.pathname);
         }
       }
     } catch {}
   }, [sessionKey, prefix]);
 
-  // Synchronize active room session with sessionStorage and URL query params
+  // Synchronize active room session with sessionStorage (hindari menyuntikkan role=host ke address bar)
   useEffect(() => {
     if (typeof window === 'undefined') return;
     if (role !== 'none' && roomCode) {
       try {
-        sessionStorage.setItem(sessionKey, JSON.stringify({ roomCode, role, playerName }));
-        const url = new URL(window.location.href);
-        url.searchParams.set('room', roomCode);
-        url.searchParams.set('role', role);
-        window.history.replaceState({}, '', url.toString());
+        sessionStorage.setItem(sessionKey, JSON.stringify({ roomCode, role, playerName, savedAt: Date.now() }));
       } catch {}
     } else if (role === 'none') {
       try {
@@ -125,10 +131,29 @@ export default function HtmlGameRoom({
         const url = new URL(window.location.href);
         url.searchParams.delete('room');
         url.searchParams.delete('role');
-        window.history.replaceState({}, '', url.toString());
+        window.history.replaceState({}, '', url.pathname);
       } catch {}
     }
   }, [role, roomCode, playerName, sessionKey]);
+
+  // Bersihkan session & kirim sinyal keluar instan saat tab ditutup / browser di-close
+  useEffect(() => {
+    const onPageHide = (e: PageTransitionEvent) => {
+      if (!e.persisted) {
+        try {
+          voiceRef.current?.sendMessage({
+            type: '__player_leave__',
+            intentional: true,
+            isHost: role === 'host',
+            fromPeerId: voiceRef.current?.localPeerId,
+          });
+          sessionStorage.removeItem(sessionKey);
+        } catch {}
+      }
+    };
+    window.addEventListener('pagehide', onPageHide);
+    return () => window.removeEventListener('pagehide', onPageHide);
+  }, [role, sessionKey]);
   const frameRef = useRef<HTMLDivElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const roomHandlerRef = useRef<((data: HtmlGameRoomMessage) => void) | null>(null);
@@ -164,6 +189,30 @@ export default function HtmlGameRoom({
     setJoinCode('');
     return true;
   }, [prefix, tell]);
+
+  const leaveRoom = useCallback(() => {
+    try {
+      voiceRef.current?.sendMessage({
+        type: '__player_leave__',
+        intentional: true,
+        isHost: role === 'host',
+        fromPeerId: voiceRef.current?.localPeerId,
+      });
+    } catch {}
+    try { sessionStorage.removeItem(sessionKey); } catch {}
+    peersRef.current = [];
+    setJoinedPlayers([]);
+    setRoomCode('');
+    setRole('none');
+    setWaitingOpen(false);
+    try {
+      const url = new URL(window.location.href);
+      url.searchParams.delete('room');
+      url.searchParams.delete('role');
+      window.history.replaceState({}, '', url.pathname);
+    } catch {}
+  }, [role, sessionKey]);
+
   const onRoomData = useCallback((data: HtmlGameRoomMessage) => {
     if (data.type === '__player_join__' && role === 'host') {
       setWaitingOpen(false);
@@ -176,10 +225,17 @@ export default function HtmlGameRoom({
           return next;
         });
       }
-    } else if (data.type === '__player_leave__' && role === 'host') {
-      const next = peersRef.current.filter((peer) => peer.id !== data.fromPeerId);
-      peersRef.current = next;
-      setJoinedPlayers(next);
+    } else if (data.type === '__player_leave__') {
+      const peerId = String(data.fromPeerId || '');
+      if (role === 'host') {
+        const next = peersRef.current.filter((peer) => peer.id !== peerId);
+        peersRef.current = next;
+        setJoinedPlayers(next);
+        tell('👋 Pemain keluar dari room.');
+      } else if (role === 'guest' && (data.isHost || peerId.includes('host'))) {
+        tell('👋 Host telah menutup room. Kembali ke lobi.');
+        leaveRoom();
+      }
     } else if (data.type === '__player_name_update__') {
       const peerId = String(data.peerId || data.fromPeerId || '');
       const newName = String(data.name || 'Pemain').slice(0, 20);
@@ -271,14 +327,6 @@ export default function HtmlGameRoom({
   const joinRoom = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     joinRoomWithCode(joinCode);
-  };
-  const leaveRoom = () => {
-    try { sessionStorage.removeItem(sessionKey); } catch {}
-    peersRef.current = [];
-    setJoinedPlayers([]);
-    setRoomCode('');
-    setRole('none');
-    setWaitingOpen(false);
   };
   const copyInvite = async () => {
     const url = `${window.location.origin}${invitePath}?room=${encodeURIComponent(roomCode)}&role=guest`;
