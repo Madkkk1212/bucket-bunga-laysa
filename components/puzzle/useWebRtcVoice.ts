@@ -174,7 +174,34 @@ export function useWebRtcVoice(
       if (prev.length <= 1) return [playerName];
       return [playerName, ...prev.slice(1)];
     });
-  }, [playerName]);
+    const timer = setTimeout(() => {
+      const conns = dataConnectionsRef.current.filter((c) => c.open);
+      if (conns.length > 0 && localPeerIdRef.current) {
+        conns.forEach((c) => {
+          try {
+            c.send({
+              type: '__player_name_update__',
+              peerId: localPeerIdRef.current,
+              name: playerName,
+            });
+          } catch {}
+        });
+        if (roleRef.current === 'host') {
+          const currentPlayers = [
+            { id: localPeerIdRef.current, name: playerName },
+            ...conns.map((c) => ({
+              id: String((c as any).__remotePeerId || c.peer || ''),
+              name: String((c as any).__remoteName || 'Teman'),
+            })),
+          ].filter((item, index, list) => item.id && list.findIndex((p) => p.id === item.id) === index);
+          conns.forEach((c) => {
+            try { c.send({ type: '__peer_list__', players: currentPlayers, maxPlayers }); } catch {}
+          });
+        }
+      }
+    }, 200);
+    return () => clearTimeout(timer);
+  }, [playerName, maxPlayers]);
   useEffect(() => { onDataMessageRef.current = onDataMessage; }, [onDataMessage]);
   useEffect(() => { isMicOnRef.current = isMicOn; }, [isMicOn]);
   useEffect(() => {
@@ -497,6 +524,38 @@ export function useWebRtcVoice(
         const remoteName = String(data.name || 'Host').slice(0, 24);
         setPlayerList([playerNameRef.current, remoteName]);
         onDataMessageRef.current?.({ ...data, type: '__player_welcome__', name: remoteName, players: [remoteName] });
+        return;
+      }
+      if (data.type === '__player_name_update__') {
+        const remoteName = String(data.name || 'Teman').slice(0, 24);
+        const remotePeerId = String(data.peerId || source?.peer || '');
+        const sourceConnection = source || connections.find((item) => (item as any).__remotePeerId === remotePeerId || item.peer === remotePeerId);
+        if (sourceConnection) {
+          (sourceConnection as any).__remoteName = remoteName;
+          if (remotePeerId) (sourceConnection as any).__remotePeerId = remotePeerId;
+        }
+        if (role === 'host') {
+          const currentPlayers = [
+            { id: localPeerIdRef.current || hostId, name: playerNameRef.current },
+            ...connections.filter((item) => item.open).map((item) => ({
+              id: String((item as any).__remotePeerId || item.peer || ''),
+              name: String((item as any).__remoteName || 'Teman'),
+            })),
+          ].filter((item, index, list) => item.id && list.findIndex((peerItem) => peerItem.id === item.id) === index);
+          setPlayerList(currentPlayers.map((item) => item.name));
+          connections.filter((item) => item.open && item !== source).forEach((connection) => {
+            try { connection.send(data); } catch {}
+          });
+          connections.filter((item) => item.open).forEach((connection) => {
+            try { connection.send({ type: '__peer_list__', players: currentPlayers, maxPlayers }); } catch {}
+          });
+        } else {
+          setPlayerList((prev) => {
+            if (prev.length <= 1) return [playerNameRef.current, remoteName];
+            return [playerNameRef.current, remoteName, ...prev.slice(2)];
+          });
+        }
+        onDataMessageRef.current?.({ ...data, fromPeerId: source?.peer || remotePeerId });
         return;
       }
       if (data.type === '__peer_list__') {

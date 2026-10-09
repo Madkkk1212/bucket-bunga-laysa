@@ -118,6 +118,14 @@ button.pri:active{box-shadow:0 0 0 #4a30c4}
 .rollrow button.my-turn-highlight{animation:pulse-btn 1.2s infinite alternate;box-shadow:0 4px 20px rgba(108,76,240,.55);border-color:#5335d6}
 @keyframes pulse-btn{0%{transform:scale(1)}100%{transform:scale(1.05)}}
 
+.shake-tip{display:flex;align-items:center;justify-content:center;gap:.45rem;padding:.4rem .8rem;background:rgba(108,76,240,.07);border:1.5px dashed rgba(108,76,240,.28);border-radius:12px;font-size:.76rem;font-weight:600;color:var(--acc);transition:all .25s ease}
+.shake-ico{font-size:.95rem;display:inline-block;animation:shake-phone 1.8s infinite ease-in-out}
+@keyframes shake-phone{0%,100%{transform:rotate(0deg)}20%{transform:rotate(-14deg) scale(1.12)}40%{transform:rotate(14deg) scale(1.12)}60%{transform:rotate(-8deg)}80%{transform:rotate(8deg)}}
+.shake-tip.is-my-turn{background:linear-gradient(135deg,rgba(108,76,240,.12),rgba(255,210,63,.16));border-color:var(--acc);box-shadow:0 0 12px rgba(108,76,240,.22);color:#4a2ec7}
+.shake-tip.is-shaking{background:#ffeaa7;border-color:#fdcb6e;color:#b37d00;transform:scale(1.04)}
+.die.dice-shaken{animation:dice-shake .09s infinite alternate}
+@keyframes dice-shake{0%{transform:scale(1.22) rotate(-16deg) translate(-4px,2px)}100%{transform:scale(1.22) rotate(16deg) translate(4px,-2px)}}
+
 </style>
 </head>
 <body>
@@ -145,6 +153,7 @@ button.pri:active{box-shadow:0 0 0 #4a30c4}
   <div class="side">
     <div class="turn"><span class="dot" id="tdot"></span><span id="tname"></span></div>
     <div class="rollrow"><div class="die" id="die"></div><button class="pri" id="roll">Lempar dadu</button></div>
+    <div class="shake-tip" id="shakeTip"><span class="shake-ico">📱</span><span id="shakeText">Goyangkan HP / Tab untuk lempar dadu</span></div>
     <div id="msg"></div>
     <div class="pl" id="pl"></div>
   </div>
@@ -352,6 +361,15 @@ function ui(){
   rollBtn.classList.toggle('my-turn-highlight',isMyTurn);
   $('pl').innerHTML=players.map(p=>`<div><span class="dot" style="background:${p.color}"></span><b>${p.name}</b><span>blok ${p.pos}</span></div>`).join('');
   players.forEach((_,i)=>{const e=$('pw'+i);if(e)e.classList.toggle('cur',i===turn&&!over)});
+  const tip=$('shakeTip'),txt=$('shakeText');
+  if(tip){
+    const isTouch=('ontouchstart' in window)||(navigator.maxTouchPoints>0)||(window.matchMedia&&window.matchMedia('(pointer:coarse)').matches);
+    if(txt){
+      if(!isTouch) txt.textContent='Tekan Spasi atau tombol untuk lempar dadu';
+      else txt.textContent=isMyTurn?'Goyangkan HP atau tekan tombol untuk lempar!':'Goyangkan HP / Tab untuk lempar dadu';
+    }
+    tip.classList.toggle('is-my-turn',Boolean(isMyTurn));
+  }
 }
 
 let turnAlertTimer=null;
@@ -420,7 +438,7 @@ function applyGameState(snapshot){
     renderStartedGame();players.forEach((p,i)=>place(i,p.pos,0));
     showTurnAlert(players[turn],false);
   }else if(!busy){
-    snapshot.players.forEach((p,i)=>{if(players[i]){players[i].pos=p.pos;place(i,p.pos,0)}});
+    snapshot.players.forEach((p,i)=>{if(players[i]){players[i].pos=p.pos;if(p.name)players[i].name=p.name;place(i,p.pos,0)}});
     turn=snapshot.turn;moves=snapshot.moves;over=snapshot.over;
     ui();
     if(over&&snapshot.winnerId){const winner=players.find(p=>p.id===snapshot.winnerId);if(winner)finish(winner)}
@@ -535,6 +553,10 @@ window.addEventListener('message',event=>{
   const data=event.data;
   if(data.type==='snake:room-state'){
     onlineRole=data.role||'none';onlinePeers=Array.isArray(data.joinedPeers)?data.joinedPeers:[];localPeerId=data.localPeerId||'';if(onlineRole!=='none')onlineIntent='online';updateOnlineAvailability();
+    if(data.playerName&&players.length){
+      const me=players.find(p=>p.id===localPeerId);
+      if(me&&me.name!==data.playerName){me.name=data.playerName;ui()}
+    }
   }else if(data.type==='snake:settings'){
     if(onlineRole==='guest'){onlineIntent='online';np=data.np;N=data.N;drawOpts();gen();preview()}
   }else if(data.type==='snake:start-online'&&(onlineRole==='guest'||onlineRole==='host')){
@@ -545,6 +567,19 @@ window.addEventListener('message',event=>{
     applyGameState(data.state);
   }else if(data.type==='snake:remote-roll'&&onlineRole==='host'){
     if(players[turn]?.id===data.playerId){authorizedRemoteRoll=true;void roll()}
+  }else if(data.type==='snake:player-name-update'){
+    const pId=String(data.playerId||'');
+    const nName=String(data.name||'').slice(0,24);
+    if(pId&&nName){
+      const target=players.find(p=>p.id===pId);
+      if(target){
+        target.name=nName;
+        ui();
+        if(onlineRole==='host')publishGameState();
+      }
+    }
+  }else if(data.type==='snake:shake'){
+    triggerShakeRoll();
   }else if(data.type==='snake:start-error'){
     $('onlineNote').textContent=data.message||'Belum bisa mulai. Periksa jumlah peserta room.';
   }
@@ -552,6 +587,71 @@ window.addEventListener('message',event=>{
 syncFullscreenButton();
 document.addEventListener('keydown',e=>{if(e.code==='Space'&&!$('roll').disabled&&$('menu').classList.contains('hide')){e.preventDefault();roll()}});
 gen();setFace(1);drawOpts();preview();sendParent('snake:ready',{np,N});
+
+let lastAcc=null,lastShakeTs=0,motionListenerBound=false;
+function triggerShakeRoll(){
+  if(busy||over)return;
+  const P=players[turn];if(!P)return;
+  const isMyTurn=!busy&&!over&&!P.cpu&&(!onlineGame||P.id===localPeerId);
+  if(!isMyTurn){
+    say(`Bukan giliranmu! Giliran: ${P.name}`);
+    try{if(navigator.vibrate)navigator.vibrate(25)}catch(e){}
+    return;
+  }
+  const tip=$('shakeTip');
+  if(tip){
+    tip.classList.add('is-shaking');
+    setTimeout(()=>tip.classList.remove('is-shaking'),800);
+  }
+  const die=$('die');
+  if(die){
+    die.classList.add('dice-shaken');
+    setTimeout(()=>die.classList.remove('dice-shaken'),600);
+  }
+  try{if(navigator.vibrate)navigator.vibrate([40,60,40])}catch(e){}
+  shake();
+  pop('🎲 Goyangan HP terdeteksi!','#6c4cf0');
+  void roll();
+}
+
+function handleMotion(e){
+  const acc=e.accelerationIncludingGravity||e.acceleration;
+  if(!acc||acc.x===null||acc.y===null||acc.z===null)return;
+  if(lastAcc){
+    const dx=Math.abs(acc.x-lastAcc.x);
+    const dy=Math.abs(acc.y-lastAcc.y);
+    const dz=Math.abs(acc.z-lastAcc.z);
+    const delta=dx+dy+dz;
+    if(delta>16){
+      const now=Date.now();
+      if(now-lastShakeTs>1150){
+        lastShakeTs=now;
+        triggerShakeRoll();
+      }
+    }
+  }
+  lastAcc={x:acc.x,y:acc.y,z:acc.z};
+}
+
+function bindMotion(){
+  if(motionListenerBound)return;
+  if(typeof DeviceMotionEvent!=='undefined'&&typeof DeviceMotionEvent.requestPermission==='function'){
+    const req=()=>{
+      DeviceMotionEvent.requestPermission().then(st=>{
+        if(st==='granted'){
+          window.addEventListener('devicemotion',handleMotion,{passive:true});
+          motionListenerBound=true;
+        }
+      }).catch(()=>{});
+    };
+    window.addEventListener('touchend',req,{once:true,passive:true});
+    window.addEventListener('click',req,{once:true,passive:true});
+  }else if('DeviceMotionEvent' in window){
+    window.addEventListener('devicemotion',handleMotion,{passive:true});
+    motionListenerBound=true;
+  }
+}
+bindMotion();
 
 window.addEventListener('message', (ev) => {
   if (ev.data && ev.data.type === 'room:ping') {

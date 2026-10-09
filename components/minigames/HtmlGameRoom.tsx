@@ -116,15 +116,44 @@ export default function HtmlGameRoom({
     if (data.type === '__player_join__' && role === 'host') {
       setWaitingOpen(false);
       const peer = { id: String(data.fromPeerId || ''), name: String(data.name || 'Pemain') };
-      if (peer.id && !peersRef.current.some((item) => item.id === peer.id)) {
-        const next = [...peersRef.current, peer];
-        peersRef.current = next;
-        setJoinedPlayers(next);
+      if (peer.id) {
+        setJoinedPlayers((prev) => {
+          const exists = prev.some((item) => item.id === peer.id);
+          const next = exists ? prev.map((item) => (item.id === peer.id ? { ...item, name: peer.name } : item)) : [...prev, peer];
+          peersRef.current = next;
+          return next;
+        });
       }
     } else if (data.type === '__player_leave__' && role === 'host') {
       const next = peersRef.current.filter((peer) => peer.id !== data.fromPeerId);
       peersRef.current = next;
       setJoinedPlayers(next);
+    } else if (data.type === '__player_name_update__') {
+      const peerId = String(data.peerId || data.fromPeerId || '');
+      const newName = String(data.name || 'Pemain').slice(0, 20);
+      if (peerId) {
+        setJoinedPlayers((prev) => {
+          const next = prev.map((peer) => (peer.id === peerId ? { ...peer, name: newName } : peer));
+          peersRef.current = next;
+          return next;
+        });
+      }
+      postToGame('snake:player-name-update', { playerId: peerId, name: newName });
+    } else if (data.type === '__peer_list__') {
+      const peers = Array.isArray(data.players) ? data.players : [];
+      if (role === 'guest') {
+        const others = peers.filter((p: any) => p.id && p.id !== voiceRef.current?.localPeerId);
+        if (others.length > 0) {
+          const mapped = others.map((p: any) => ({ id: String(p.id), name: String(p.name || 'Pemain') }));
+          peersRef.current = mapped;
+          setJoinedPlayers(mapped);
+        }
+      }
+      peers.forEach((p: any) => {
+        if (p.id && p.name) {
+          postToGame('snake:player-name-update', { playerId: String(p.id), name: String(p.name) });
+        }
+      });
     }
     if (data.type === '__html_game_broadcast__') {
       const fromPeerId = String(data.fromPeerId || '');
@@ -218,7 +247,45 @@ export default function HtmlGameRoom({
     } catch { tell('Mode layar penuh tidak didukung browser ini.'); }
   };
 
-    useEffect(() => {
+  const handleNameChange = (val: string) => {
+    const nextName = val.slice(0, 20);
+    setPlayerName(nextName);
+    postToGame('snake:player-name-update', { playerId: voice.localPeerId, name: nextName });
+    if (role !== 'none') {
+      sendRoomMessage({ type: '__player_name_update__', peerId: voice.localPeerId, name: nextName });
+    }
+  };
+
+  useEffect(() => {
+    let lastAcc: { x: number; y: number; z: number } | null = null;
+    let lastShake = 0;
+    const onMotion = (event: DeviceMotionEvent) => {
+      const acc = event.accelerationIncludingGravity || event.acceleration;
+      if (!acc || acc.x === null || acc.y === null || acc.z === null) return;
+      if (lastAcc) {
+        const delta = Math.abs(acc.x - lastAcc.x) + Math.abs(acc.y - lastAcc.y) + Math.abs(acc.z - lastAcc.z);
+        if (delta > 16) {
+          const now = Date.now();
+          if (now - lastShake > 1100) {
+            lastShake = now;
+            postToGame('snake:shake');
+          }
+        }
+      }
+      lastAcc = { x: acc.x, y: acc.y, z: acc.z };
+    };
+
+    if (typeof window !== 'undefined' && 'DeviceMotionEvent' in window) {
+      window.addEventListener('devicemotion', onMotion, { passive: true });
+    }
+    return () => {
+      if (typeof window !== 'undefined' && 'DeviceMotionEvent' in window) {
+        window.removeEventListener('devicemotion', onMotion);
+      }
+    };
+  }, [postToGame]);
+
+  useEffect(() => {
     postToGame('room:ping', { pingMs: voice.pingMs, pingQuality: voice.pingQuality });
   }, [voice.pingMs, voice.pingQuality, postToGame]);
   const roomLabel = role === 'none'
@@ -256,7 +323,7 @@ export default function HtmlGameRoom({
           <button type="button" className="snake-html-back" onClick={() => router.push(backHref)} aria-label="Kembali ke Mini Games">
             <ArrowLeft size={18} /><span>Mini Games</span>
           </button>
-          <label className="snake-html-name"><span>Nama</span><input value={playerName} onChange={(event) => setPlayerName(event.target.value.slice(0, 20))} maxLength={20} aria-label="Nama pemain" /></label>
+          <label className="snake-html-name"><span>Nama</span><input value={playerName} onChange={(event) => handleNameChange(event.target.value)} maxLength={20} aria-label="Nama pemain" /></label>
           <div className="snake-html-audio" aria-label="Kontrol game dan audio room">
             {/* Real-time P2P Network Ping Badge (Selalu Terlihat) */}
             <div
@@ -301,7 +368,7 @@ export default function HtmlGameRoom({
         </section>
 
         <div ref={frameRef} className={`snake-html-game-frame ${isFullscreen ? 'is-fullscreen' : ''}`}>
-          <iframe ref={iframeRef} src={src} title={title} allow="microphone; autoplay; fullscreen" allowFullScreen onLoad={() => {
+          <iframe ref={iframeRef} src={src} title={title} allow="microphone; autoplay; fullscreen; accelerometer; gyroscope" allowFullScreen onLoad={() => {
             postToGame('html-room:fullscreen-state', { active: Boolean(document.fullscreenElement) });
             postToGame('html-room:state', {
               role,

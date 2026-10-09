@@ -35,6 +35,7 @@ function SnakeLaddersRoomBridge() {
       role: room.role,
       joinedPeers: room.joinedPlayers,
       localPeerId: room.localPeerId,
+      playerName: room.playerName,
     });
   }, [room]);
 
@@ -145,6 +146,21 @@ function SnakeLaddersRoomBridge() {
       room.postToGame('snake:apply-state', { state: message.state });
       return;
     }
+    if (message.type === '__player_name_update__') {
+      const peerId = String(message.peerId || message.fromPeerId || '');
+      const newName = String(message.name || '');
+      if (peerId && newName && snapshotRef.current) {
+        const target = snapshotRef.current.players.find((p) => p.id === peerId);
+        if (target) {
+          target.name = newName;
+          if (room.role === 'host') {
+            room.sendRoomMessage({ type: '__snake_game_state__', state: snapshotRef.current });
+          }
+        }
+      }
+      room.postToGame('snake:player-name-update', { playerId: peerId, name: newName });
+      return;
+    }
     if (message.type === '__snake_roll_request__' && room.role === 'host') {
       const currentTurn = snapshotRef.current?.turn ?? 0;
       const currentPlayer = snapshotRef.current?.players?.[currentTurn];
@@ -155,6 +171,17 @@ function SnakeLaddersRoomBridge() {
       }
     }
   }, [room]);
+
+  useEffect(() => {
+    if (room.role === 'host' && snapshotRef.current && room.playerName) {
+      const hostPlayer = snapshotRef.current.players.find((p) => p.id === room.localPeerId);
+      if (hostPlayer && hostPlayer.name !== room.playerName) {
+        hostPlayer.name = room.playerName;
+        room.sendRoomMessage({ type: '__snake_game_state__', state: snapshotRef.current });
+        room.postToGame('snake:player-name-update', { playerId: room.localPeerId, name: room.playerName });
+      }
+    }
+  }, [room.playerName, room.role, room.localPeerId, room]);
 
   const registerGameMessageHandler = room.registerGameMessageHandler;
   const registerRoomMessageHandler = room.registerRoomMessageHandler;
