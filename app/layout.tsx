@@ -328,8 +328,51 @@ export default function RootLayout({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdStructuredData) }}
         />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                function isolateExtensionElements() {
+                  try {
+                    var el = document.getElementById('chromane-theme-root');
+                    if (el && el.parentElement === document.body) {
+                      document.head.appendChild(el);
+                    }
+                    if (document.body) {
+                      var children = document.body.children;
+                      for (var i = 0; i < children.length; i++) {
+                        var node = children[i];
+                        if (node && node.id && node.id.indexOf('chromane') !== -1 && node.parentElement === document.body) {
+                          document.head.appendChild(node);
+                        }
+                      }
+                    }
+                  } catch (e) {}
+                }
+                isolateExtensionElements();
+                if (typeof MutationObserver !== 'undefined') {
+                  new MutationObserver(function() {
+                    isolateExtensionElements();
+                  }).observe(document.documentElement, { childList: true, subtree: true });
+                }
+              })();
+            `,
+          }}
+        />
       </head>
       <body suppressHydrationWarning>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              try {
+                var el = document.getElementById('chromane-theme-root');
+                if (el && el.parentElement === document.body) {
+                  document.head.appendChild(el);
+                }
+              } catch(e) {}
+            `,
+          }}
+        />
         <LanguageProvider>{children}</LanguageProvider>
       </body>
     </html>

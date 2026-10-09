@@ -15,7 +15,7 @@ export default function HomeBackgroundVideo() {
   }, []);
 
   return (
-    <div className="home-video-bg-container" aria-hidden="true">
+    <div className="home-video-bg-container" aria-hidden="true" suppressHydrationWarning>
       {canLoadVideo ? (
         <video
           autoPlay
