@@ -103,13 +103,33 @@ button.pri:active{box-shadow:0 0 0 #4a30c4}
 .ping-hud.ping-good{color:#16a34a;background:rgba(34,197,94,.12);border-color:rgba(34,197,94,.25)}
 .ping-hud.ping-good .pdot{background:#22c55e;box-shadow:0 0 6px #22c55e}
 .ping-hud.ping-med{color:#d97706;background:rgba(245,158,11,.12);border-color:rgba(245,158,11,.25)}
-.ping-hud.ping-med .pdot{background:#f59e0b}
-.ping-hud.ping-bad{color:#dc2626;background:rgba(239,68,68,.12);border-color:rgba(239,68,68,.25)}
-.ping-hud.ping-bad .pdot{background:#ef4444}
+.turn-alert{position:fixed;top:4.2rem;left:50%;transform:translateX(-50%) translateY(-24px) scale(.92);z-index:99;pointer-events:none;opacity:0;transition:all .35s cubic-bezier(.175,.885,.32,1.275)}
+.turn-alert.show{opacity:1;transform:translateX(-50%) translateY(0) scale(1)}
+.turn-alert-card{display:flex;align-items:center;gap:.75rem;padding:.55rem 1.25rem;background:rgba(255,255,255,.96);backdrop-filter:blur(14px);border:1.5px solid var(--line);border-radius:99px;box-shadow:0 14px 40px rgba(42,39,35,.24),0 0 0 1px rgba(255,255,255,.9);white-space:nowrap}
+.turn-alert-dot{width:14px;height:14px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 2px rgba(0,0,0,.15);flex:none;animation:pulse-dot 1.2s infinite}
+@keyframes pulse-dot{0%,100%{transform:scale(1)}50%{transform:scale(1.25)}}
+.turn-alert-text{display:flex;flex-direction:column;line-height:1.2;text-align:left}
+.turn-alert-title{font-size:.95rem;font-weight:700;color:var(--ink);letter-spacing:-.01em}
+.turn-alert-sub{font-size:.72rem;color:var(--mut);font-weight:600}
+.turn-alert.is-my-turn .turn-alert-card{border-color:var(--acc);background:linear-gradient(135deg,#ffffff,#f3efff);box-shadow:0 16px 44px rgba(108,76,240,.32),0 0 0 2px var(--acc)}
+.turn-alert.is-my-turn .turn-alert-title{color:var(--acc)}
+.turn-alert.is-bonus .turn-alert-card{border-color:#e8a200;background:linear-gradient(135deg,#ffffff,#fff9e6);box-shadow:0 16px 44px rgba(232,162,0,.32),0 0 0 2px #e8a200}
+.turn-alert.is-bonus .turn-alert-title{color:#b37d00}
+.rollrow button.my-turn-highlight{animation:pulse-btn 1.2s infinite alternate;box-shadow:0 4px 20px rgba(108,76,240,.55);border-color:#5335d6}
+@keyframes pulse-btn{0%{transform:scale(1)}100%{transform:scale(1.05)}}
 
 </style>
 </head>
 <body>
+<div class="turn-alert" id="turnAlert" aria-live="assertive">
+  <div class="turn-alert-card">
+    <span class="turn-alert-dot" id="turnAlertDot"></span>
+    <div class="turn-alert-text">
+      <div class="turn-alert-title" id="turnAlertTitle">Giliran Kamu!</div>
+      <div class="turn-alert-sub" id="turnAlertSub">Lempar dadu untuk melangkah</div>
+    </div>
+  </div>
+</div>
 <header>
   <div class="top-row">
     <div class="eyebrow">Mini Games</div>
@@ -324,11 +344,42 @@ function follow(posn){
 }
 function place(i,posn,dur){const el=$('pw'+i),p=pos(posn);el.style.transition=`transform ${dur}ms ease-in-out`;el.style.transform=`translate(${p.x+OFF[i][0]}px,${p.y+OFF[i][1]+3}px)`}
 function ui(){
-  const P=players[turn];$('tdot').style.background=P.color;$('tname').textContent=over?'Selesai':`Giliran: ${P.name}`;
-  $('roll').disabled=busy||over||P.cpu||(onlineGame&&P.id!==localPeerId);
+  const P=players[turn];if(!P)return;
+  $('tdot').style.background=P.color;$('tname').textContent=over?'Selesai':`Giliran: ${P.name}`;
+  const isMyTurn=!busy&&!over&&!P.cpu&&(!onlineGame||P.id===localPeerId);
+  const rollBtn=$('roll');
+  rollBtn.disabled=!isMyTurn;
+  rollBtn.classList.toggle('my-turn-highlight',isMyTurn);
   $('pl').innerHTML=players.map(p=>`<div><span class="dot" style="background:${p.color}"></span><b>${p.name}</b><span>blok ${p.pos}</span></div>`).join('');
   players.forEach((_,i)=>{const e=$('pw'+i);if(e)e.classList.toggle('cur',i===turn&&!over)});
 }
+
+let turnAlertTimer=null;
+function showTurnAlert(nextPlayer,isBonus){
+  const el=$('turnAlert');if(!el||!nextPlayer)return;
+  const isMe=onlineGame?(nextPlayer.id===localPeerId):(!nextPlayer.cpu);
+  const dot=$('turnAlertDot'),title=$('turnAlertTitle'),sub=$('turnAlertSub');
+  if(dot)dot.style.background=nextPlayer.color||'#6c4cf0';
+  el.className='turn-alert';
+  if(isBonus){
+    el.classList.add('is-bonus');
+    if(title)title.textContent=isMe?'🔥 BONUS 6! Lempar Sekali Lagi!':`🔥 BONUS 6! ${nextPlayer.name} Lempar Lagi!`;
+    if(sub)sub.textContent=isMe?'Kamu dapat kesempatan lempar dadu tambahan!':`Menunggu ${nextPlayer.name} melempar dadu...`;
+  }else if(isMe){
+    el.classList.add('is-my-turn');
+    if(title)title.textContent='🎯 GILIRAN KAMU!';
+    if(sub)sub.textContent='Tekan "Lempar dadu" sekarang!';
+  }else{
+    if(title)title.textContent=`⏳ Giliran: ${nextPlayer.name}`;
+    if(sub)sub.textContent=`Menunggu ${nextPlayer.name} melempar dadu...`;
+  }
+  const rollBtn=$('roll');
+  if(rollBtn)rollBtn.classList.toggle('my-turn-highlight',isMe&&!busy&&!over);
+  el.classList.add('show');
+  clearTimeout(turnAlertTimer);
+  turnAlertTimer=setTimeout(()=>{el.classList.remove('show')},2400);
+}
+
 function start(){
   cancelCpuTurn();
   turnActionId++;
@@ -341,6 +392,7 @@ function start(){
   over=false;busy=false;moves=0;turn=0;
   players=PCOL.slice(0,np===1?2:np).map((c,i)=>({id:`local-${i}`,color:c,pos:1,cpu:np===1&&i===1,name:np===1?(i?'Komputer':'Kamu'):'Pemain '+(i+1)}));
   renderStartedGame();
+  showTurnAlert(players[0],false);
 }
 function renderStartedGame(){
   const pawns=players.map((p,i)=>`<g class="pw" id="pw${i}"><ellipse rx="11" ry="4.5" cy="1" fill="rgba(40,30,20,.28)"/><g class="b"><path d="M-9 0Q-9 -11 -4.5 -15A6.5 6.5 0 1 1 4.5 -15Q9 -11 9 0Z" fill="${p.color}" stroke="#fff" stroke-width="2"/><circle cx="-2.5" cy="-21" r="2" fill="rgba(255,255,255,.65)"/></g></g>`).join('');
@@ -355,39 +407,51 @@ function startOnline(snapshot){
   cancelCpuTurn();turnActionId++;
   onlineGame=true;gameSnapshot=snapshot;N=snapshot.N;np=snapshot.np;L=snapshot.L;S=snapshot.S;elev=snapshot.elev;jump={};L.forEach(([a,b])=>jump[a]=b);S.forEach(([h,t])=>jump[h]=t);
   players=snapshot.players.map((p,i)=>({...p,cpu:false,color:p.color||PCOL[i%PCOL.length]}));turn=0;moves=0;over=false;busy=false;
-  $('menu').classList.add('hide');$('win').classList.remove('on');renderStartedGame();publishGameState();
+  $('menu').classList.add('hide');$('win').classList.remove('on');renderStartedGame();
+  showTurnAlert(players[0],false);
+  publishGameState();
 }
 function applyGameState(snapshot){
   if(!snapshot?.players?.length)return;
   const needsStart=!onlineGame||N!==snapshot.N||players.length!==snapshot.players.length;
   onlineGame=true;gameSnapshot=snapshot;N=snapshot.N;np=snapshot.np;L=snapshot.L;S=snapshot.S;elev=snapshot.elev;jump={};L.forEach(([a,b])=>jump[a]=b);S.forEach(([h,t])=>jump[h]=t);
-  players=snapshot.players.map((p,i)=>({...p,cpu:false,color:p.color||PCOL[i%PCOL.length]}));turn=snapshot.turn;moves=snapshot.moves;over=snapshot.over;busy=false;
-  if(needsStart){renderStartedGame();players.forEach((p,i)=>place(i,p.pos,0));}else{
-    players.forEach((p,i)=>place(i,p.pos,0));setFace(1);ui();
+  if(needsStart){
+    players=snapshot.players.map((p,i)=>({...p,cpu:false,color:p.color||PCOL[i%PCOL.length]}));turn=snapshot.turn;moves=snapshot.moves;over=snapshot.over;busy=false;
+    renderStartedGame();players.forEach((p,i)=>place(i,p.pos,0));
+    showTurnAlert(players[turn],false);
+  }else if(!busy){
+    snapshot.players.forEach((p,i)=>{if(players[i]){players[i].pos=p.pos;place(i,p.pos,0)}});
+    turn=snapshot.turn;moves=snapshot.moves;over=snapshot.over;
+    ui();
     if(over&&snapshot.winnerId){const winner=players.find(p=>p.id===snapshot.winnerId);if(winner)finish(winner)}
   }
 }
 function publishGameState(){if(onlineGame&&!over||onlineGame&&players.length)sendParent('snake:game-state',{state:exportGameState()})}
 function cpuTurn(){cancelCpuTurn();cpuTimeout=setTimeout(()=>{cpuTimeout=null;if(!over&&players[turn]?.cpu)void roll()},900)}
-async function roll(){
-  if(busy||over)return;
-  if(onlineGame&&onlineRole==='guest'){sendParent('snake:roll-request',{playerId:players[turn]?.id});return}
-  if(onlineGame&&players[turn]?.id!==localPeerId&&!authorizedRemoteRoll){if(onlineRole==='guest')sendParent('snake:roll-request',{playerId:players[turn]?.id});return}
-  authorizedRemoteRoll=false;
-  busy=true;ui();const P=players[turn],i=turn,v=rand(1,6);
-  const curAction=++turnActionId;
+
+async function performTurnMove(turnIdx,v){
+  if(over)return;
+  busy=true;turn=turnIdx;
+  const P=players[turn];if(!P){busy=false;return;}
+  const i=turn,curAction=++turnActionId;
+  ui();
+
   try{
-    await throwDice(v,P.color);if(over||curAction!==turnActionId)return;
+    // Dadu 2D dan 3D berputar di kedua layar (Host & Guest sama-sama melihat!)
+    await throwDice(v,P.color);
+    if(over||curAction!==turnActionId)return;
+
     setFace(v);say(`${P.name} dapat ${v}.`);moves++;await sleep(150);
     if(over||curAction!==turnActionId)return;
-    let c=P.pos,d=1;
+
+    let c=Number(P.pos)||1,d=1;
     for(let k=0;k<v;k++){
       if(c===N*N)d=-1;c+=d;place(i,c,200);follow(c);P.pos=c;ui();await sleep(210);
       if(over||curAction!==turnActionId)return;
     }
     if(jump[c]){
       await sleep(300);if(over||curAction!==turnActionId)return;
-      const dest=jump[c],up=dest>c,a=pos(c),b=pos(dest),dur=up?1000:850;
+      const dest=Number(jump[c]),up=dest>c,a=pos(c),b=pos(dest),dur=up?1000:850;
       pop(up?`Naik tangga! +${dest-c}`:`Digigit ular! ${dest-c}`,up?'#6c4cf0':'#e0823a');
       say(up?`${P.name} naik tangga ke blok ${dest}.`:`${P.name} digigit ular, turun ke blok ${dest}.`);
       place(i,dest,dur);follow(dest);trail(a,b,dur,up?['#ffd23f','#9be8c8','#cdbfff','#fff']:['#f08a4b','#c97b3a','#8d6a4a']);
@@ -395,16 +459,53 @@ async function roll(){
       if(over||curAction!==turnActionId)return;
       fx(b.x,b.y-6,up?['#ffd23f','#9be8c8','#fff']:['#f08a4b','#8d6a4a'],12,34,5);if(!up)shake();ui();
     }
-    if(c===N*N){over=true;busy=false;ui();publishGameState();setTimeout(()=>finish(P),500);return}
-    if(v===6)say(`${P.name} dapat 6, lempar sekali lagi!`);else turn=(turn+1)%players.length;
+    if(c===N*N){
+      over=true;busy=false;ui();
+      if(onlineGame&&onlineRole==='host')publishGameState();
+      setTimeout(()=>finish(P),500);
+      return;
+    }
+    if(v===6){
+      say(`${P.name} dapat 6, lempar sekali lagi!`);
+      showTurnAlert(P,true);
+    }else{
+      turn=(turn+1)%players.length;
+      showTurnAlert(players[turn],false);
+    }
   }catch(err){
     console.error(err);
   }finally{
     if(curAction===turnActionId&&!over){
-      busy=false;
-      ui();publishGameState();if(players[turn]?.cpu)cpuTurn();
+      busy=false;ui();
+      if(onlineGame&&onlineRole==='host'){
+        publishGameState();
+      }
+      if(players[turn]?.cpu)cpuTurn();
     }
   }
+}
+
+async function roll(){
+  if(busy||over)return;
+  if(onlineGame&&onlineRole==='guest'){
+    const die=$('die');if(die)die.classList.add('rolling');
+    sendParent('snake:roll-request',{playerId:players[turn]?.id});
+    return;
+  }
+  if(onlineGame&&players[turn]?.id!==localPeerId&&!authorizedRemoteRoll){
+    if(onlineRole==='guest'){
+      const die=$('die');if(die)die.classList.add('rolling');
+      sendParent('snake:roll-request',{playerId:players[turn]?.id});
+    }
+    return;
+  }
+  authorizedRemoteRoll=false;
+  const P=players[turn];if(!P)return;
+  const v=rand(1,6);
+  if(onlineGame&&onlineRole==='host'){
+    sendParent('snake:dice-roll',{turnIndex:turn,diceValue:v,playerId:P.id});
+  }
+  await performTurnMove(turn,v);
 }
 function finish(P){
   $('wdot').style.background=P.color;$('wname').textContent=`${P.name} menang!`;$('winfo').textContent=`Papan ${N}×${N} · ${moves} kali lempar dadu`;
@@ -438,6 +539,8 @@ window.addEventListener('message',event=>{
     if(onlineRole==='guest'){onlineIntent='online';np=data.np;N=data.N;drawOpts();gen();preview()}
   }else if(data.type==='snake:start-online'&&(onlineRole==='guest'||onlineRole==='host')){
     localPeerId=data.state?.localPeerId||localPeerId;startOnline(data.state);
+  }else if(data.type==='snake:dice-roll'){
+    void performTurnMove(Number(data.turnIndex),Number(data.diceValue));
   }else if(data.type==='snake:apply-state'&&onlineRole==='guest'){
     applyGameState(data.state);
   }else if(data.type==='snake:remote-roll'&&onlineRole==='host'){

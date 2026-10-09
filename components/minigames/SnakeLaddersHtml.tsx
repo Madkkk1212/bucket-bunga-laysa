@@ -96,6 +96,15 @@ function SnakeLaddersRoomBridge() {
       room.sendRoomMessage({ type: '__snake_game_state__', state: message.state });
       return;
     }
+    if (message.type === 'snake:dice-roll' && room.role === 'host') {
+      room.sendRoomMessage({
+        type: '__snake_dice_roll__',
+        turnIndex: message.turnIndex,
+        diceValue: message.diceValue,
+        playerId: message.playerId,
+      });
+      return;
+    }
     if (message.type === 'snake:roll-request' && room.role === 'guest') {
       room.sendRoomMessage({ type: '__snake_roll_request__', playerId: message.playerId });
     }
@@ -121,6 +130,14 @@ function SnakeLaddersRoomBridge() {
       const state = message.state as SnakeSnapshot;
       snapshotRef.current = state;
       room.postToGame('snake:start-online', { state: { ...state, localPeerId: room.localPeerId } });
+      return;
+    }
+    if (message.type === '__snake_dice_roll__' && room.role === 'guest') {
+      room.postToGame('snake:dice-roll', {
+        turnIndex: message.turnIndex,
+        diceValue: message.diceValue,
+        playerId: message.playerId,
+      });
       return;
     }
     if (message.type === '__snake_game_state__' && room.role === 'guest') {
