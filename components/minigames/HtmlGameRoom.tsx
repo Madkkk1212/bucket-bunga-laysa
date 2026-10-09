@@ -231,9 +231,14 @@ export default function HtmlGameRoom({
         const next = peersRef.current.filter((peer) => peer.id !== peerId);
         peersRef.current = next;
         setJoinedPlayers(next);
-        tell('👋 Pemain keluar dari room.');
-      } else if (role === 'guest' && (data.isHost || peerId.includes('host'))) {
-        tell('👋 Host telah menutup room. Kembali ke lobi.');
+        if (next.length === 0) {
+          tell('👋 Pemain lawan telah keluar / tidak kembali. Room dibubarkan.');
+          leaveRoom();
+        } else {
+          tell('👋 Seorang pemain keluar dari room.');
+        }
+      } else if (role === 'guest') {
+        tell('👋 Host telah menutup room atau lawan keluar. Kembali ke lobi.');
         leaveRoom();
       }
     } else if (data.type === '__player_name_update__') {

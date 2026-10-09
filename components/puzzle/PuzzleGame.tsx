@@ -1417,15 +1417,15 @@ export default function PuzzleGame({
       } else if (data.type === '__player_leave__') {
         if (data.isHost) {
           showToast('👋 Host telah menutup room. Kembali ke menu.');
-          if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
-          cancelAnimationFrame(tlRafRef.current);
-          setIsWinOpen(false);
-          setInMenu(true);
-          setRoomRole('none');
-          setRoomCode('');
         } else {
-          showToast('👋 Pemain keluar dari room.');
+          showToast('👋 Teman telah keluar / tidak kembali. Room dibubarkan.');
         }
+        if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
+        cancelAnimationFrame(tlRafRef.current);
+        setIsWinOpen(false);
+        setInMenu(true);
+        setRoomRole('none');
+        setRoomCode('');
         const rec = recRef.current;
         if (rec) {
           rec.pcs.forEach((piece) => {
