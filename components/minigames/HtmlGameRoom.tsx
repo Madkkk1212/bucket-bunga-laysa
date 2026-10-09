@@ -218,6 +218,9 @@ export default function HtmlGameRoom({
     } catch { tell('Mode layar penuh tidak didukung browser ini.'); }
   };
 
+    useEffect(() => {
+    postToGame('room:ping', { pingMs: voice.pingMs, pingQuality: voice.pingQuality });
+  }, [voice.pingMs, voice.pingQuality, postToGame]);
   const roomLabel = role === 'none'
     ? 'Belum ada room online'
     : voice.connectionError || (voice.connectionStatus === 'hosting'
@@ -255,6 +258,14 @@ export default function HtmlGameRoom({
           </button>
           <label className="snake-html-name"><span>Nama</span><input value={playerName} onChange={(event) => setPlayerName(event.target.value.slice(0, 20))} maxLength={20} aria-label="Nama pemain" /></label>
           <div className="snake-html-audio" aria-label="Kontrol game dan audio room">
+            {/* Real-time P2P Network Ping Badge (Selalu Terlihat) */}
+            <div
+              className={`snake-html-ping-badge snake-html-ping--${voice.pingQuality}`}
+              title={`Latensi P2P: ${voice.pingMs === null ? 'belum terhubung' : `${voice.pingMs}ms`}`}
+            >
+              <span className="snake-html-ping-dot" />
+              <span className="snake-html-ping-val">{voice.pingMs === null ? '—' : `${voice.pingMs}ms`}</span>
+            </div>
             <button type="button" className="snake-html-audio-btn snake-html-fullscreen-btn" onClick={toggleFullscreen} aria-label={isFullscreen ? 'Keluar dari layar penuh' : 'Masuk layar penuh'} aria-pressed={isFullscreen}>
               {isFullscreen ? <Minimize2 size={18} /> : <Maximize2 size={18} />}<span>{isFullscreen ? 'Keluar penuh' : 'Layar penuh'}</span>
             </button>

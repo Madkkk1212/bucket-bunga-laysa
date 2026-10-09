@@ -1,4 +1,14 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}
+.ping-hud-congklak{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;background:rgba(201,162,92,.1);border:1px solid rgba(201,162,92,.25);border-radius:99px;font-family:var(--font-display);font-size:.68rem;letter-spacing:.1em;color:var(--gold-hi);margin-top:2px}
+.ping-hud-congklak .pdot{width:6px;height:6px;border-radius:50%;background:#94a3b8}
+.ping-hud-congklak.ping-good{color:#34d399;border-color:rgba(52,211,153,.3);background:rgba(52,211,153,.12)}
+.ping-hud-congklak.ping-good .pdot{background:#10b981;box-shadow:0 0 6px #10b981}
+.ping-hud-congklak.ping-med{color:#fbbf24;border-color:rgba(251,191,36,.3);background:rgba(251,191,36,.12)}
+.ping-hud-congklak.ping-med .pdot{background:#f59e0b}
+.ping-hud-congklak.ping-bad{color:#f87171;border-color:rgba(248,113,113,.3);background:rgba(248,113,113,.12)}
+.ping-hud-congklak.ping-bad .pdot{background:#ef4444}
+
+</style></head><body>
 <title>Congklak 3D</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -109,6 +119,7 @@ button{font:inherit;color:inherit}
 <div class="app">
   <header class="top">
     <div class="brand"><span class="orn l"></span><h1>Congklak</h1><span class="orn r"></span></div>
+    <div id="congklakPing" class="ping-hud-congklak" title="Latensi Jaringan P2P"><span class="pdot"></span><span id="congklakPingVal">-- ms</span></div>
     <p class="sub">Permainan tradisional nusantara</p>
     <p class="sub room-sub" id="roomStatus" aria-live="polite" hidden></p>
     <div class="ctrl">
@@ -185,6 +196,23 @@ button{font:inherit;color:inherit}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 
 <script>
+window.addEventListener('message', (ev) => {
+  if (ev.data && ev.data.type === 'room:ping') {
+    const val = ev.data.pingMs;
+    const hud = document.getElementById('congklakPing');
+    const valEl = document.getElementById('congklakPingVal');
+    if (hud && valEl) {
+      if (val === null || val === undefined) {
+        valEl.textContent = '-- ms';
+        hud.className = 'ping-hud-congklak';
+      } else {
+        valEl.textContent = val + ' ms';
+        hud.className = 'ping-hud-congklak ' + (val < 90 ? 'ping-good' : val < 180 ? 'ping-med' : 'ping-bad');
+      }
+    }
+  }
+});
+
 /*LOGIC-START*/
 // Board indices: 0-6 = pemain 1 (kiri ke kanan), 7 = rumah pemain 1,
 // 8-14 = pemain 2 (kanan ke kiri), 15 = rumah pemain 2. Sowing goes up by one index.

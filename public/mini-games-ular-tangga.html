@@ -94,11 +94,27 @@ button.pri:active{box-shadow:0 0 0 #4a30c4}
 .card .row{display:flex;gap:.5rem;justify-content:center;flex-wrap:wrap;margin-top:1rem}
 .cft{position:fixed;top:-1rem;width:.6rem;height:.9rem;z-index:90;pointer-events:none;animation:fall 2.8s ease-in forwards;border-radius:2px}
 @keyframes fall{to{transform:translateY(110vh) rotate(540deg);opacity:.8}}
+
+.die.rolling{animation:die-roll .12s ease-in-out infinite alternate}
+@keyframes die-roll{0%{transform:scale(1.12) rotate(-8deg)}100%{transform:scale(1.12) rotate(8deg)}}
+.top-row{display:flex;align-items:center;justify-content:center;gap:.6rem;flex-wrap:wrap}
+.ping-hud{display:inline-flex;align-items:center;gap:5px;padding:3px 8px;background:rgba(0,0,0,.06);border:1px solid rgba(0,0,0,.08);border-radius:99px;font-size:.72rem;font-weight:700;color:var(--mut);transition:all .3s}
+.ping-hud .pdot{width:7px;height:7px;border-radius:50%;background:#94a3b8;transition:background .3s}
+.ping-hud.ping-good{color:#16a34a;background:rgba(34,197,94,.12);border-color:rgba(34,197,94,.25)}
+.ping-hud.ping-good .pdot{background:#22c55e;box-shadow:0 0 6px #22c55e}
+.ping-hud.ping-med{color:#d97706;background:rgba(245,158,11,.12);border-color:rgba(245,158,11,.25)}
+.ping-hud.ping-med .pdot{background:#f59e0b}
+.ping-hud.ping-bad{color:#dc2626;background:rgba(239,68,68,.12);border-color:rgba(239,68,68,.25)}
+.ping-hud.ping-bad .pdot{background:#ef4444}
+
 </style>
 </head>
 <body>
 <header>
-  <div class="eyebrow">Mini Games</div>
+  <div class="top-row">
+    <div class="eyebrow">Mini Games</div>
+    <div id="pingHud" class="ping-hud" title="Latensi Jaringan P2P"><span class="pdot"></span><span id="pingVal">-- ms</span></div>
+  </div>
   <h1>Ular Tangga</h1>
   <div class="bar"><button id="home">Menu</button><button id="redo">Ulang</button><button id="zoom">Zoom</button><button id="fullscreen" aria-label="Masuk layar penuh">Layar penuh</button></div>
 </header>
@@ -253,28 +269,48 @@ function fx(x,y,cols,n,dist,size){
 function trail(a,b,dur,cols){const t0=performance.now(),iv=setInterval(()=>{const u=Math.min(1,(performance.now()-t0)/dur);fx(a.x+(b.x-a.x)*u,a.y+(b.y-a.y)*u-8,cols,3,24,4);if(u>=1)clearInterval(iv)},55)}
 function shake(){const b=$('bd');b.classList.remove('shake');void b.offsetWidth;b.classList.add('shake')}
 async function throwDice(v,color){
-  const ar=$('arena'),dw=$('dwrap'),cube=$('cube'),aw=ar.clientWidth,ah=ar.clientHeight,R={1:[0,0],2:[0,-90],3:[-90,0],4:[90,0],5:[0,90],6:[0,180]}[v];
+  const ar=$('arena'),dw=$('dwrap'),cube=$('cube'),die=$('die');
+  const aw=ar.clientWidth||320,ah=ar.clientHeight||320,R={1:[0,0],2:[0,-90],3:[-90,0],4:[90,0],5:[0,90],6:[0,180]}[v];
+
+  // Efek kocokan dinamis pada dadu panel kontrol (dijamin terlihat di mobile!)
+  let rollTick=0;
+  if(die)die.classList.add('rolling');
+  const rollIv=setInterval(()=>{setFace((rollTick++%6)+1)},65);
+
   dw.getAnimations().forEach(a=>a.cancel());
   cube.style.transition='none';cube.style.transform=`rotateX(${rand(0,360)}deg) rotateY(${rand(0,360)}deg)`;void cube.offsetWidth;
   cube.style.transition='transform 1.05s cubic-bezier(.15,.7,.25,1)';
   cube.style.transform=`rotateX(${R[0]+360*rand(2,4)}deg) rotateY(${R[1]+360*rand(2,4)}deg)`;
   dw.style.opacity=1;
-  const D=1150,an=dw.animate([
-    {transform:`translate(${-aw*.62}px,${ah*.05}px) scale(.5)`,opacity:0,offset:0},
+
+  const D=1150;
+  const startX=-Math.min(aw*.45,120),startY=Math.min(ah*.08,30);
+  const midX=-Math.min(aw*.15,45),midY=-Math.min(ah*.25,75);
+  const an=dw.animate([
+    {transform:`translate(${startX}px,${startY}px) scale(.6)`,opacity:0,offset:0},
     {opacity:1,offset:.12},
-    {transform:`translate(${-aw*.18}px,${-ah*.3}px) scale(1.2)`,offset:.42,easing:'ease-in'},
+    {transform:`translate(${midX}px,${midY}px) scale(1.2)`,offset:.42,easing:'ease-in'},
     {transform:'translate(0,0) scale(1)',offset:.62,easing:'ease-out'},
-    {transform:`translate(${aw*.035}px,${-ah*.1}px) scale(1.05)`,offset:.78,easing:'ease-in'},
+    {transform:'translate(10px,-15px) scale(1.05)',offset:.78,easing:'ease-in'},
     {transform:'translate(0,0) scale(1)',offset:.9},
     {transform:'translate(0,0) scale(1)',offset:1}],{duration:D,fill:'forwards'});
+
   setTimeout(()=>{
+    clearInterval(rollIv);
+    if(die)die.classList.remove('rolling');
+    setFace(v); // Kunci ke angka dadu hasil kocokan
+
     const cx=aw/2,cy=ah*.46+30;
     if(v===6){burst(ar,cx,cy,['#ffd23f','#ffb703','#fff3b0','#ff8fab'],26,110,9);ring(ar,cx,cy,'#ffb703');ring(ar,cx,cy-6,'#ffd23f');pop('BONUS! Lempar lagi','#e8a200')}
     else if(v===1){burst(ar,cx,cy,['#cfc8ba','#e4ddcf'],10,50,7);ring(ar,cx,cy,'#cfc8ba')}
     else{burst(ar,cx,cy,[color,'#fff','#ffd23f'],18,85,8);ring(ar,cx,cy,color)}
     shake();try{navigator.vibrate&&navigator.vibrate(v===6?[30,40,30]:25)}catch(e){}
   },D*.62);
+
   await sleep(D+420);
+  clearInterval(rollIv);
+  if(die)die.classList.remove('rolling');
+  setFace(v);
   dw.animate([{opacity:1,transform:'translate(0,0) scale(1)'},{opacity:0,transform:'translate(0,-24px) scale(.7)'}],{duration:220,fill:'forwards'});
   await sleep(230);
 }
@@ -413,6 +449,23 @@ window.addEventListener('message',event=>{
 syncFullscreenButton();
 document.addEventListener('keydown',e=>{if(e.code==='Space'&&!$('roll').disabled&&$('menu').classList.contains('hide')){e.preventDefault();roll()}});
 gen();setFace(1);drawOpts();preview();sendParent('snake:ready',{np,N});
+
+window.addEventListener('message', (ev) => {
+  if (ev.data && ev.data.type === 'room:ping') {
+    const val = ev.data.pingMs;
+    const hud = $('pingHud'), pv = $('pingVal');
+    if (hud && pv) {
+      if (val === null || val === undefined) {
+        pv.textContent = '-- ms';
+        hud.className = 'ping-hud';
+      } else {
+        pv.textContent = val + ' ms';
+        hud.className = 'ping-hud ' + (val < 90 ? 'ping-good' : val < 180 ? 'ping-med' : 'ping-bad');
+      }
+    }
+  }
+});
+
 </script>
 </body>
 </html>

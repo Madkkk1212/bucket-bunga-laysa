@@ -24477,3 +24477,58 @@ body.modal-backdrop-blur-active .ds-root {
 @media (prefers-reduced-motion: reduce) {
   .snake-html-page *, .snake-html-page *::before, .snake-html-page *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; }
 }
+
+
+/* ── Real-time P2P Ping Badge for HtmlGameRoom (Ular Tangga, Congklak) ── */
+.snake-html-ping-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: var(--r-full);
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  white-space: nowrap;
+  user-select: none;
+}
+.snake-html-ping-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #94a3b8;
+  transition: all 0.2s ease;
+}
+.snake-html-ping-val {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+.snake-html-ping--good {
+  color: #15803d;
+  background: rgba(240, 253, 244, 0.95);
+  border-color: rgba(34, 197, 94, 0.35);
+}
+.snake-html-ping--good .snake-html-ping-dot {
+  background: #22c55e;
+  box-shadow: 0 0 8px rgba(34, 197, 94, 0.7);
+}
+.snake-html-ping--medium {
+  color: #b45309;
+  background: rgba(254, 252, 232, 0.95);
+  border-color: rgba(245, 158, 11, 0.35);
+}
+.snake-html-ping--medium .snake-html-ping-dot {
+  background: #f59e0b;
+  box-shadow: 0 0 8px rgba(245, 158, 11, 0.7);
+}
+.snake-html-ping--poor {
+  color: #b91c1c;
+  background: rgba(254, 242, 242, 0.95);
+  border-color: rgba(239, 68, 68, 0.35);
+}
+.snake-html-ping--poor .snake-html-ping-dot {
+  background: #ef4444;
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.7);
+}

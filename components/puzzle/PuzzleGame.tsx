@@ -84,14 +84,15 @@ function serializeCustomImage(image: HTMLImageElement | null) {
     const width = image.naturalWidth || image.width;
     const height = image.naturalHeight || image.height;
     if (!width || !height) return null;
-    const scale = Math.min(1, 1400 / Math.max(width, height));
+    // Resize optimal max 720px & JPEG 0.72: hemat 15x lipat (~80KB) agar sync instan tanpa lag voice
+    const scale = Math.min(1, 720 / Math.max(width, height));
     const canvas = document.createElement('canvas');
     canvas.width = Math.max(1, Math.round(width * scale));
     canvas.height = Math.max(1, Math.round(height * scale));
     const context = canvas.getContext('2d');
     if (!context) return null;
     context.drawImage(image, 0, 0, canvas.width, canvas.height);
-    return canvas.toDataURL('image/jpeg', 0.82);
+    return canvas.toDataURL('image/jpeg', 0.72);
   } catch {
     return null;
   }

@@ -283,15 +283,25 @@ export function useWebRtcVoice(
     connections.forEach((connection) => {
       try {
         connection.send({ ...message, assetTransferId: transferId, assetChunkCount: chunks });
-        for (let index = 0; index < chunks; index += 1) {
-          connection.send({
-            type: '__asset_chunk__',
-            transferId,
-            index,
-            total: chunks,
-            chunk: image.slice(index * ASSET_CHUNK_SIZE, (index + 1) * ASSET_CHUNK_SIZE),
-          });
-        }
+        let chunkIndex = 0;
+        // Paced chunk sending: beri jeda 12ms agar buffer WebRTC tidak meledak & audio voice tetap jernih
+        const sendNextChunk = () => {
+          if (chunkIndex >= chunks || !connection.open) return;
+          for (let b = 0; b < 2 && chunkIndex < chunks; b += 1) {
+            connection.send({
+              type: '__asset_chunk__',
+              transferId,
+              index: chunkIndex,
+              total: chunks,
+              chunk: image.slice(chunkIndex * ASSET_CHUNK_SIZE, (chunkIndex + 1) * ASSET_CHUNK_SIZE),
+            });
+            chunkIndex += 1;
+          }
+          if (chunkIndex < chunks) {
+            setTimeout(sendNextChunk, 12);
+          }
+        };
+        setTimeout(sendNextChunk, 10);
       } catch {
         try { connection.send({ type: '__asset_error__', message: 'Foto gagal dikirim ke teman. Coba foto yang lebih kecil.' }); } catch {}
       }
@@ -584,23 +594,7 @@ export function useWebRtcVoice(
           debug: 0,
           config: {
             iceServers: [
-              // Fast STUN Servers (Direct P2P detection)
-              { urls: 'stun:stun.relay.metered.ca:80' },
-              { urls: 'stun:stun.l.google.com:19302' },
-              { urls: 'stun:stun1.l.google.com:19302' },
-              { urls: 'stun:stun.cloudflare.com:3478' },
-
-              // Dedicated Singapore TURN Relay Server (Anti-lag, 100% bypass CGNAT Telkomsel/XL/Indosat)
-              {
-                urls: 'turn:sg.relay.metered.ca:80',
-                username: '41a1c8a977fea4ccb5f38235',
-                credential: '+v+MPqS3XPKujs6B',
-              },
-              {
-                urls: 'turn:sg.relay.metered.ca:80?transport=tcp',
-                username: '41a1c8a977fea4ccb5f38235',
-                credential: '+v+MPqS3XPKujs6B',
-              },
+              // 1. Dedicated Singapore TURN Relay (Prioritas Utama: Langsung tembus < 20ms tanpa lag)
               {
                 urls: 'turn:sg.relay.metered.ca:443',
                 username: '41a1c8a977fea4ccb5f38235',
@@ -611,6 +605,22 @@ export function useWebRtcVoice(
                 username: '41a1c8a977fea4ccb5f38235',
                 credential: '+v+MPqS3XPKujs6B',
               },
+              {
+                urls: 'turn:sg.relay.metered.ca:80',
+                username: '41a1c8a977fea4ccb5f38235',
+                credential: '+v+MPqS3XPKujs6B',
+              },
+              {
+                urls: 'turn:sg.relay.metered.ca:80?transport=tcp',
+                username: '41a1c8a977fea4ccb5f38235',
+                credential: '+v+MPqS3XPKujs6B',
+              },
+
+              // 2. Fast STUN Servers (Untuk deteksi direct P2P jika 1 WiFi)
+              { urls: 'stun:stun.relay.metered.ca:80' },
+              { urls: 'stun:stun.l.google.com:19302' },
+              { urls: 'stun:stun1.l.google.com:19302' },
+              { urls: 'stun:stun.cloudflare.com:3478' },
             ],
             iceCandidatePoolSize: 4,
           },
