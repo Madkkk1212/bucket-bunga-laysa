@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { useDesign } from '@/context/DesignContext';
 import { useLanguage } from '@/context/LanguageContext';
 import NavigationButtons from '../designer/NavigationButtons';
@@ -33,8 +34,9 @@ interface CardTemplate {
 }
 
 export default function StepText() {
-  const { design, setText, setStep } = useDesign();
+  const { design, setText, setStep, isPremiumUnlocked, isCardVip } = useDesign();
   const { t } = useLanguage();
+  const [showVipModal, setShowVipModal] = useState(false);
   const { text } = design;
 
   const cardTemplates: CardTemplate[] = [
@@ -200,17 +202,33 @@ export default function StepText() {
           </label>
 
           <label
-            className={`card-style-option ${text.cardStyle === 'elegant' ? 'active' : ''}`}
-            onClick={() => setText({ cardStyle: 'elegant' })}
+            className={`card-style-option ${text.cardStyle === 'elegant' ? 'active' : ''} ${
+              isCardVip && isCardVip('elegant') && !isPremiumUnlocked ? 'style-locked' : ''
+            }`}
+            onClick={() => {
+              const isLocked = Boolean(isCardVip ? isCardVip('elegant') : true) && !isPremiumUnlocked;
+              if (isLocked) {
+                setShowVipModal(true);
+                return;
+              }
+              setText({ cardStyle: 'elegant' });
+            }}
           >
             <input
               type="radio"
               name="cardStyle"
               checked={text.cardStyle === 'elegant'}
-              onChange={() => setText({ cardStyle: 'elegant' })}
+              onChange={() => {
+                const isLocked = Boolean(isCardVip ? isCardVip('elegant') : true) && !isPremiumUnlocked;
+                if (!isLocked) {
+                  setText({ cardStyle: 'elegant' });
+                }
+              }}
             />
             <div className="card-style-preview style-elegant">
-              <span className="card-style-chip gold">GOLD</span>
+              <span className="card-style-chip gold">
+                {isCardVip && isCardVip('elegant') ? '👑 VIP GOLD' : 'GOLD'}
+              </span>
               <span className="card-style-label">{t('card_style_elegant_title')}</span>
               <span className="card-style-sub">{t('card_style_elegant_sub')}</span>
             </div>

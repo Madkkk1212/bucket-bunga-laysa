@@ -78,10 +78,10 @@ export default function TemplateSelector({
                   )}
                 </div>
 
-                {/* Badge: Free vs VIP */}
+                {/* Badge: Standar vs VIP */}
                 {tmpl.isFree ? (
                   <span className="gift-template-badge-free">
-                    FREE
+                    {isEn ? 'STANDARD' : 'STANDAR'}
                   </span>
                 ) : (
                   <span className="gift-template-badge-vip">

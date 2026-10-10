@@ -182,7 +182,7 @@ export interface DesignContextType {
   setSelectedFlowerUid: (uid: string | null) => void;
   /** Status apakah buket sedang aktif/terpilih di canvas untuk rotasi & scale */
   isBucketSelected: boolean;
-  setIsBucketSelected: (selected: boolean) => void;
+  setIsBucketSelected: (selected: boolean | ((prev: boolean) => boolean)) => void;
   /** Hovered flower UID for highlighting buried flowers on canvas */
   hoveredFlowerUid: string | null;
   setHoveredFlowerUid: (uid: string | null) => void;
@@ -240,5 +240,13 @@ export interface DesignContextType {
   /** Status modal peringatan ketika kuota maksimal bunga telah tercapai */
   isFlowerLimitModalOpen: boolean;
   setIsFlowerLimitModalOpen: (open: boolean) => void;
+  /** Helper pengecekan status VIP item secara dinamis dari database */
+  isFlowerVip?: (flowerId: string) => boolean;
+  isBucketVip?: (bucketId: string) => boolean;
+  isCardVip?: (cardStyle: string) => boolean;
+  isTemplateVip?: (templateId: string) => boolean;
+  checkDesignVipViolations?: (customDesign?: DesignState) => string[];
+  draftVipViolations?: string[];
+  refreshVipItems?: () => Promise<void>;
 }
 

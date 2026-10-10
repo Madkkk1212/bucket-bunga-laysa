@@ -7,6 +7,7 @@ import { LANDING_TEXT_KEYS, type GiftConfig, type LandingPageTemplateId, type La
 import { DEFAULT_FREE_LIMITS } from '@/types/giftConfig';
 import { sanitizeText, containsProfanity } from '@/utils/textSanitize';
 import { isMasterAccessCode } from '@/lib/masterAccessCodes';
+import { validateDesignVipItems } from '@/lib/vipItems';
 
 // ─── Batas karakter yang divalidasi server ────────────────────────────────
 const LIMITS = {
@@ -93,8 +94,11 @@ export async function POST(req: Request) {
     const cleanCode = (accessCode || '').trim().toUpperCase();
     const dbClient = getAdminClient() || supabase;
 
+    let isUserVip = false;
+
     // 1. Cek apakah menggunakan Master VIP Code
     if (cleanCode && isMasterAccessCode(cleanCode)) {
+      isUserVip = true;
       tierLimits = {
         maxPhotos: 6,
         canUseYouTube: true,
@@ -112,6 +116,7 @@ export async function POST(req: Request) {
         .maybeSingle();
 
       if (codeData) {
+        isUserVip = true;
         let durationDays: number | null = codeData.link_duration_days;
         if (durationDays === undefined || durationDays === null) {
           if (codeData.tier === 'daily') durationDays = 1;
@@ -129,6 +134,20 @@ export async function POST(req: Request) {
           linkDurationDays: durationDays,
         };
       }
+    }
+
+    // ─── Server-Side VIP Enforcement: Periksa item VIP pada desain & template ─
+    const requestedTemplate = config?.templateId;
+    const vipCheck = await validateDesignVipItems(designData, isUserVip, requestedTemplate);
+    if (!vipCheck.valid) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: `Rangkaian buket Anda menggunakan item VIP eksklusif: ${vipCheck.violations.join(', ')}. Silakan buka akses VIP atau ganti dengan item standar.`,
+          violations: vipCheck.violations,
+        },
+        { status: 403 }
+      );
     }
 
     // ─── Custom duration days dari input pengirim (jika diatur) ─────────

@@ -17,7 +17,7 @@ interface Props {
 }
 
 export default function MobileFlowerPickerModal({ isOpen, onClose, onOpenStudio }: Props) {
-  const { design, addFlower, removeFlowerByType, isPremiumUnlocked, randomizeFlowers } = useDesign();
+  const { design, addFlower, removeFlowerByType, isPremiumUnlocked, randomizeFlowers, isFlowerVip } = useDesign();
   const { language } = useLanguage();
   const isEn = language === 'en';
   const [search, setSearch] = useState('');
@@ -159,15 +159,16 @@ export default function MobileFlowerPickerModal({ isOpen, onClose, onOpenStudio 
               <div className="ms-flower-grid">
                 {filteredFlowers.map((flower) => {
                   const count = countMap[flower.id] || 0;
-                  const isLocked = Boolean(flower.isPremium && !isPremiumUnlocked);
+                  const isVip = Boolean(isFlowerVip ? isFlowerVip(flower.id) : flower.isPremium);
+                  const isLocked = Boolean(isVip && !isPremiumUnlocked);
                   return (
                     <div
                       key={flower.id}
                       className={`ms-flower-card ${count > 0 ? 'ms-flower-card-active' : ''} ${isLocked ? 'ms-flower-card-locked' : ''}`}
                     >
                       {/* VIP Lock Badge */}
-                      {isLocked && (
-                        <div className="ms-vip-lock-badge" title={isEn ? 'VIP Premium Item' : 'Item VIP Premium'}>
+                      {isVip && (
+                        <div className={`ms-vip-lock-badge ${isLocked ? 'locked' : 'unlocked'}`} title={isEn ? 'VIP Premium Item' : 'Item VIP Premium'}>
                           <Crown size={9} />
                         </div>
                       )}

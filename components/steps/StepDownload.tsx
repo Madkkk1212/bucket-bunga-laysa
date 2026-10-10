@@ -16,6 +16,7 @@ import {
   Check,
   Eye,
   Loader2,
+  Crown,
 } from 'lucide-react';
 import { useDesign } from '@/context/DesignContext';
 import { downloadDesign } from '@/utils/downloadUtils';
@@ -46,6 +47,9 @@ export default function StepDownload({ canvasRef }: StepDownloadProps) {
     exportResolution,
     setExportResolution,
     isPremiumUnlocked,
+    checkDesignVipViolations,
+    draftVipViolations,
+    isTemplateVip,
   } = useDesign();
 
   // Active Tab: 'gift-link' | 'download-image'
@@ -114,6 +118,19 @@ export default function StepDownload({ canvasRef }: StepDownloadProps) {
   };
 
   const handleDownload = async () => {
+    // Penegakan aturan: Pengguna non-VIP tidak boleh mengunduh HD jika desain memuat item VIP
+    if (!isVipUser) {
+      const violations = checkDesignVipViolations ? checkDesignVipViolations() : [];
+      if (violations.length > 0) {
+        setGiftError(
+          isEn
+            ? `HD Download is exclusive to VIP. Your bouquet contains VIP items: ${violations.join(', ')}. Please upgrade to VIP or replace these items.`
+            : `Unduh HD eksklusif untuk VIP. Rangkaian buket Anda menggunakan item VIP: ${violations.join(', ')}. Silakan buka akses VIP atau ganti item tersebut.`
+        );
+        return;
+      }
+    }
+
     setStatus('downloading');
     await downloadDesign(canvasRef, format, exportResolution, design);
     setTimeout(() => setStatus('done'), 800);
@@ -174,6 +191,27 @@ export default function StepDownload({ canvasRef }: StepDownloadProps) {
       document.getElementById('gift-photo-upload-section')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return;
     }
+    // Penegakan aturan klien: jika non-VIP menggunakan item VIP atau template VIP, tolak dengan pesan jelas
+    if (!isVipUser) {
+      const violations = checkDesignVipViolations ? checkDesignVipViolations() : [];
+      const isSelectedTmplVip = isTemplateVip
+        ? isTemplateVip(selectedTemplateId)
+        : !GIFT_TEMPLATES[selectedTemplateId]?.isFree;
+
+      if (violations.length > 0 || isSelectedTmplVip) {
+        const allVio = [...violations];
+        if (isSelectedTmplVip) {
+          allVio.push(`Template: ${GIFT_TEMPLATES[selectedTemplateId]?.name || selectedTemplateId}`);
+        }
+        setGiftError(
+          isEn
+            ? `Cannot create link: Bouquet contains VIP items: ${allVio.join(', ')}. Please upgrade to VIP or replace with standard items.`
+            : `Tidak dapat membuat link: Rangkaian buket Anda menggunakan item VIP eksklusif: ${allVio.join(', ')}. Silakan buka akses VIP atau ganti dengan item standar.`
+        );
+        return;
+      }
+    }
+
     setIsCreatingGift(true);
     setGiftCreationStage('creating');
     setGiftError(null);
@@ -318,6 +356,56 @@ export default function StepDownload({ canvasRef }: StepDownloadProps) {
             </h3>
           </div>
 
+          {/* Peringatan Draft VIP jika Pengguna Non-VIP merangkai item yang berstatus VIP */}
+          {!isVipUser && draftVipViolations && draftVipViolations.length > 0 && (
+            <div
+              style={{
+                background: 'linear-gradient(135deg, #fffbeb, #fef3c7)',
+                border: '1px solid #fcd34d',
+                borderRadius: '14px',
+                padding: '14px 18px',
+                marginBottom: '18px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '12px',
+                flexWrap: 'wrap',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <Crown size={20} style={{ color: '#d97706', flexShrink: 0 }} />
+                <div>
+                  <h5 style={{ margin: 0, fontWeight: 700, fontSize: '0.86rem', color: '#92400e' }}>
+                    {isEn ? 'Exclusive VIP Item in Draft' : 'Item VIP Eksklusif di Draft Anda'}
+                  </h5>
+                  <p style={{ margin: '2px 0 0', fontSize: '0.78rem', color: '#b45309' }}>
+                    {isEn
+                      ? `Your bouquet uses VIP items: ${draftVipViolations.join(', ')}. Please upgrade to VIP or replace these items.`
+                      : `Rangkaian buket Anda menggunakan item VIP: ${draftVipViolations.join(', ')}. Silakan buka akses VIP atau ganti dengan item standar.`}
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setIsUnlockModalOpen(true)}
+                style={{
+                  padding: '7px 14px',
+                  borderRadius: '8px',
+                  background: 'linear-gradient(135deg, #d97706, #b45309)',
+                  color: '#ffffff',
+                  fontWeight: 700,
+                  fontSize: '0.76rem',
+                  border: 'none',
+                  cursor: 'pointer',
+                  boxShadow: '0 2px 6px rgba(217, 119, 6, 0.3)',
+                }}
+              >
+                {isEn ? 'Unlock VIP Access' : 'Buka Akses VIP'}
+              </button>
+            </div>
+          )}
+
           {!giftShareUrl ? (
             <form onSubmit={handleCreateDigitalGift} className="digital-gift-form">
               {/* ─── CARD 1: 🌸 TEMA, OBJEK & EFEK ─── */}
@@ -333,7 +421,13 @@ export default function StepDownload({ canvasRef }: StepDownloadProps) {
                 <TemplateSelector
                   selectedTemplateId={selectedTemplateId}
                   onSelect={handleSelectTemplate}
-                  allowedTemplates={isVipUser ? 'all' : ['klasik', 'taman-mekar']}
+                  allowedTemplates={
+                    isVipUser
+                      ? 'all'
+                      : (Object.keys(GIFT_TEMPLATES) as GiftTemplateId[]).filter((tmplId) =>
+                          isTemplateVip ? !isTemplateVip(tmplId) : (GIFT_TEMPLATES as any)[tmplId]?.isFree
+                        )
+                  }
                   onUpgradeClick={() => setIsUnlockModalOpen(true)}
                   isEn={isEn}
                 />

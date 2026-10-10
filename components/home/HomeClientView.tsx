@@ -4,6 +4,7 @@ import Navbar from '@/components/layout/Navbar';
 import HeroActions from '@/components/home/HeroActions';
 import HomeBackgroundVideo from '@/components/home/HomeBackgroundVideo';
 import HomeDesktopDecor from '@/components/home/HomeDesktopDecor';
+import InitialPopupModal from '@/components/home/InitialPopupModal';
 import { useLanguage } from '@/context/LanguageContext';
 
 export default function HomeClientView() {
@@ -11,6 +12,9 @@ export default function HomeClientView() {
 
   return (
     <div className="home-page theme-pink game-theme-arena relative" suppressHydrationWarning>
+      {/* ── 0. POPUP MODAL BANNER ONBOARDING / PROMO (MAKSIMAL 3 SLIDE) ── */}
+      <InitialPopupModal />
+
       {/* ── 1. BACKGROUND VIDEO CINEMATIC (home.mp4 — SILENT, INSTANT AUTOPLAY) ── */}
       <HomeBackgroundVideo />
 

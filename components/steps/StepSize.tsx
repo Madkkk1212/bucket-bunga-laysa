@@ -41,6 +41,7 @@ export default function StepSize() {
     setCustomBgImage,
     setStep,
     isPremiumUnlocked,
+    isBucketVip,
   } = useDesign();
 
   // Filter state
@@ -125,7 +126,8 @@ export default function StepSize() {
 
   const handleSelectBucket = (id: string) => {
     const bucket = getBucketSize(id);
-    if (bucket.isPremium && !isPremiumUnlocked) {
+    const isVip = Boolean(isBucketVip ? isBucketVip(id) : bucket.isPremium);
+    if (isVip && !isPremiumUnlocked) {
       setPremiumModalItem(bucket.label);
       return;
     }
@@ -139,7 +141,8 @@ export default function StepSize() {
 
   const handleConfirmModal = () => {
     const bucket = getBucketSize(selectedBucketInModal);
-    if (bucket.isPremium && !isPremiumUnlocked) {
+    const isVip = Boolean(isBucketVip ? isBucketVip(selectedBucketInModal) : bucket.isPremium);
+    if (isVip && !isPremiumUnlocked) {
       setPremiumModalItem(bucket.label);
       return;
     }
@@ -193,7 +196,8 @@ export default function StepSize() {
       <div className="size-options size-options-clean">
         {displayBuckets.map((size) => {
           const isSelected = currentBucketId === size.id;
-          const isLocked = Boolean(size.isPremium && hasMounted && !isPremiumUnlocked);
+          const isVip = Boolean(isBucketVip ? isBucketVip(size.id) : size.isPremium);
+          const isLocked = Boolean(isVip && hasMounted && !isPremiumUnlocked);
 
           return (
             <button
@@ -469,7 +473,8 @@ export default function StepSize() {
             <div className="bucket-catalog-grid">
               {filteredBuckets.map((b) => {
                 const isSelected = selectedBucketInModal === b.id;
-                const isLocked = Boolean(b.isPremium && !isPremiumUnlocked);
+                const isVip = Boolean(isBucketVip ? isBucketVip(b.id) : b.isPremium);
+                const isLocked = Boolean(isVip && !isPremiumUnlocked);
 
                 return (
                   <div

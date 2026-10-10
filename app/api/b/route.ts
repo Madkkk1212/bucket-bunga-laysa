@@ -7,6 +7,8 @@ import {
   saveLocalGift,
   type StoredGift,
 } from '@/lib/giftsStorage';
+import { isMasterAccessCode } from '@/lib/masterAccessCodes';
+import { validateDesignVipItems } from '@/lib/vipItems';
 
 // Simple in-memory rate limiter per IP: max 20 requests per 10 minutes
 const ipRateLimitMap = new Map<string, number[]>();
@@ -69,6 +71,37 @@ export async function POST(req: Request) {
           { status: 422 }
         );
       }
+    }
+
+    // 2.5 Server-Side VIP Enforcement: Periksa apakah ada item VIP yang digunakan tanpa izin
+    const cleanCode = (body?.accessCode || '').trim().toUpperCase();
+    let isUserVip = false;
+
+    if (cleanCode && isMasterAccessCode(cleanCode)) {
+      isUserVip = true;
+    } else if (cleanCode && isSupabaseConfigured) {
+      const dbClient = getAdminClient() || supabase;
+      if (dbClient) {
+        const { data: codeData } = await dbClient
+          .from('access_codes')
+          .select('is_active')
+          .eq('code', cleanCode)
+          .eq('is_active', true)
+          .maybeSingle();
+        if (codeData) isUserVip = true;
+      }
+    }
+
+    const vipCheck = await validateDesignVipItems(designData, isUserVip);
+    if (!vipCheck.valid) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: `Rangkaian buket Anda menggunakan item VIP eksklusif: ${vipCheck.violations.join(', ')}. Silakan buka akses VIP atau ganti dengan item standar.`,
+          violations: vipCheck.violations,
+        },
+        { status: 403 }
+      );
     }
 
     // 3. Generate unique 8-character ID & sanitize design transform attributes

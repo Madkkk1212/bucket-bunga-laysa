@@ -36,7 +36,11 @@ import {
   Trees,
   Calendar,
   Clock,
+  Crown,
+  Image as ImageIcon,
 } from 'lucide-react';
+import VipManagementPanel from '@/components/admin/VipManagementPanel';
+import PopupManagementSection from '@/components/admin/PopupManagementSection';
 
 interface AccessCodeItem {
   id: string;
@@ -124,7 +128,7 @@ export default function LaysaCleanPortalPage() {
   const [lockoutSeconds, setLockoutSeconds] = useState<number>(0);
 
   // ── Dashboard States ──
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'tokens' | 'gifts' | 'pricing' | 'garden' | 'diagnostics'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'tokens' | 'gifts' | 'pricing' | 'garden' | 'diagnostics' | 'vip' | 'popups'>('dashboard');
   const [codes, setCodes] = useState<AccessCodeItem[]>([]);
   const [isLoadingCodes, setIsLoadingCodes] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -1094,7 +1098,23 @@ export default function LaysaCleanPortalPage() {
               <span>Atur Harga &amp; Promo</span>
             </button>
 
-            
+            <button
+              type="button"
+              onClick={() => setActiveTab('vip')}
+              className={`adm-nav-item ${activeTab === 'vip' ? 'active' : ''}`}
+            >
+              <Crown size={17} />
+              <span>Kelola VIP</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab('popups')}
+              className={`adm-nav-item ${activeTab === 'popups' ? 'active' : ''}`}
+            >
+              <ImageIcon size={17} />
+              <span>Popup Awal (Slide)</span>
+            </button>
 
             <button
               type="button"
@@ -1201,7 +1221,23 @@ export default function LaysaCleanPortalPage() {
                 <span>Harga &amp; Promo</span>
               </button>
 
-              
+              <button
+                type="button"
+                onClick={() => setActiveTab('vip')}
+                className={`adm-mobile-tab-btn ${activeTab === 'vip' ? 'active' : ''}`}
+              >
+                <Crown size={14} />
+                <span>Kelola VIP</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveTab('popups')}
+                className={`adm-mobile-tab-btn ${activeTab === 'popups' ? 'active' : ''}`}
+              >
+                <ImageIcon size={14} />
+                <span>Popup Awal</span>
+              </button>
 
               <button
                 type="button"
@@ -3731,6 +3767,14 @@ export default function LaysaCleanPortalPage() {
                 </div>
               </div>
             </div>
+          )}
+
+          {activeTab === 'vip' && (
+            <VipManagementPanel />
+          )}
+
+          {activeTab === 'popups' && (
+            <PopupManagementSection />
           )}
         </main>
 

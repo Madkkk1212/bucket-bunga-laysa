@@ -13,6 +13,7 @@ import {
   RotateCcw,
   Sparkles,
   Layers,
+  Check,
 } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import { PlacedFlower } from '@/types/design';
@@ -30,7 +31,7 @@ interface TransformControlOverlayProps {
   bucketDims: BouquetDimensions | null;
   onUpdateFlower: (uid: string, updates: Partial<PlacedFlower>) => void;
   onUpdateBucket: (updates: { scale?: number; rotation?: number; offset?: { x: number; y: number } }) => void;
-  onLiveFlowerTransform?: (live: { uid: string; x?: number; y?: number; rotation?: number; scale?: number } | null) => void;
+  onLiveFlowerTransform?: (live: { uid: string; x?: number; y?: number; rotation?: number; scale?: number; size?: number } | null) => void;
   onLiveBucketTransform?: (live: { offset?: { x: number; y: number }; rotation?: number; scale?: number } | null) => void;
   onCommitFlower?: (uid: string, updates: Partial<PlacedFlower>) => void;
   onCommitBucket?: (updates: { scale?: number; rotation?: number; offset?: { x: number; y: number } }) => void;
@@ -41,6 +42,7 @@ interface TransformControlOverlayProps {
   onDelete: (uid: string) => void;
   onReset: (uid?: string) => void;
   recordSnapshot: () => void;
+  currentStep?: number;
 }
 
 type ActiveAction = 'move-flower' | 'rotate-flower' | 'scale-flower' | 'move-bucket' | 'rotate-bucket' | 'scale-bucket' | 'pinch-gesture' | null;
@@ -68,6 +70,7 @@ export default function TransformControlOverlay({
   onDelete,
   onReset,
   recordSnapshot,
+  currentStep,
 }: TransformControlOverlayProps) {
   const { t, isEn } = useLanguage();
 
@@ -110,6 +113,13 @@ export default function TransformControlOverlay({
   const activePointersRef = useRef<Map<number, { clientX: number; clientY: number }>>(new Map());
   const pinchStartRef = useRef<{ dist: number; angle: number; startScale: number; startRot: number }>({ dist: 0, angle: 0, startScale: 1, startRot: 0 });
   const isDraggingActiveRef = useRef<boolean>(false);
+  const lastCommittedTransformRef = useRef<{
+    uid: string;
+    x?: number;
+    y?: number;
+    scale?: number;
+    rotation?: number;
+  } | null>(null);
 
   // Floating feedback badge (e.g. "45°" or "125%")
   const [liveTooltip, setLiveTooltip] = useState<string | null>(null);
@@ -308,20 +318,24 @@ export default function TransformControlOverlay({
         const ratio = currentDist / (startItemRef.current.dist || 1);
         const newScale = Math.max(0.3, Math.min(3.0, Number((startItemRef.current.scale * ratio).toFixed(2))));
 
+        const baseFlowerSz = selectedItem.flower.size ?? 92;
+        const currentSz = Math.round(baseFlowerSz * newScale);
+
         pendingFlowerUpdatesRef.current = {
           ...pendingFlowerUpdatesRef.current,
           scale: newScale,
+          size: baseFlowerSz,
           isManual: true,
         };
         onLiveFlowerTransform?.({
           uid: selectedItem.flower.uid,
-          ...pendingFlowerUpdatesRef.current,
+          scale: newScale,
+          size: currentSz,
         });
 
         if (boxRef.current) {
-          const baseSz = Math.max(52, Math.round(selectedItem.sz * (newScale / (selectedItem.flower.scale || 1))));
-          boxRef.current.style.width = `${(baseSz / canvasW) * 100}%`;
-          boxRef.current.style.height = `${(baseSz / canvasH) * 100}%`;
+          boxRef.current.style.width = `${(currentSz / canvasW) * 100}%`;
+          boxRef.current.style.height = `${(currentSz / canvasH) * 100}%`;
         }
         setLiveTooltip(`${Math.round(newScale * 100)}%`);
       }
@@ -434,6 +448,10 @@ export default function TransformControlOverlay({
         isDraggingActiveRef.current = false;
         // Commit changes once on pointer up (atomic commit preventing re-render loop during drag)
         if (selectedItem && Object.keys(pendingFlowerUpdatesRef.current).length > 0) {
+          lastCommittedTransformRef.current = {
+            uid: selectedItem.flower.uid,
+            ...pendingFlowerUpdatesRef.current,
+          };
           if (onCommitFlower) {
             onCommitFlower(selectedItem.flower.uid, pendingFlowerUpdatesRef.current);
           } else {
@@ -449,11 +467,9 @@ export default function TransformControlOverlay({
         recordSnapshot();
       }
 
-      // MANDATORY: ALWAYS clear liveRefs and pending updates after release
+      // Clear pending updates & live tooltip without prematurely erasing live transform state
       pendingFlowerUpdatesRef.current = {};
       pendingBucketUpdatesRef.current = {};
-      onLiveFlowerTransform?.(null);
-      onLiveBucketTransform?.(null);
       activeActionRef.current = null;
       isDraggingActiveRef.current = false;
       setLiveTooltip(null);
@@ -700,18 +716,39 @@ export default function TransformControlOverlay({
     const bouquetRotRad = ((bouquetRotation || 0) * Math.PI) / 180;
     const pivX = canvasW / 2;
     const pivY = canvasH / 2;
-    const dx = selectedItem.x - pivX;
-    const dy = selectedItem.y - pivY;
+
+    const committed = lastCommittedTransformRef.current;
+    const hasCommitted = Boolean(committed && committed.uid === selectedItem.flower.uid);
+
+    const curX = hasCommitted && committed?.x !== undefined ? committed.x : selectedItem.x;
+    const curY = hasCommitted && committed?.y !== undefined ? committed.y : selectedItem.y;
+    const curScale = hasCommitted && committed?.scale !== undefined ? committed.scale : (selectedItem.flower.scale ?? 1.0);
+    const curRot = hasCommitted && committed?.rotation !== undefined
+      ? (committed.rotation * Math.PI) / 180
+      : selectedItem.rot;
+
+    // Once props have caught up to the committed values, clear the ref
+    if (hasCommitted && committed) {
+      const xMatches = committed.x === undefined || Math.abs(selectedItem.x - committed.x) < 1;
+      const yMatches = committed.y === undefined || Math.abs(selectedItem.y - committed.y) < 1;
+      const scaleMatches = committed.scale === undefined || Math.abs((selectedItem.flower.scale ?? 1.0) - committed.scale) < 0.01;
+      if (xMatches && yMatches && scaleMatches) {
+        lastCommittedTransformRef.current = null;
+      }
+    }
+
+    const dx = curX - pivX;
+    const dy = curY - pivY;
     const cos = Math.cos(bouquetRotRad);
     const sin = Math.sin(bouquetRotRad);
 
     const screenCenterX = pivX + dx * cos - dy * sin;
     const screenCenterY = pivY + dx * sin + dy * cos;
-    const itemRotRad = selectedItem.rot;
-    const totalRotRad = itemRotRad + bouquetRotRad;
+    const totalRotRad = curRot + bouquetRotRad;
     const totalRotDeg = Math.round((totalRotRad * 180) / Math.PI);
 
-    const boxSize = Math.max(52, selectedItem.sz);
+    const baseFlowerSz = 92;
+    const boxSize = Math.max(52, Math.round(baseFlowerSz * curScale));
 
     targetBox = {
       pctLeft: (screenCenterX / canvasW) * 100,
@@ -753,20 +790,22 @@ export default function TransformControlOverlay({
 
   return (
     <div className="transform-overlay-layer" aria-label="Transform Canvas Overlay">
-      {/* ── TOP-LEFT BUTTON: SELECT WHOLE BOUQUET ── */}
-      <button
-        type="button"
-        onClick={(e) => {
-          e.stopPropagation();
-          onSelectBouquet();
-        }}
-        className={`transform-whole-bouquet-pill ${isBucketSelected ? 'active' : ''}`}
-        title={t('btn_select_bouquet')}
-        id="btn-select-whole-bouquet"
-      >
-        <span className="shrink-0 text-xs">💐</span>
-        <span>{t('btn_select_bouquet')}</span>
-      </button>
+      {/* ── TOP-LEFT BUTTON: SELECT WHOLE BOUQUET (Hanya tampil di Step 1 atau Step 4 Review) ── */}
+      {(currentStep === 1 || currentStep === 4 || currentStep === undefined) && (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onSelectBouquet();
+          }}
+          className={`transform-whole-bouquet-pill ${isBucketSelected ? 'active' : ''}`}
+          title={isBucketSelected ? (isEn ? 'Click to deselect bouquet' : 'Klik untuk selesai / lepas pilihan buket') : t('btn_select_bouquet')}
+          id="btn-select-whole-bouquet"
+        >
+          <span className="shrink-0 text-xs">{isBucketSelected ? '✓' : '💐'}</span>
+          <span>{isBucketSelected ? (isEn ? 'Done Selecting' : 'Selesai Pilih Buket') : t('btn_select_bouquet')}</span>
+        </button>
+      )}
 
       {/* ── FIRST-TIME USER HELPER TOAST ── */}
       {showHint && (
@@ -812,14 +851,14 @@ export default function TransformControlOverlay({
             touchAction: 'none',
           }}
         >
-          {/* Dashed Bounding Box Body (Draggable for Translation) */}
+          {/* Dashed Bounding Box Body */}
           <div
             className={`transform-bounding-box ${targetBox.isGroup ? 'box-group' : 'box-element'}`}
-            onPointerDown={startMove}
+            onPointerDown={targetBox.isGroup ? undefined : startMove}
             onPointerCancel={handlePointerCancel}
             onLostPointerCapture={handleLostPointerCapture}
             style={{ touchAction: 'none' }}
-            title={targetBox.isGroup ? 'Seret untuk menggeser buket' : 'Seret untuk menggeser posisi'}
+            title={targetBox.isGroup ? undefined : 'Seret untuk menggeser posisi'}
           />
 
           {/* ── HANDLE 1: ROTATE BUTTON (POJOK KIRI ATAS) ── */}
@@ -855,7 +894,7 @@ export default function TransformControlOverlay({
           {/* ── FLOATING ACTION TOOLBAR (ATTACHED TO BOX) ── */}
           <div className="transform-floating-actions" onPointerDown={(e) => e.stopPropagation()}>
             {targetBox.isGroup ? (
-              // Actions for entire bouquet: sleek reset button without cluttered labels
+              // Actions for entire bouquet: reset button and done / deselect button
               <div className="transform-actions-cluster">
                 <button
                   type="button"
@@ -865,6 +904,20 @@ export default function TransformControlOverlay({
                 >
                   <RotateCcw size={13} />
                   <span>{isEn ? 'Reset Bouquet' : 'Reset Buket'}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onDeselect()}
+                  className="transform-action-btn action-deselect"
+                  title={isEn ? 'Done / Deselect Bouquet' : 'Selesai / Lepas Pilihan Buket'}
+                  style={{
+                    background: '#8b5cf6',
+                    color: '#ffffff',
+                    borderColor: '#7c3aed',
+                  }}
+                >
+                  <Check size={13} />
+                  <span>{isEn ? 'Done' : 'Selesai'}</span>
                 </button>
               </div>
             ) : selectedItem ? (

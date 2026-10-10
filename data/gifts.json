@@ -598,5 +598,109 @@
     },
     "createdAt": "2026-10-10T06:41:22.128Z",
     "views": 0
+  },
+  {
+    "id": "hrnc2zau",
+    "senderName": "Pengirim Standar",
+    "recipientName": "Penerima Standar",
+    "message": "Buket bunga indah untukmu!",
+    "musicTrack": "romantic-piano",
+    "designData": {
+      "bucketSize": "bucket-1",
+      "selectedFlowers": [
+        {
+          "id": "aster_purple",
+          "flowerId": "aster_purple",
+          "rotation": 0,
+          "scale": 1
+        },
+        {
+          "id": "chrysanthemum_pink",
+          "flowerId": "chrysanthemum_pink",
+          "rotation": 0,
+          "scale": 1
+        }
+      ]
+    },
+    "createdAt": "2026-10-10T07:45:05.641Z",
+    "views": 0
+  },
+  {
+    "id": "a8bp5q2y",
+    "senderName": "Pengirim Standar",
+    "recipientName": "Penerima Standar",
+    "message": "Buket bunga indah untukmu!",
+    "musicTrack": "romantic-piano",
+    "designData": {
+      "bucketSize": "bucket-1",
+      "selectedFlowers": [
+        {
+          "id": "aster_purple",
+          "flowerId": "aster_purple",
+          "rotation": 0,
+          "scale": 1
+        },
+        {
+          "id": "chrysanthemum_pink",
+          "flowerId": "chrysanthemum_pink",
+          "rotation": 0,
+          "scale": 1
+        }
+      ]
+    },
+    "createdAt": "2026-10-10T07:45:53.931Z",
+    "views": 0
+  },
+  {
+    "id": "fbmett4d",
+    "senderName": "Pengirim Standar",
+    "recipientName": "Penerima Standar",
+    "message": "Buket bunga indah untukmu!",
+    "musicTrack": "romantic-piano",
+    "designData": {
+      "bucketSize": "bucket-1",
+      "selectedFlowers": [
+        {
+          "id": "aster_purple",
+          "flowerId": "aster_purple",
+          "rotation": 0,
+          "scale": 1
+        },
+        {
+          "id": "chrysanthemum_pink",
+          "flowerId": "chrysanthemum_pink",
+          "rotation": 0,
+          "scale": 1
+        }
+      ]
+    },
+    "createdAt": "2026-10-10T07:46:50.761Z",
+    "views": 0
+  },
+  {
+    "id": "556ybdm6",
+    "senderName": "Pengirim Standar",
+    "recipientName": "Penerima Standar",
+    "message": "Buket bunga indah untukmu!",
+    "musicTrack": "romantic-piano",
+    "designData": {
+      "bucketSize": "bucket-1",
+      "selectedFlowers": [
+        {
+          "id": "aster_purple",
+          "flowerId": "aster_purple",
+          "rotation": 0,
+          "scale": 1
+        },
+        {
+          "id": "chrysanthemum_pink",
+          "flowerId": "chrysanthemum_pink",
+          "rotation": 0,
+          "scale": 1
+        }
+      ]
+    },
+    "createdAt": "2026-10-10T07:53:24.259Z",
+    "views": 0
   }
 ]

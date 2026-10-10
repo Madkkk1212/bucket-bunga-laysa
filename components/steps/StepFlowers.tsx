@@ -33,6 +33,7 @@ const StepFlowers = React.memo(function StepFlowers() {
     setStep,
     isPremiumUnlocked,
     setIsFlowerLimitModalOpen,
+    isFlowerVip,
   } = useDesign();
 
   const [search, setSearch] = useState('');
@@ -134,7 +135,8 @@ const StepFlowers = React.memo(function StepFlowers() {
       <div className="sf-flower-grid" role="list">
         {paginatedFlowers.map((flower) => {
           const count = getFlowerCount(flower.id);
-          const isLocked = Boolean(flower.isPremium && !isPremiumUnlocked);
+          const isVip = Boolean(isFlowerVip ? isFlowerVip(flower.id) : flower.isPremium);
+          const isLocked = Boolean(isVip && !isPremiumUnlocked);
 
           return (
             <div
@@ -165,9 +167,9 @@ const StepFlowers = React.memo(function StepFlowers() {
                   className="sf-flower-img"
                   unoptimized
                 />
-                {isLocked && (
-                  <span className="sf-flower-vip-badge" title="Koleksi VIP Terkunci">
-                    <Crown size={11} className="text-amber-500" />
+                {isVip && (
+                  <span className={`sf-flower-vip-badge ${isLocked ? 'locked' : 'unlocked'}`} title={isLocked ? "Koleksi VIP Terkunci" : "Koleksi VIP Terbuka"}>
+                    <Crown size={11} className={isLocked ? "text-amber-500" : "text-amber-400"} />
                     <span>VIP</span>
                   </span>
                 )}

@@ -16,7 +16,7 @@ interface Props {
 }
 
 export default function MobileBucketPickerModal({ isOpen, onClose }: Props) {
-  const { design, setBucketSize, isPremiumUnlocked } = useDesign();
+  const { design, setBucketSize, isPremiumUnlocked, isBucketVip } = useDesign();
   const { language } = useLanguage();
   const isEn = language === 'en';
   const [activeTheme, setActiveTheme] = useState<'all' | 'korean' | 'luxury' | 'anime'>('all');
@@ -39,7 +39,8 @@ export default function MobileBucketPickerModal({ isOpen, onClose }: Props) {
   }, [activeTheme]);
 
   const handleBucketSelect = (bucket: typeof BUCKET_SIZES[number]) => {
-    if (bucket.isPremium && !isPremiumUnlocked) {
+    const isVip = Boolean(isBucketVip ? isBucketVip(bucket.id) : bucket.isPremium);
+    if (isVip && !isPremiumUnlocked) {
       setLockedItemName(bucket.label);
       setIsUnlockModalOpen(true);
       return;
@@ -122,7 +123,8 @@ export default function MobileBucketPickerModal({ isOpen, onClose }: Props) {
               <div className="ms-bucket-grid">
                 {filteredBuckets.map((bucket) => {
                   const isSelected = design.bucketSize === bucket.id;
-                  const isLocked = Boolean(bucket.isPremium && !isPremiumUnlocked);
+                  const isVip = Boolean(isBucketVip ? isBucketVip(bucket.id) : bucket.isPremium);
+                  const isLocked = Boolean(isVip && !isPremiumUnlocked);
                   return (
                     <button
                       key={bucket.id}

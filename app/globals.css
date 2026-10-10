@@ -25370,10 +25370,12 @@ body.modal-backdrop-blur-active .ds-root {
   cursor: grabbing;
 }
 
-.transform-bounding-box.whole-bouquet-box {
+.transform-bounding-box.whole-bouquet-box,
+.transform-bounding-box.box-group {
   border-color: #8b5cf6;
   border-style: dashed;
   box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.8), 0 0 16px rgba(139, 92, 246, 0.28);
+  pointer-events: none;
 }
 
 .transform-live-feedback-pill {

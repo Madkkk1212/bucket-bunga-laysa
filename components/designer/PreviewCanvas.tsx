@@ -107,8 +107,8 @@ export default function PreviewCanvas({ canvasRef: externalRef }: PreviewCanvasP
 
   const [dragState, setDragState] = useState<DragState | null>(null);
   
-  // Status selesai / final (Step 3 ucapan, Step 4 pratinjau, Step 5 unduh, atau status final)
-  const isFinished = design.currentStep >= 3 || design.final2D.status === 'final';
+  // Status selesai / final terkunci (Hanya saat Step 5 unduh atau jika status sudah final)
+  const isFinished = design.currentStep >= 5 || design.final2D.status === 'final';
 
   // Bulatan "Area Kantung Bunga (Bebas Geser)" HANYA muncul saat buket masih kosong
   const showGuide = !isFinished && design.selectedFlowers.length === 0;
@@ -143,6 +143,41 @@ export default function PreviewCanvas({ canvasRef: externalRef }: PreviewCanvasP
 
   // Cache latest computed render items for instant hit testing
   const renderItemsRef = useRef<FlowerRenderItem[]>([]);
+
+  // Otomatis lepas pilihan buket jika masuk ke Step 2 (merangkai bunga) atau Step 3 (kartu ucapan)
+  useEffect(() => {
+    if (design.currentStep === 2 || design.currentStep === 3) {
+      if (isBucketSelected) {
+        setIsBucketSelected(false);
+      }
+    }
+  }, [design.currentStep, isBucketSelected, setIsBucketSelected]);
+
+  // Clear live transform refs ONLY AFTER React state commits the updates (prevents snap-back/bounce)
+  useEffect(() => {
+    if (liveFlowerRef.current) {
+      const target = design.selectedFlowers.find((f) => f.uid === liveFlowerRef.current?.uid);
+      if (target) {
+        const lf = liveFlowerRef.current;
+        const xMatches = lf.x === undefined || target.x === lf.x;
+        const yMatches = lf.y === undefined || target.y === lf.y;
+        const scaleMatches = lf.scale === undefined || target.scale === lf.scale;
+        if (xMatches && yMatches && scaleMatches) {
+          liveFlowerRef.current = null;
+        }
+      } else {
+        liveFlowerRef.current = null;
+      }
+    }
+  }, [design.selectedFlowers]);
+
+  useEffect(() => {
+    liveBucketRef.current = null;
+  }, [design.bouquetScale, design.bouquetRotation, design.bucketOffset]);
+
+  useEffect(() => {
+    liveCardRef.current = null;
+  }, [design.text]);
 
   // Synchronous memoized bouquet dimensions & flower render items
   const currentBucketDims = useMemo(() => {
@@ -467,8 +502,12 @@ export default function PreviewCanvas({ canvasRef: externalRef }: PreviewCanvasP
         if (liveFlower.x !== undefined) targetItem.x = liveFlower.x;
         if (liveFlower.y !== undefined) targetItem.y = liveFlower.y;
         if (liveFlower.rotation !== undefined) targetItem.rot = liveFlower.rotation;
-        if (liveFlower.size !== undefined) targetItem.sz = liveFlower.size;
-        else if (liveFlower.scale !== undefined) targetItem.sz = Math.round(92 * liveFlower.scale);
+        if (liveFlower.size !== undefined) {
+          targetItem.sz = liveFlower.size;
+        } else if (liveFlower.scale !== undefined) {
+          const base = targetItem.flower.size ?? 92;
+          targetItem.sz = Math.round(base * liveFlower.scale);
+        }
       }
     }
     renderItemsRef.current = items;
@@ -926,6 +965,38 @@ export default function PreviewCanvas({ canvasRef: externalRef }: PreviewCanvasP
         setIsCardSelected(false);
         return;
       }
+
+      // 2b. Saat buket sedang dipilih, klik di mana saja pada area buket (bunga maupun kertas buket)
+      // akan menggeser SELURUH BUKET sebagai satu kesatuan. Bunga TIDAK BISA diklik satuan lagi!
+      const groupMinY = Math.min(bDims.bucketY - 160, bDims.wrapperTopY - 80);
+      const groupMaxY = bDims.bottomY + 40;
+      const groupMinX = bDims.bucketX - 40;
+      const groupMaxX = bDims.bucketX + bDims.bucketW + 40;
+
+      if (
+        flMouseX >= groupMinX &&
+        flMouseX <= groupMaxX &&
+        flMouseY >= groupMinY &&
+        flMouseY <= groupMaxY
+      ) {
+        const bucketOffset = design.bucketOffset ?? { x: 0, y: 0 };
+        setDragState({
+          mode: 'bucket-move',
+          startMouseX: flMouseX,
+          startMouseY: flMouseY,
+          origX: bucketOffset.x,
+          origY: bucketOffset.y,
+          origSize: design.bouquetScale ?? 1.0,
+          origRot: design.bouquetRotation ?? 0,
+        });
+        return;
+      }
+
+      // Jika klik di luar area buket pada kanvas kosong, lepas pilihan buket
+      setSelectedUid(null);
+      setIsBucketSelected(false);
+      setIsCardSelected(false);
+      return;
     }
 
     const items = renderItemsRef.current;
@@ -953,47 +1024,54 @@ export default function PreviewCanvas({ canvasRef: externalRef }: PreviewCanvasP
     }
 
     // 4. Check flower bloom hits (bouquet-local coords, topmost flower first)
-    const activeItems = currentRenderItems.length > 0 ? currentRenderItems : items;
-    const isTouchDevice = typeof window !== 'undefined' && ('ontouchstart' in window || (navigator?.maxTouchPoints ?? 0) > 0);
-    const flowerHitSlop = isTouchDevice ? 22 : 14;
-    for (let i = activeItems.length - 1; i >= 0; i--) {
-      const item = activeItems[i];
-      const dist = Math.hypot(flMouseX - item.x, flMouseY - item.y);
+    // Di Step 4 (Pratinjau / Review), bunga dan buket sudah TERKUNCI menjadi 1 grup utuh,
+    // sehingga bunga TIDAK BISA diklik/dipilih satuan lagi.
+    if (design.currentStep !== 4) {
+      const activeItems = currentRenderItems.length > 0 ? currentRenderItems : items;
+      const isTouchDevice = typeof window !== 'undefined' && ('ontouchstart' in window || (navigator?.maxTouchPoints ?? 0) > 0);
+      const flowerHitSlop = isTouchDevice ? 22 : 14;
+      for (let i = activeItems.length - 1; i >= 0; i--) {
+        const item = activeItems[i];
+        const dist = Math.hypot(flMouseX - item.x, flMouseY - item.y);
 
-      // Hit within circular bloom head boundary (with generous touch grace margin)
-      if (dist <= Math.max(item.sz / 2 + flowerHitSlop, 36)) {
-        setSelectedUid(item.flower.uid);
-        setIsBucketSelected(false);
-        setIsCardSelected(false);
+        // Hit within circular bloom head boundary (with generous touch grace margin)
+        if (dist <= Math.max(item.sz / 2 + flowerHitSlop, 36)) {
+          setSelectedUid(item.flower.uid);
+          setIsBucketSelected(false);
+          setIsCardSelected(false);
 
-        // If not already manual, lock in its current rendered position
-        if (!item.flower.isManual) {
-          updateFlower(item.flower.uid, {
-            x: item.x,
-            y: item.y,
-            size: item.sz,
-            customRotation: item.rot,
-            rotation: Math.round(((item.rot * 180) / Math.PI) * 10) / 10,
-            scale: item.flower.scale ?? 1.0,
-            isManual: true,
+          // If not already manual, lock in its current rendered position
+          if (!item.flower.isManual) {
+            updateFlower(item.flower.uid, {
+              x: item.x,
+              y: item.y,
+              size: 92,
+              customRotation: item.rot,
+              rotation: Math.round(((item.rot * 180) / Math.PI) * 10) / 10,
+              scale: item.flower.scale ?? 1.0,
+              isManual: true,
+            });
+          }
+
+          setDragState({
+            mode: 'move',
+            startMouseX: flMouseX,
+            startMouseY: flMouseY,
+            origX: item.x,
+            origY: item.y,
+            origSize: item.sz,
+            origRot: item.rot,
           });
+          return;
         }
-
-        setDragState({
-          mode: 'move',
-          startMouseX: flMouseX,
-          startMouseY: flMouseY,
-          origX: item.x,
-          origY: item.y,
-          origSize: item.sz,
-          origRot: item.rot,
-        });
-        return;
       }
     }
 
     // 5. Check bucket body hit (select bucket and start dragging bucket directly)
-    if (!isFinished && bucketDimsRef.current) {
+    // Di Step 2 (merangkai bunga) atau Step 3 (kartu ucapan), buket TIDAK BISA diklik/dipilih.
+    // Buket hanya bisa dipilih/diatur di Step 4 (Pratinjau / Review) atau Step 1!
+    const allowBucketSelection = design.currentStep === 4 || design.currentStep === 1;
+    if (allowBucketSelection && !isFinished && bucketDimsRef.current) {
       const bDims = bucketDimsRef.current;
       if (
         flMouseX >= bDims.bucketX - 14 &&
@@ -1283,7 +1361,6 @@ export default function PreviewCanvas({ canvasRef: externalRef }: PreviewCanvasP
           updateFlower(targetUid, {
             ...(lf.x !== undefined ? { x: lf.x } : {}),
             ...(lf.y !== undefined ? { y: lf.y } : {}),
-            ...(lf.size !== undefined ? { size: lf.size } : {}),
             ...(lf.scale !== undefined ? { scale: lf.scale } : {}),
             ...(lf.rotation !== undefined
               ? {
@@ -1304,10 +1381,7 @@ export default function PreviewCanvas({ canvasRef: externalRef }: PreviewCanvasP
       }
     }
 
-    // MANDATORY: ALWAYS unconditionally clear liveRefs, drag state, and preDragSnapshot
-    liveBucketRef.current = null;
-    liveFlowerRef.current = null;
-    liveCardRef.current = null;
+    // Clear drag state & snapshot (live refs remain active until React state commits to prevent bounce/mantul)
     preDragSnapshot.current = null;
     hasMovedDrag.current = false;
     setDragState(null);
@@ -1414,12 +1488,12 @@ export default function PreviewCanvas({ canvasRef: externalRef }: PreviewCanvasP
   }, [scheduleRender]);
 
   const handleCommitFlower = useCallback((uid: string, updates: Partial<PlacedFlower>) => {
-    liveFlowerRef.current = null;
+    // Keep liveFlowerRef alive until React commits the update to prevent bounce/flash
     updateFlower(uid, updates);
   }, [updateFlower]);
 
   const handleCommitBucket = useCallback((updates: { scale?: number; rotation?: number; offset?: { x: number; y: number } }) => {
-    liveBucketRef.current = null;
+    // Keep liveBucketRef alive until React commits the update to prevent bounce/flash
     if (updates.scale !== undefined) setBouquetScale(updates.scale);
     if (updates.rotation !== undefined) setBouquetRotation(updates.rotation);
     if (updates.offset !== undefined) setBucketOffset(updates.offset);
@@ -1572,13 +1646,14 @@ export default function PreviewCanvas({ canvasRef: externalRef }: PreviewCanvasP
             }}
             onSelectBouquet={() => {
               setSelectedUid(null);
-              setIsBucketSelected(true);
+              setIsBucketSelected((prev: boolean) => !prev);
             }}
             onLayerChange={changeFlowerLayer}
             onDuplicate={duplicateFlower}
             onDelete={removeFlowerByUid}
             onReset={resetElementTransform}
             recordSnapshot={recordSnapshot}
+            currentStep={design.currentStep}
           />
         )}
 

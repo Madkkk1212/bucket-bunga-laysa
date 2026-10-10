@@ -1,8 +1,8 @@
 'use client';
 
-import React, { createContext, useContext, useState, useCallback, useRef, useEffect } from 'react';
+import React, { createContext, useContext, useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { DesignState, DesignContextType, TextConfig, FlowerDef, PlacedFlower, CanvasRatio, BackgroundTheme, FlowerCountVariant, ExportResolution } from '../types/design';
-import { getBucketSize } from '../data/buckets';
+import { getBucketSize, BUCKET_SIZES } from '../data/buckets';
 import { FLOWERS } from '../data/flowers';
 
 const DEFAULT_TEXT: TextConfig = {
@@ -23,11 +23,11 @@ function createDefaultDesign(): DesignState {
     bucketSize: 'bucket-1',
     wrapperType: 'matte',
     selectedFlowers: [
-      { uid: 'init-1', flowerId: 'aster_purple', imageUrl: '/images/flowers/aster_purple.png', category: 'filler', order: 1, zIndex: 1, angle: -0.35, radius: 80, rotation: -0.2, stemVariation: 0 },
-      { uid: 'init-2', flowerId: 'aster_purple', imageUrl: '/images/flowers/aster_purple.png', category: 'filler', order: 2, zIndex: 2, angle: 0.35, radius: 80, rotation: 0.2, stemVariation: 0 },
-      { uid: 'init-3', flowerId: 'chrysanthemum_pink', imageUrl: '/images/flowers/chrysanthemum_pink.png', category: 'main', order: 3, zIndex: 3, angle: -0.15, radius: 50, rotation: -0.08, stemVariation: 0 },
-      { uid: 'init-4', flowerId: 'chrysanthemum_pink', imageUrl: '/images/flowers/chrysanthemum_pink.png', category: 'main', order: 4, zIndex: 4, angle: 0.15, radius: 50, rotation: 0.08, stemVariation: 0 },
-      { uid: 'init-5', flowerId: 'chrysanthemum_pink', imageUrl: '/images/flowers/chrysanthemum_pink.png', category: 'main', order: 5, zIndex: 5, angle: 0, radius: 30, rotation: 0, stemVariation: 0 },
+      { uid: 'init-1', flowerId: 'aster_purple', imageUrl: '/images/flowers/aster_purple.png', category: 'filler', order: 1, zIndex: 1, angle: 0, radius: 60, x: 255, y: 235, size: 92, scale: 1.0, rotation: -12, stemVariation: 0, isManual: true },
+      { uid: 'init-2', flowerId: 'aster_purple', imageUrl: '/images/flowers/aster_purple.png', category: 'filler', order: 2, zIndex: 2, angle: 0, radius: 60, x: 345, y: 235, size: 92, scale: 1.0, rotation: 12, stemVariation: 0, isManual: true },
+      { uid: 'init-3', flowerId: 'chrysanthemum_pink', imageUrl: '/images/flowers/chrysanthemum_pink.png', category: 'main', order: 3, zIndex: 3, angle: 0, radius: 60, x: 260, y: 310, size: 96, scale: 1.0, rotation: -6, stemVariation: 0, isManual: true },
+      { uid: 'init-4', flowerId: 'chrysanthemum_pink', imageUrl: '/images/flowers/chrysanthemum_pink.png', category: 'main', order: 4, zIndex: 4, angle: 0, radius: 60, x: 340, y: 310, size: 96, scale: 1.0, rotation: 6, stemVariation: 0, isManual: true },
+      { uid: 'init-5', flowerId: 'chrysanthemum_pink', imageUrl: '/images/flowers/chrysanthemum_pink.png', category: 'main', order: 5, zIndex: 5, angle: 0, radius: 60, x: 300, y: 275, size: 96, scale: 1.0, rotation: 0, stemVariation: 0, isManual: true },
     ],
     text: DEFAULT_TEXT,
     currentStep: 1,
@@ -137,11 +137,14 @@ export function DesignProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  const setIsBucketSelected = useCallback((selected: boolean) => {
-    setIsBucketSelectedState(selected);
-    if (selected) {
-      setSelectedFlowerUidState(null);
-    }
+  const setIsBucketSelected = useCallback((action: boolean | ((prev: boolean) => boolean)) => {
+    setIsBucketSelectedState((prev) => {
+      const next = typeof action === 'function' ? action(prev) : action;
+      if (next) {
+        setSelectedFlowerUidState(null);
+      }
+      return next;
+    });
   }, []);
 
   const resetElementTransform = useCallback((targetUid?: string) => {
@@ -177,6 +180,159 @@ export function DesignProvider({ children }: { children: React.ReactNode }) {
   const [exportResolution, setExportResolution] = useState<ExportResolution>('4k');
   const [cloudSyncStatus, setCloudSyncStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [lastCloudSavedAt, setLastCloudSavedAt] = useState<string | null>(null);
+
+  // ── Dynamic VIP Items Catalog State from Database ──
+  const [vipCatalog, setVipCatalog] = useState<{
+    bucket: Record<string, boolean>;
+    flower: Record<string, boolean>;
+    card: Record<string, boolean>;
+    gift_template: Record<string, boolean>;
+  }>({
+    bucket: {
+      'bucket-luxury-gold': true,
+      'bucket-luxury-champagne': true,
+      'bucket-luxury-emerald': true,
+      'bucket-onepiece': true,
+      'bucket-onepiece-2': true,
+      'bucket-naruto': true,
+      'bucket-kuromi': true,
+      'bucket-totoro': true,
+      'bucket-sailormoon': true,
+      'bucket-pikachu': true,
+      'bucket-hellokitty': true,
+      'bucket-heart-box': true,
+      'bucket-213-3': true,
+      'bucket-213-10': true,
+      'bucket-213-34': true,
+    },
+    flower: {
+      calla_white: true,
+      hydrangea_blue: true,
+      hydrangea_purple: true,
+      iris_purple: true,
+      orchid_pink: true,
+      protea_pink: true,
+      ranunculus_pink: true,
+      tulip_pink: true,
+      tulip_purple: true,
+    },
+    card: {
+      elegant: true,
+      graduation: true,
+      simple: false,
+      birthday: false,
+    },
+    gift_template: {
+      'kupu-kupu-harapan': true,
+      'pesta-bintang': true,
+      pernikahan: true,
+      'cerita-kita': true,
+      'film-kenangan': true,
+      'album-surat': true,
+      klasik: false,
+      'taman-mekar': false,
+    },
+  });
+
+  const refreshVipItems = useCallback(async () => {
+    try {
+      const res = await fetch('/api/vip/items');
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.vipItems) {
+          setVipCatalog(data.vipItems);
+        }
+      }
+    } catch {
+      // Fallback ke seed lokal
+    }
+  }, []);
+
+  useEffect(() => {
+    refreshVipItems();
+  }, [refreshVipItems]);
+
+  const isFlowerVip = useCallback(
+    (flowerId: string): boolean => {
+      if (vipCatalog.flower && typeof vipCatalog.flower[flowerId] === 'boolean') {
+        return vipCatalog.flower[flowerId];
+      }
+      const f = FLOWERS.find((item) => item.id === flowerId);
+      return Boolean(f?.isPremium);
+    },
+    [vipCatalog]
+  );
+
+  const isBucketVip = useCallback(
+    (bucketId: string): boolean => {
+      if (vipCatalog.bucket && typeof vipCatalog.bucket[bucketId] === 'boolean') {
+        return vipCatalog.bucket[bucketId];
+      }
+      const b = BUCKET_SIZES.find((item) => item.id === bucketId);
+      return Boolean(b?.isPremium);
+    },
+    [vipCatalog]
+  );
+
+  const isCardVip = useCallback(
+    (cardStyle: string): boolean => {
+      if (vipCatalog.card && typeof vipCatalog.card[cardStyle] === 'boolean') {
+        return vipCatalog.card[cardStyle];
+      }
+      return cardStyle === 'elegant' || cardStyle === 'graduation';
+    },
+    [vipCatalog]
+  );
+
+  const isTemplateVip = useCallback(
+    (templateId: string): boolean => {
+      if (vipCatalog.gift_template && typeof vipCatalog.gift_template[templateId] === 'boolean') {
+        return vipCatalog.gift_template[templateId];
+      }
+      return templateId !== 'klasik' && templateId !== 'taman-mekar';
+    },
+    [vipCatalog]
+  );
+
+  const checkDesignVipViolations = useCallback(
+    (customDesign?: DesignState): string[] => {
+      if (isPremiumUnlocked) return [];
+      const target = customDesign || design;
+      const violations: string[] = [];
+
+      if (target.bucketSize && isBucketVip(target.bucketSize)) {
+        const b = BUCKET_SIZES.find((item) => item.id === target.bucketSize);
+        violations.push(b ? b.label : `Pembungkus (${target.bucketSize})`);
+      }
+
+      if (Array.isArray(target.selectedFlowers)) {
+        const seen = new Set<string>();
+        for (const f of target.selectedFlowers) {
+          const fId = f.flowerId || (f as any).id;
+          if (fId && !seen.has(fId) && isFlowerVip(fId)) {
+            seen.add(fId);
+            const fl = FLOWERS.find((item) => item.id === fId);
+            violations.push(fl ? fl.name : `Bunga (${fId})`);
+          }
+        }
+      }
+
+      if (target.text?.cardStyle && isCardVip(target.text.cardStyle)) {
+        violations.push(
+          target.text.cardStyle === 'elegant'
+            ? 'Luxury Gold Foil Card'
+            : `Kartu (${target.text.cardStyle})`
+        );
+      }
+
+      return violations;
+    },
+    [isPremiumUnlocked, design, isBucketVip, isFlowerVip, isCardVip]
+  );
+
+  const draftVipViolations = useMemo(() => {
+    return checkDesignVipViolations();
+  }, [checkDesignVipViolations]);
 
   // ── Auto-restore draft from LocalStorage on mount ──
   useEffect(() => {
@@ -485,6 +641,8 @@ export function DesignProvider({ children }: { children: React.ReactNode }) {
       }
 
       recordSnapshot();
+      const spreadX = Math.round((Math.random() - 0.5) * 50);
+      const spreadY = Math.round((Math.random() - 0.5) * 40);
       const newFlower: PlacedFlower = {
         uid: `${flower.id}_${Date.now()}_${Math.random()}`,
         flowerId: flower.id,
@@ -493,9 +651,14 @@ export function DesignProvider({ children }: { children: React.ReactNode }) {
         order: prev.selectedFlowers.length + 1,
         zIndex: prev.selectedFlowers.length + 1,
         angle: 0,
-        radius: 60 + Math.random() * 30,
-        rotation: (Math.random() - 0.5) * 0.4,
+        radius: 60,
+        rotation: Math.round((Math.random() - 0.5) * 16),
         stemVariation: (Math.random() - 0.5) * 0.2,
+        size: 92,
+        scale: 1.0,
+        x: 300 + spreadX,
+        y: 285 + spreadY,
+        isManual: true,
       };
 
       // Auto-select newly added flower so handles are immediately active
@@ -674,6 +837,8 @@ export function DesignProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const setStep = useCallback((step: number) => {
+    setIsBucketSelectedState(false);
+    setSelectedFlowerUidState(null);
     setDesign((prev) => ({ ...prev, currentStep: step }));
   }, []);
 
@@ -859,7 +1024,7 @@ export function DesignProvider({ children }: { children: React.ReactNode }) {
     recordSnapshot();
     setDesign((prev) => {
       const targetCount = prev.targetFlowerCount ?? 25;
-      const available = FLOWERS.filter((f) => !f.isPremium || isPremiumUnlocked);
+      const available = FLOWERS.filter((f) => !isFlowerVip(f.id) || isPremiumUnlocked);
       const shuffled = [...available].sort(() => Math.random() - 0.5);
       // Pick 3-5 harmonious species
       const speciesCount = Math.min(shuffled.length, Math.max(3, Math.min(5, Math.ceil(targetCount / 5))));
@@ -888,7 +1053,7 @@ export function DesignProvider({ children }: { children: React.ReactNode }) {
         selectedFlowers: newFlowers,
       };
     });
-  }, [isPremiumUnlocked]);
+  }, [recordSnapshot, isFlowerVip, isPremiumUnlocked]);
 
   const applyFlowerFormation = useCallback((newFlowers: PlacedFlower[]) => {
     recordSnapshot();
@@ -959,6 +1124,13 @@ export function DesignProvider({ children }: { children: React.ReactNode }) {
     recordSnapshot,
     isFlowerLimitModalOpen,
     setIsFlowerLimitModalOpen,
+    isFlowerVip,
+    isBucketVip,
+    isCardVip,
+    isTemplateVip,
+    checkDesignVipViolations,
+    draftVipViolations,
+    refreshVipItems,
   };
 
   return <DesignContext.Provider value={value}>{children}</DesignContext.Provider>;

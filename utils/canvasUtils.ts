@@ -190,6 +190,8 @@ export interface BouquetDimensions {
   bucketW: number;
   bucketH: number;
   scale: number;
+  offset?: { x: number; y: number };
+  bouquetScale?: number;
 }
 
 export function getBouquetDimensions(
@@ -313,6 +315,8 @@ export function getBouquetDimensions(
     bucketW: targetW,
     bucketH: targetH,
     scale,
+    offset,
+    bouquetScale: bMultiplier,
   };
 }
 
@@ -420,14 +424,27 @@ export function computeFlowerRenderItems(
   const manualItems: FlowerRenderItem[] = [];
   const autoFlowers: PlacedFlower[] = [];
 
+  const bOffset = dims.offset || { x: 0, y: 0 };
+  const bScale = dims.bouquetScale || 1.0;
+  const baseCenterX = dims.centerX - bOffset.x;
+  const baseCollarY = Math.round((dims.bucketY - bOffset.y) + (dims.bucketH / bScale) * 0.5373);
+
   flowers.forEach((f) => {
     if (f.isManual && f.x !== undefined && f.y !== undefined) {
       const { rotRad, sz } = getFlowerTransform(f, 0, 92);
+      const x = (bOffset.x === 0 && bScale === 1.0)
+        ? Math.round(f.x)
+        : Math.round(baseCenterX + bOffset.x + (f.x - baseCenterX) * bScale);
+      const y = (bOffset.y === 0 && bScale === 1.0)
+        ? Math.round(f.y)
+        : Math.round(baseCollarY + bOffset.y + (f.y - baseCollarY) * bScale);
+      const renderSz = bScale === 1.0 ? sz : Math.round(sz * bScale);
+
       manualItems.push({
         flower: f,
-        x: Math.round(f.x),
-        y: Math.round(f.y),
-        sz,
+        x,
+        y,
+        sz: renderSz,
         rot: rotRad,
         zIndex: f.zIndex ?? 10,
       });
