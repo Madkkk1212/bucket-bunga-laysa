@@ -66,19 +66,25 @@ export function getOrCreateDeviceId(): string {
 
 export function DesignProvider({ children }: { children: React.ReactNode }) {
   const [design, setDesign] = useState<DesignState>(createDefaultDesign);
-  // ─── UNDO HISTORY STACK ─────────────────────────────────────────────────
+  // ─── UNDO / REDO HISTORY STACK (MIN 20 STEPS, MAX 35 STEPS) ────────────
   const historyRef = useRef<DesignState[]>([]);
+  const redoRef = useRef<DesignState[]>([]);
   const [canUndo, setCanUndo] = useState(false);
+  const [canRedo, setCanRedo] = useState(false);
   const MAX_HISTORY = 35;
 
   const recordSnapshot = useCallback((customSnapshot?: DesignState) => {
     if (customSnapshot) {
       historyRef.current = [JSON.parse(JSON.stringify(customSnapshot)), ...historyRef.current].slice(0, MAX_HISTORY);
+      redoRef.current = [];
       setCanUndo(true);
+      setCanRedo(false);
     } else {
       setDesign((current) => {
         historyRef.current = [JSON.parse(JSON.stringify(current)), ...historyRef.current].slice(0, MAX_HISTORY);
+        redoRef.current = [];
         setCanUndo(true);
+        setCanRedo(false);
         return current;
       });
     }
@@ -88,8 +94,24 @@ export function DesignProvider({ children }: { children: React.ReactNode }) {
     if (historyRef.current.length === 0) return;
     const [prev, ...rest] = historyRef.current;
     historyRef.current = rest;
+    setDesign((current) => {
+      redoRef.current = [JSON.parse(JSON.stringify(current)), ...redoRef.current].slice(0, MAX_HISTORY);
+      setCanRedo(true);
+      return prev;
+    });
     setCanUndo(rest.length > 0);
-    setDesign(prev);
+  }, []);
+
+  const redo = useCallback(() => {
+    if (redoRef.current.length === 0) return;
+    const [next, ...rest] = redoRef.current;
+    redoRef.current = rest;
+    setDesign((current) => {
+      historyRef.current = [JSON.parse(JSON.stringify(current)), ...historyRef.current].slice(0, MAX_HISTORY);
+      setCanUndo(true);
+      return next;
+    });
+    setCanRedo(rest.length > 0);
   }, []);
 
   const [selectedFlowerUid, setSelectedFlowerUidState] = useState<string | null>(null);
@@ -99,6 +121,19 @@ export function DesignProvider({ children }: { children: React.ReactNode }) {
     setSelectedFlowerUidState(uid);
     if (uid) {
       setIsBucketSelectedState(false);
+      // Elemen yang dipilih otomatis naik ke depan (z-index)
+      setDesign((prev) => {
+        const index = prev.selectedFlowers.findIndex((f) => f.uid === uid);
+        if (index === -1) return prev;
+        const list = [...prev.selectedFlowers];
+        const [target] = list.splice(index, 1);
+        list.push(target);
+        const updatedList = list.map((f, i) => ({
+          ...f,
+          zIndex: (i + 1) * 2,
+        }));
+        return { ...prev, selectedFlowers: updatedList };
+      });
     }
   }, []);
 
@@ -108,6 +143,29 @@ export function DesignProvider({ children }: { children: React.ReactNode }) {
       setSelectedFlowerUidState(null);
     }
   }, []);
+
+  const resetElementTransform = useCallback((targetUid?: string) => {
+    const uid = targetUid || selectedFlowerUid;
+    if (uid) {
+      recordSnapshot();
+      setDesign((prev) => ({
+        ...prev,
+        selectedFlowers: prev.selectedFlowers.map((f) =>
+          f.uid === uid
+            ? { ...f, scale: 1.0, size: 92, rotation: 0, customRotation: 0 }
+            : f
+        ),
+      }));
+    } else if (isBucketSelected) {
+      recordSnapshot();
+      setDesign((prev) => ({
+        ...prev,
+        bouquetScale: 1.0,
+        bouquetRotation: 0,
+        bucketOffset: { x: 0, y: 0 },
+      }));
+    }
+  }, [selectedFlowerUid, isBucketSelected, recordSnapshot]);
 
   const [hoveredFlowerUid, setHoveredFlowerUid] = useState<string | null>(null);
   const [isPremiumUnlocked, setIsPremiumUnlocked] = useState<boolean>(false);
@@ -128,7 +186,40 @@ export function DesignProvider({ children }: { children: React.ReactNode }) {
       if (localDraft) {
         const parsed = JSON.parse(localDraft);
         if (parsed && Array.isArray(parsed.selectedFlowers)) {
-          setDesign(parsed);
+          // Validasi nilai saat memuat data (rotation dan scale dibatasi 0.3x - 3.0x) agar aman dari data rusak
+          const sanitizedFlowers = parsed.selectedFlowers.map((f: any) => {
+            let rotation = typeof f.rotation === 'number' && !isNaN(f.rotation)
+              ? ((f.rotation % 360) + 360) % 360
+              : typeof f.customRotation === 'number' && !isNaN(f.customRotation)
+              ? ((((f.customRotation * 180) / Math.PI) % 360) + 360) % 360
+              : 0;
+            if (rotation > 180) rotation -= 360;
+
+            const scale = typeof f.scale === 'number' && !isNaN(f.scale)
+              ? Math.max(0.3, Math.min(3.0, f.scale))
+              : 1.0;
+
+            return {
+              ...f,
+              rotation: Math.round(rotation * 10) / 10,
+              scale: Math.round(scale * 100) / 100,
+            };
+          });
+
+          const sanitizedBouquetScale = typeof parsed.bouquetScale === 'number' && !isNaN(parsed.bouquetScale)
+            ? Math.max(0.3, Math.min(3.0, parsed.bouquetScale))
+            : 1.0;
+
+          const sanitizedBouquetRot = typeof parsed.bouquetRotation === 'number' && !isNaN(parsed.bouquetRotation)
+            ? ((parsed.bouquetRotation % 360) + 360) % 360
+            : 0;
+
+          setDesign({
+            ...parsed,
+            selectedFlowers: sanitizedFlowers,
+            bouquetScale: Math.round(sanitizedBouquetScale * 100) / 100,
+            bouquetRotation: sanitizedBouquetRot > 180 ? sanitizedBouquetRot - 360 : sanitizedBouquetRot,
+          });
         }
       }
     } catch {
@@ -407,6 +498,12 @@ export function DesignProvider({ children }: { children: React.ReactNode }) {
         stemVariation: (Math.random() - 0.5) * 0.2,
       };
 
+      // Auto-select newly added flower so handles are immediately active
+      setTimeout(() => {
+        setSelectedFlowerUid(newFlower.uid);
+        setIsBucketSelected(false);
+      }, 0);
+
       return {
         ...prev,
         selectedFlowers: [...prev.selectedFlowers, newFlower],
@@ -438,6 +535,13 @@ export function DesignProvider({ children }: { children: React.ReactNode }) {
         y,
         isManual: true,
       };
+
+      // Auto-select newly placed flower
+      setTimeout(() => {
+        setSelectedFlowerUid(newFlower.uid);
+        setIsBucketSelected(false);
+      }, 0);
+
       return { ...prev, selectedFlowers: [...prev.selectedFlowers, newFlower] };
     });
   }, [recordSnapshot]);
@@ -848,6 +952,9 @@ export function DesignProvider({ children }: { children: React.ReactNode }) {
     clearAllFlowers,
     undo,
     canUndo,
+    redo,
+    canRedo,
+    resetElementTransform,
     nudgeFlower,
     recordSnapshot,
     isFlowerLimitModalOpen,

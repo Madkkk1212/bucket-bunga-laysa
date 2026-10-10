@@ -1,11 +1,26 @@
 import { RefObject } from 'react';
-import { ExportResolution } from '@/types/design';
+import { ExportResolution, DesignState } from '@/types/design';
+import { preloadFlowers, preloadImage } from '@/utils/canvasUtils';
 
 export async function downloadDesign(
   canvasRef?: RefObject<HTMLCanvasElement | null> | null,
   format: 'png' | 'jpg' = 'png',
   resolution: ExportResolution = '4k',
+  design?: DesignState,
 ): Promise<boolean> {
+  // If design state is provided, ensure all flower assets are fully preloaded in cache before capture
+  if (design) {
+    try {
+      const tasks: Promise<any>[] = [preloadFlowers(design.selectedFlowers, design.bucketSize)];
+      if (design.bgTheme === 'custom' && design.customBgImage) {
+        tasks.push(preloadImage(design.customBgImage));
+      }
+      await Promise.all(tasks);
+    } catch {
+      // Proceed with capture
+    }
+  }
+
   const canvas =
     canvasRef?.current ||
     (typeof document !== 'undefined'

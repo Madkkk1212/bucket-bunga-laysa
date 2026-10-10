@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import Image from 'next/image';
 import { Plus, Minus, Search, ChevronDown, ChevronLeft, ChevronRight, Crown, Lock } from 'lucide-react';
 import { useDesign } from '@/context/DesignContext';
@@ -22,7 +22,7 @@ const CATEGORY_TABS: { id: CategoryFilter; label: string }[] = [
 
 const ITEMS_PER_PAGE = 9; // 3 baris x 3 kolom = 9 bunga per halaman
 
-export default function StepFlowers() {
+const StepFlowers = React.memo(function StepFlowers() {
   const { t, isEn } = useLanguage();
   const {
     addFlower,
@@ -44,7 +44,7 @@ export default function StepFlowers() {
   const max = getMaxFlowers();
   const isMaxed = total >= max;
 
-  const handleAddFlower = (flower: FlowerDef) => {
+  const handleAddFlower = useCallback((flower: FlowerDef) => {
     if (isMaxed) {
       consoleAudio.play('warning');
       setIsFlowerLimitModalOpen(true);
@@ -52,17 +52,17 @@ export default function StepFlowers() {
     }
     consoleAudio.play('soft');
     addFlower(flower);
-  };
+  }, [isMaxed, addFlower, setIsFlowerLimitModalOpen]);
 
-  const handleCategoryChange = (tabId: CategoryFilter) => {
+  const handleCategoryChange = useCallback((tabId: CategoryFilter) => {
     setCategoryFilter(tabId);
     setCurrentPage(1);
-  };
+  }, []);
 
-  const handleSearchChange = (val: string) => {
+  const handleSearchChange = useCallback((val: string) => {
     setSearch(val);
     setCurrentPage(1);
-  };
+  }, []);
 
   // Filter flowers directly by category and search query
   const filteredFlowers = FLOWERS.filter((flower) => {
@@ -323,4 +323,6 @@ export default function StepFlowers() {
       />
     </div>
   );
-}
+});
+
+export default StepFlowers;

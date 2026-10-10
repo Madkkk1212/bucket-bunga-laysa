@@ -34,21 +34,15 @@ export default function HomeClientView() {
         <div className="hero-content game-arena-grid">
           {/* SISI KIRI: TITLE, DESKRIPSI & TOMBOL UTAMA */}
           <div className="hero-text game-hero-text">
-            <div className="hero-text-container">
-              <div className="hero-kicker-badge">
-                <span className="hero-kicker-icon">🌸</span>
-                <span className="hero-kicker-text">STUDIO BUKET BUNGA VIRTUAL #1</span>
-              </div>
-
-              {/* Modern & High-Contrast Aesthetic Title */}
-              <h1 className="game-theme-title">
-                {t('home_hero_title_1')}<br />
-                {t('home_hero_title_2')}<br />
-                <span className="game-theme-title-accent">{t('home_hero_title_3')}</span>
+            <div className="hero-text-container hero-fade-in">
+              {/* Modern & High-Contrast Aesthetic Title (2 Lines Only) */}
+              <h1 className="game-theme-title hero-fade-in stagger-1">
+                <span className="game-title-line-1">{t('home_hero_title_1')}</span>
+                <span className="game-theme-title-accent game-title-line-2">{t('home_hero_title_2')}</span>
               </h1>
 
               {/* Subheadline Penjelas Produk */}
-              <p className="hero-subtitle">
+              <p className="hero-subtitle hero-fade-in stagger-2">
                 {t('home_hero_subtitle')}
               </p>
 
@@ -59,7 +53,7 @@ export default function HomeClientView() {
 
           {/* SISI KANAN: 3D MYTHIC ITEM SHOWCASE (PEDESTAL) */}
           <div className="hero-visual game-visual-stage">
-            <div className="game-pedestal-showcase">
+            <div className="game-pedestal-showcase hero-fade-in stagger-4">
               {/* Feature Step Pill */}
               <div className="game-rarity-pill">
                 <span className="game-rarity-sparkle">🎀</span>
@@ -93,11 +87,6 @@ export default function HomeClientView() {
                     style={{ width: '100%', height: 'auto', display: 'block' }}
                   />
                 </picture>
-              </div>
-
-              {/* Floating Benefit Highlights Card */}
-              <div className="game-item-stats-card">
-                <span className="game-item-stats-text">{t('home_stat_benefits')}</span>
               </div>
             </div>
           </div>

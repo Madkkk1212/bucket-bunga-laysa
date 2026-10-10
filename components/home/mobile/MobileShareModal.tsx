@@ -88,7 +88,14 @@ export default function MobileShareModal({ isOpen, onClose, canvasRef }: Props) 
         ))
       );
 
-      const res = await fetch('/api/gifts', {
+      let bouquetDataUrl: string | undefined;
+      try {
+        bouquetDataUrl = canvasRef?.current?.toDataURL('image/png', 0.85);
+      } catch {
+        // Fallback
+      }
+
+      const res = await fetch('/api/b', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -96,15 +103,16 @@ export default function MobileShareModal({ isOpen, onClose, canvasRef }: Props) 
           recipientName: recipientName.trim() || (isEn ? 'For You' : 'Untukmu'),
           message: personalMessage.trim() || cardMessage,
           musicTrack,
-          designData: design,
-          accessCode,
-          isVipUser,
+          designData: {
+            ...design,
+            ...(bouquetDataUrl ? { final2D: { image: bouquetDataUrl } } : {}),
+          },
         }),
       });
 
       const data = await res.json();
-      if (data.success && data.shareUrl) {
-        const fullUrl = `${window.location.origin}${data.shareUrl}`;
+      if (data.success && data.id) {
+        const fullUrl = `${window.location.origin}/b/${data.id}`;
         setGiftShareUrl(fullUrl);
         setGiftId(data.id);
       } else {
@@ -390,8 +398,40 @@ export default function MobileShareModal({ isOpen, onClose, canvasRef }: Props) 
                         <span>{isEn ? 'Send Link via WhatsApp' : 'Kirim Link via WhatsApp'}</span>
                       </a>
 
+                      {typeof navigator !== 'undefined' && typeof navigator.share === 'function' && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (navigator.share) {
+                              navigator.share({
+                                title: `Buket Bunga untuk ${recipientName || 'Kamu'} 🌸`,
+                                text: `Hai ${recipientName || 'kamu'}! Buka kado buket bunga virtual spesial dariku di link ini ya:`,
+                                url: giftShareUrl || '',
+                              }).catch(() => {});
+                            }
+                          }}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '8px',
+                            borderRadius: '14px',
+                            background: '#FDF2F8',
+                            color: '#9D174D',
+                            border: '1.5px solid #FBCFE8',
+                            padding: '11px',
+                            fontSize: '12px',
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                          }}
+                        >
+                          <Share2 size={15} />
+                          <span>{isEn ? 'Share Link' : 'Bagikan Link'}</span>
+                        </button>
+                      )}
+
                       <a
-                        href={`/gift/${giftId}`}
+                        href={`/b/${giftId}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         style={{
@@ -410,7 +450,7 @@ export default function MobileShareModal({ isOpen, onClose, canvasRef }: Props) 
                         }}
                       >
                         <ExternalLink size={15} />
-                        <span>{isEn ? 'Open Gift Preview' : 'Buka Pratinjau Kado'}</span>
+                        <span>{isEn ? 'Open Gift Preview (/b/…)' : 'Buka Halaman Kado (/b/…)'}</span>
                       </a>
                     </div>
 

@@ -17,7 +17,7 @@ export default function HeroActions() {
   }, [router]);
 
   return (
-    <div className="hero-actions game-actions-single">
+    <div className="hero-actions game-actions-single hero-fade-in stagger-3">
       {/* ── SATU-SATUNYA TOMBOL UTAMA: MULAI BUAT BUCKET ── */}
       <Link
         href="/menu"
@@ -25,26 +25,10 @@ export default function HeroActions() {
         className="game-btn-primary game-btn-massive"
         aria-label={t('home_hero_start_btn')}
       >
-        <Sparkles size={22} className="game-sparkle-spin" />
-        <span>{t('home_hero_start_btn')}</span>
-        <ArrowRight size={22} className="game-arrow-pulse" />
+        <Sparkles size={22} className="game-sparkle-spin shrink-0" />
+        <span className="game-btn-label-text">{t('home_hero_start_btn')}</span>
+        <ArrowRight size={22} className="game-arrow-pulse shrink-0" />
       </Link>
-
-      {/* ── BENEFIT HIGHLIGHTS UNDER BUTTON ── */}
-      <div className="hero-trust-row" aria-label="Keunggulan Layanan">
-        <span className="hero-trust-chip">
-          <Sparkles size={13} className="text-amber-500" />
-          <span>100% Gratis</span>
-        </span>
-        <span className="hero-trust-dot">•</span>
-        <span className="hero-trust-chip">
-          <span>Tanpa Daftar</span>
-        </span>
-        <span className="hero-trust-dot">•</span>
-        <span className="hero-trust-chip">
-          <span>Unduh Kualitas HD</span>
-        </span>
-      </div>
     </div>
   );
 }

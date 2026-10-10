@@ -1,0 +1,34 @@
+[
+  {
+    "id": "ewz4g6kg",
+    "senderName": "Farhan",
+    "recipientName": "Nadia",
+    "message": "Selamat ulang tahun sayang! Semoga suka buket bunganya 🌸✨",
+    "musicTrack": "romantic-piano",
+    "designData": {
+      "bucketSize": "medium",
+      "selectedFlowers": [
+        {
+          "id": "rose_red",
+          "name": "Mawar Merah",
+          "imageUrl": "/images/flowers/rose_pink.png",
+          "x": 200,
+          "y": 200
+        }
+      ],
+      "wrapper": {
+        "id": "wrap_pink",
+        "color": "#ffb6c1"
+      },
+      "ribbon": {
+        "id": "rib_rose",
+        "color": "#e11d48"
+      },
+      "text": {
+        "content": "Happy Birthday!"
+      }
+    },
+    "createdAt": "2026-10-09T23:26:12.908Z",
+    "views": 1
+  }
+]

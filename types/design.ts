@@ -223,10 +223,16 @@ export interface DesignContextType {
   applyFlowerFormation: (flowers: PlacedFlower[]) => void;
   /** Kosongkan seluruh bunga pada buket */
   clearAllFlowers: () => void;
-  /** Undo last flower add/remove/layer change */
+  /** Undo last flower add/remove/transform change */
   undo: () => void;
   /** Whether there is anything to undo */
   canUndo: boolean;
+  /** Redo previously undone action */
+  redo: () => void;
+  /** Whether there is anything to redo */
+  canRedo: boolean;
+  /** Reset transform (scale 1.0, rotation 0) for element or whole bouquet */
+  resetElementTransform: (uid?: string) => void;
   /** Geser posisi bunga secara presisi (D-pad nudge) */
   nudgeFlower: (uid: string, dx: number, dy: number) => void;
   /** Simpan snapshot sebelum aksi canvas atau interaksi manual */

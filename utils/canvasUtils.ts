@@ -167,7 +167,13 @@ export function preloadFlowers(
   ].filter(Boolean) as string[];
 
   const allUrls = [...new Set([...flowerUrls, ...bucketUrls])];
-  return Promise.all(allUrls.map(preloadImage));
+  const uncached = allUrls.filter(
+    (url) => !imageCache[url] || !imageCache[url].complete || !imageCache[url].naturalWidth,
+  );
+  if (uncached.length === 0) {
+    return Promise.resolve([]);
+  }
+  return Promise.all(uncached.map(preloadImage));
 }
 
 // ─── Bouquet Dimensions & Geometry ──────────────────────────────────────────
@@ -394,17 +400,35 @@ export function computeFlowerRenderItems(
     return getFlowerById(f.flowerId)?.category || 'main';
   };
 
+  const getFlowerTransform = (f: PlacedFlower, fallbackRot: number, fallbackSz: number) => {
+    let rotRad = fallbackRot;
+    if (f.rotation !== undefined && Number.isFinite(f.rotation)) {
+      rotRad = (f.rotation * Math.PI) / 180;
+    } else if (f.customRotation !== undefined && Number.isFinite(f.customRotation)) {
+      rotRad = Math.abs(f.customRotation) > 2 * Math.PI
+        ? (f.customRotation * Math.PI) / 180
+        : f.customRotation;
+    }
+    const scaleMultiplier = Math.max(0.3, Math.min(3.0, f.scale ?? 1.0));
+    const baseSz = f.size ?? fallbackSz;
+    return {
+      rotRad,
+      sz: Math.round(baseSz * scaleMultiplier),
+    };
+  };
+
   const manualItems: FlowerRenderItem[] = [];
   const autoFlowers: PlacedFlower[] = [];
 
   flowers.forEach((f) => {
     if (f.isManual && f.x !== undefined && f.y !== undefined) {
+      const { rotRad, sz } = getFlowerTransform(f, 0, 92);
       manualItems.push({
         flower: f,
         x: Math.round(f.x),
         y: Math.round(f.y),
-        sz: Math.round((f.size ?? 92) * (f.scale ?? 1)),
-        rot: f.customRotation ?? f.rotation ?? 0,
+        sz,
+        rot: rotRad,
         zIndex: f.zIndex ?? 10,
       });
     } else {
@@ -427,12 +451,13 @@ export function computeFlowerRenderItems(
   ];
   greens.forEach((g, idx) => {
     const anc = greenAnchors[idx % greenAnchors.length];
+    const { rotRad, sz } = getFlowerTransform(g, anc.rot, anc.sz);
     renderItems.push({
       flower: g,
       x: anc.x,
       y: anc.y,
-      sz: Math.round(anc.sz * (g.scale ?? 1)),
-      rot: anc.rot,
+      sz,
+      rot: rotRad,
       zIndex: g.zIndex ?? anc.zIndex,
     });
   });
@@ -451,12 +476,13 @@ export function computeFlowerRenderItems(
   ];
   fillers.forEach((fl, idx) => {
     const anc = fillerAnchors[idx % fillerAnchors.length];
+    const { rotRad, sz } = getFlowerTransform(fl, anc.rot, anc.sz);
     renderItems.push({
       flower: fl,
       x: anc.x,
       y: anc.y,
-      sz: Math.round(anc.sz * (fl.scale ?? 1)),
-      rot: anc.rot,
+      sz,
+      rot: rotRad,
       zIndex: fl.zIndex ?? anc.zIndex,
     });
   });
@@ -568,12 +594,13 @@ export function computeFlowerRenderItems(
 
     primaryFlowers.forEach((f, idx) => {
       const slot = mainSlots[idx % mainSlots.length];
+      const { rotRad, sz } = getFlowerTransform(f, slot.rot, slot.sz);
       renderItems.push({
         flower: f,
         x: slot.x,
         y: slot.y,
-        sz: Math.round(slot.sz * (f.scale ?? 1)),
-        rot: slot.rot,
+        sz,
+        rot: rotRad,
         zIndex: f.zIndex ?? slot.zIndex,
       });
     });
@@ -584,19 +611,40 @@ export function computeFlowerRenderItems(
   return renderItems;
 }
 
-export function drawFlowers(
+// ─── Fast-Path Cache Status Checker (Synchronous without Promise) ────────────
+export function areImagesCached(flowers: PlacedFlower[], bucketId = 'bucket-1'): boolean {
+  const flowerUrls = flowers.map((f) => f.imageUrl).filter(Boolean);
+  const bucket = getBucketSize(bucketId);
+  const bucketUrls = [
+    bucket.backImage || '/images/bucket/bucket-1_back.png',
+    bucket.frontImage || '/images/bucket/bucket-1_front.png',
+    bucket.image || '/images/bucket/bucket-1.png',
+  ].filter(Boolean) as string[];
+
+  const allUrls = [...new Set([...flowerUrls, ...bucketUrls])];
+  return allUrls.every(
+    (url) => imageCache[url] && imageCache[url].complete && imageCache[url].naturalWidth > 0,
+  );
+}
+
+export function isImageCached(src?: string | null): boolean {
+  if (!src) return true;
+  return Boolean(imageCache[src] && imageCache[src].complete && imageCache[src].naturalWidth > 0);
+}
+
+export function getImageFromCache(src?: string | null): HTMLImageElement | null {
+  if (!src) return null;
+  const img = imageCache[src];
+  if (img && img.complete && img.naturalWidth > 0) return img;
+  return null;
+}
+
+export function drawFlowerRenderItems(
   ctx: CanvasRenderingContext2D,
-  flowers: PlacedFlower[],
-  dims: BouquetDimensions,
+  renderItems: FlowerRenderItem[],
 ): void {
-  const total = flowers.length;
-  if (total === 0) return;
+  if (renderItems.length === 0) return;
 
-  ctx.save();
-
-  const renderItems = computeFlowerRenderItems(flowers, dims);
-
-  // Draw flowers centered at (x, y) with realistic drop shadows
   renderItems.forEach((item, index) => {
     const img = imageCache[item.flower.imageUrl];
 
@@ -635,7 +683,19 @@ export function drawFlowers(
 
     ctx.restore();
   });
+}
 
+export function drawFlowers(
+  ctx: CanvasRenderingContext2D,
+  flowers: PlacedFlower[],
+  dims: BouquetDimensions,
+): void {
+  const total = flowers.length;
+  if (total === 0) return;
+
+  ctx.save();
+  const renderItems = computeFlowerRenderItems(flowers, dims);
+  drawFlowerRenderItems(ctx, renderItems);
   ctx.restore();
 }
 

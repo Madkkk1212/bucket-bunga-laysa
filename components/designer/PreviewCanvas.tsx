@@ -1,14 +1,17 @@
 'use client';
 
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { useDesign } from '@/context/DesignContext';
 import {
   drawBouquetBack,
   drawBouquetFront,
   drawFlowers,
+  drawFlowerRenderItems,
   drawText,
   getCardBounds,
   preloadFlowers,
+  areImagesCached,
+  isImageCached,
   computeFlowerRenderItems,
   getBouquetDimensions,
   FlowerRenderItem,
@@ -17,9 +20,33 @@ import {
   BACKGROUND_THEMES,
   drawCanvasBackground,
   preloadImage,
+  getImageFromCache,
 } from '@/utils/canvasUtils';
-import { CanvasRatio, BackgroundTheme } from '@/types/design';
+import { CanvasRatio, BackgroundTheme, PlacedFlower } from '@/types/design';
 import { useLanguage } from '@/context/LanguageContext';
+import { RotateCcw, RotateCw } from 'lucide-react';
+import TransformControlOverlay from './TransformControlOverlay';
+
+export interface LiveFlowerTransform {
+  uid: string;
+  x?: number;
+  y?: number;
+  rotation?: number; // radians
+  scale?: number;
+  size?: number;
+}
+
+export interface LiveBucketTransform {
+  offset?: { x: number; y: number };
+  rotation?: number; // degrees
+  scale?: number;
+}
+
+export interface LiveCardTransform {
+  cardX?: number;
+  cardY?: number;
+  cardScale?: number;
+}
 
 interface PreviewCanvasProps {
   canvasRef?: React.RefObject<HTMLCanvasElement | null>;
@@ -59,10 +86,19 @@ export default function PreviewCanvas({ canvasRef: externalRef }: PreviewCanvasP
     setBouquetRotation,
     setBucketOffset,
     recordSnapshot,
+    undo,
+    canUndo,
+    redo,
+    canRedo,
+    resetElementTransform,
+    changeFlowerLayer,
+    duplicateFlower,
+    removeFlowerByUid,
   } = useDesign();
 
   const preDragSnapshot = useRef<any>(null);
   const hasMovedDrag = useRef<boolean>(false);
+  const isDraggingActiveRef = useRef<boolean>(false);
 
   const currentRatio: CanvasRatio = design.canvasRatio ?? '1:1';
   const currentTheme: BackgroundTheme = design.bgTheme ?? 'studio-warm';
@@ -90,8 +126,47 @@ export default function PreviewCanvas({ canvasRef: externalRef }: PreviewCanvasP
   const [isCardSelected, setIsCardSelected] = useState<boolean>(false);
   const cardDragOffset = useRef<{ dx: number; dy: number }>({ dx: 0, dy: 0 });
 
+  // 5. Capped devicePixelRatio (max 2) for retina sharpness without excessive memory
+  const [dpr, setDpr] = useState<number>(1);
+  useEffect(() => {
+    setDpr(Math.min(window.devicePixelRatio || 1, 2));
+  }, []);
+
+  // Live transform refs for high-performance drag without React re-renders
+  const liveFlowerRef = useRef<LiveFlowerTransform | null>(null);
+  const liveBucketRef = useRef<LiveBucketTransform | null>(null);
+  const liveCardRef = useRef<LiveCardTransform | null>(null);
+
+  // Anti-race render counter & single rAF scheduler
+  const renderIdRef = useRef<number>(0);
+  const rAfIdRef = useRef<number | null>(null);
+
   // Cache latest computed render items for instant hit testing
   const renderItemsRef = useRef<FlowerRenderItem[]>([]);
+
+  // Synchronous memoized bouquet dimensions & flower render items
+  const currentBucketDims = useMemo(() => {
+    return getBouquetDimensions(
+      canvasW,
+      canvasH,
+      design.bucketSize,
+      design.bouquetScale ?? 1.0,
+      design.bucketOffset ?? { x: 0, y: 0 }
+    );
+  }, [canvasW, canvasH, design.bucketSize, design.bouquetScale, design.bucketOffset]);
+
+  const currentRenderItems = useMemo(() => {
+    return computeFlowerRenderItems(design.selectedFlowers, currentBucketDims);
+  }, [design.selectedFlowers, currentBucketDims]);
+
+  const currentSelectedItem = useMemo(() => {
+    if (!selectedUid) return null;
+    return (
+      currentRenderItems.find((it) => it.flower.uid === selectedUid) ??
+      renderItemsRef.current.find((it) => it.flower.uid === selectedUid) ??
+      null
+    );
+  }, [selectedUid, currentRenderItems]);
 
   // ─── 1. SELECTION HANDLES DRAWER ─────────────────────────────────────────
   const drawSelectionHandles = (ctx: CanvasRenderingContext2D, item: FlowerRenderItem) => {
@@ -339,36 +414,33 @@ export default function PreviewCanvas({ canvasRef: externalRef }: PreviewCanvasP
     ctx.restore();
   };
 
-  // ─── 2. RENDER FUNCTION ──────────────────────────────────────────────────
-  const render = useCallback(async () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    // Preload flower and wrapper images first
-    await preloadFlowers(design.selectedFlowers, design.bucketSize);
+  // ─── 2. FAST-PATH SYNCHRONOUS CANVAS PAINTER ─────────────────────────────
+  const paintCanvasSync = useCallback((ctx: CanvasRenderingContext2D) => {
+    // 5. Capped DPR Transform (max 2 for retina sharpness without excessive memory)
+    const effectiveDpr = typeof window !== 'undefined' ? Math.min(window.devicePixelRatio || 1, 2) : 1;
+    ctx.save();
+    ctx.setTransform(effectiveDpr, 0, 0, effectiveDpr, 0, 0);
 
     // Clear canvas
     ctx.clearRect(0, 0, canvasW, canvasH);
 
-    // Dynamic Curated Studio Backdrop Theme or Custom Image
+    // Dynamic Curated Studio Backdrop Theme or Custom Image (Fast-Path Cache)
     let customImg: HTMLImageElement | null = null;
     if (currentTheme === 'custom' && design.customBgImage) {
-      try {
-        customImg = await preloadImage(design.customBgImage);
-      } catch {
-        // fallback
-      }
+      customImg = getImageFromCache(design.customBgImage);
     }
     drawCanvasBackground(ctx, currentTheme, canvasW, canvasH, customImg);
 
-    // 1. Draw bouquet back wrapper + flowers + front — all inside a rotation transform
-    const bouquetRotDeg = design.bouquetRotation ?? 0;
+    // 1. Draw bouquet back wrapper + flowers + front — all inside bouquet transform
+    // Live override check from liveBucketRef during drag (0 React re-renders)
+    const liveBucket = liveBucketRef.current;
+    const bouquetRotDeg = liveBucket?.rotation !== undefined ? liveBucket.rotation : (design.bouquetRotation ?? 0);
     const bouquetRotRad = (bouquetRotDeg * Math.PI) / 180;
+    const bouquetScale = liveBucket?.scale !== undefined ? liveBucket.scale : (design.bouquetScale ?? 1.0);
+    const bucketOffset = liveBucket?.offset !== undefined ? liveBucket.offset : (design.bucketOffset ?? { x: 0, y: 0 });
+
     const pivotX = canvasW / 2;
     const pivotY = canvasH / 2;
-    const bucketOffset = design.bucketOffset ?? { x: 0, y: 0 };
 
     ctx.save();
     ctx.translate(pivotX, pivotY);
@@ -379,13 +451,26 @@ export default function PreviewCanvas({ canvasRef: externalRef }: PreviewCanvasP
       ctx,
       design.bucketSize,
       design.wrapperType,
-      design.bouquetScale ?? 1.0,
+      bouquetScale,
       bucketOffset,
     );
     bucketDimsRef.current = dims;
 
-    // 2. Compute current item placements
+    // 2. Compute current item placements ONCE
     const items = computeFlowerRenderItems(design.selectedFlowers, dims);
+
+    // Apply live flower transform override during drag (0 React re-renders)
+    const liveFlower = liveFlowerRef.current;
+    if (liveFlower) {
+      const targetItem = items.find((it) => it.flower.uid === liveFlower.uid);
+      if (targetItem) {
+        if (liveFlower.x !== undefined) targetItem.x = liveFlower.x;
+        if (liveFlower.y !== undefined) targetItem.y = liveFlower.y;
+        if (liveFlower.rotation !== undefined) targetItem.rot = liveFlower.rotation;
+        if (liveFlower.size !== undefined) targetItem.sz = liveFlower.size;
+        else if (liveFlower.scale !== undefined) targetItem.sz = Math.round(92 * liveFlower.scale);
+      }
+    }
     renderItemsRef.current = items;
 
     // Optional Floral Cavity Bed Guide
@@ -404,82 +489,48 @@ export default function PreviewCanvas({ canvasRef: externalRef }: PreviewCanvasP
       ctx.setLineDash([6, 6]);
       ctx.stroke();
 
-      // Subtle fill
       ctx.fillStyle = 'rgba(255, 255, 255, 0.12)';
       ctx.fill();
 
-      // Small badge text at top of guide
       ctx.font = '600 11px Inter, sans-serif';
       ctx.fillStyle = 'rgba(184, 134, 11, 0.7)';
       ctx.textAlign = 'center';
       ctx.fillText(
         isEn ? 'Flower Pocket Area (Free Drag)' : 'Area Kantung Bunga (Bebas Geser)',
         centerX,
-        guideCenterY - guideH / 2 - 8
+        guideCenterY - guideH / 2 - 8,
       );
       ctx.restore();
     }
 
-    // 3. Draw flowers inside and/or in front of the bucket based on layer setting
+    // 3. Partition items into inside and front layers (drawn via drawFlowerRenderItems without recomputing)
     const globalMode = design.flowerPlacementMode || 'inside';
-    const insideFlowers: typeof design.selectedFlowers = [];
-    const frontFlowers: typeof design.selectedFlowers = [];
+    const insideItems: FlowerRenderItem[] = [];
+    const frontItems: FlowerRenderItem[] = [];
 
-    design.selectedFlowers.forEach((f) => {
-      // Prioritas utama: pengaturan individual bunga (f.layer)
-      // Jika f.layer belum diset, baru ikuti pengaturan global (globalMode)
-      const effectiveLayer = f.layer !== undefined ? f.layer : globalMode;
+    items.forEach((it) => {
+      const effectiveLayer = it.flower.layer !== undefined ? it.flower.layer : globalMode;
       if (effectiveLayer === 'front') {
-        frontFlowers.push(f);
+        frontItems.push(it);
       } else {
-        insideFlowers.push(f);
+        insideItems.push(it);
       }
     });
 
     // Pas 1: Bunga di dalam kantung buket (terpotong alami oleh bibir/pita depan)
-    if (insideFlowers.length > 0) {
-      drawFlowers(ctx, insideFlowers, dims);
+    if (insideItems.length > 0) {
+      drawFlowerRenderItems(ctx, insideItems);
     }
 
     // 4. Draw bouquet front collar & striped ribbon bow (tucks lower stems)
     drawBouquetFront(ctx, dims, design.bucketSize, design.wrapperType);
 
     // Pas 2: Bunga di depan gambar buket (mekar di atas lipatan / pita buket)
-    if (frontFlowers.length > 0) {
-      drawFlowers(ctx, frontFlowers, dims);
-    }
-
-    // 4b. Draw Bucket Interactive Selection & Hover handles INSIDE rotated bouquet space
-    const isBucketActive =
-      isBucketSelected ||
-      isBucketHovered ||
-      dragState?.mode === 'bucket-move' ||
-      dragState?.mode === 'bucket-rotate' ||
-      dragState?.mode === 'bucket-scale';
-    if (!isFinished && isBucketActive) {
-      drawBucketInteractiveHandles(ctx, dims, isBucketSelected, isBucketHovered, dragState?.mode);
+    if (frontItems.length > 0) {
+      drawFlowerRenderItems(ctx, frontItems);
     }
 
     ctx.restore(); // end bouquet rotation transform
-
-    // 5. Draw interactive selection handles if a flower is selected (hanya saat belum final/selesai)
-    // NOTE: handles drawn in screen space — need to apply rotation offset to positions
-    if (selectedUid && !isFinished) {
-      const selectedItem = items.find((it) => it.flower.uid === selectedUid);
-      if (selectedItem) {
-        const cos = Math.cos(bouquetRotRad);
-        const sin = Math.sin(bouquetRotRad);
-        const dx = selectedItem.x - pivotX;
-        const dy = selectedItem.y - pivotY;
-        const rotatedItem = {
-          ...selectedItem,
-          x: pivotX + dx * cos - dy * sin,
-          y: pivotY + dx * sin + dy * cos,
-          rot: selectedItem.rot + bouquetRotRad,
-        };
-        drawSelectionHandles(ctx, rotatedItem);
-      }
-    }
 
     // 5b. Beacon glow ring for hovered flower (from sidebar picker - hanya saat belum selesai)
     if (hoveredFlowerUid && hoveredFlowerUid !== selectedUid && !isFinished) {
@@ -502,7 +553,6 @@ export default function PreviewCanvas({ canvasRef: externalRef }: PreviewCanvasP
         ctx.shadowBlur = 12;
         ctx.stroke();
 
-        // Pin icon above the hovered flower
         ctx.beginPath();
         ctx.arc(hx, hy - hovItem.sz / 2 - 14, 11, 0, Math.PI * 2);
         ctx.fillStyle = '#E11D48';
@@ -516,12 +566,15 @@ export default function PreviewCanvas({ canvasRef: externalRef }: PreviewCanvasP
       }
     }
 
-    // 6. Draw greeting text overlay
-    drawText(ctx, design.text);
+    // 6. Draw greeting text overlay (with live card override if dragging card)
+    const effectiveText = liveCardRef.current
+      ? { ...design.text, ...liveCardRef.current }
+      : design.text;
+    drawText(ctx, effectiveText);
 
     // 7. Interactive card drag outline & scale handle
-    if (design.text.content && design.text.content.trim()) {
-      const b = getCardBounds(design.text, canvasW, canvasH);
+    if (effectiveText.content && effectiveText.content.trim()) {
+      const b = getCardBounds(effectiveText, canvasW, canvasH);
       const isCardActive =
         !isFinished &&
         (isDraggingCard ||
@@ -542,7 +595,6 @@ export default function PreviewCanvas({ canvasRef: externalRef }: PreviewCanvasP
         ctx.setLineDash([6, 5]);
         ctx.stroke();
 
-        // Drag pill badge at top of card
         const pillW = 126;
         const pillH = 22;
         ctx.setLineDash([]);
@@ -557,7 +609,6 @@ export default function PreviewCanvas({ canvasRef: externalRef }: PreviewCanvasP
         ctx.textBaseline = 'middle';
         ctx.fillText(isEn ? '✉️ Drag Greeting Card' : '✉️ Seret Kartu Ucapan', b.cx, b.y - 9);
 
-        // Scale Handle (Bottom-Right corner square with diagonal arrow)
         const scaleHandleX = b.x + b.w + 6;
         const scaleHandleY = b.y + b.h + 6;
 
@@ -575,8 +626,7 @@ export default function PreviewCanvas({ canvasRef: externalRef }: PreviewCanvasP
         ctx.textBaseline = 'middle';
         ctx.fillText('⤡', scaleHandleX, scaleHandleY);
 
-        // Scale percentage badge
-        const currentScalePct = Math.round((design.text.cardScale ?? 1.0) * 100);
+        const currentScalePct = Math.round((effectiveText.cardScale ?? 1.0) * 100);
         ctx.font = 'bold 9px "Montserrat", sans-serif';
         ctx.fillStyle = '#B45309';
         ctx.textAlign = 'left';
@@ -585,28 +635,87 @@ export default function PreviewCanvas({ canvasRef: externalRef }: PreviewCanvasP
         ctx.restore();
       }
     }
+
+    ctx.restore(); // restore effectiveDpr transform
   }, [
     design,
-    canvasRef,
+    canvasW,
+    canvasH,
+    currentTheme,
     showGuide,
     isFinished,
-    selectedUid,
-    currentRatio,
     hoveredFlowerUid,
+    selectedUid,
     isDraggingCard,
     isCardHovered,
     isCardSelected,
     dragState,
-    canvasW,
-    canvasH,
-    currentTheme,
-    isBucketHovered,
-    isBucketSelected,
+    isEn,
   ]);
 
+  // ─── 2b. FAST-PATH CACHE-AWARE RENDER (0 PROMISES IF COMPLETE) ───────────
+  const renderCanvas = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const thisRenderId = ++renderIdRef.current;
+
+    // Fast-path: Check if all images are already completely loaded in memory
+    const isCustomBg = currentTheme === 'custom' && Boolean(design.customBgImage);
+    const allCached =
+      areImagesCached(design.selectedFlowers, design.bucketSize) &&
+      (!isCustomBg || isImageCached(design.customBgImage));
+
+    if (allCached) {
+      // 100% SYNCHRONOUS FAST PATH - 0 Promises, 0 Microtasks, 60fps!
+      paintCanvasSync(ctx);
+      return;
+    }
+
+    // Slow-path: Preload missing images, with Anti-Race renderId verification
+    (async () => {
+      try {
+        const tasks: Promise<any>[] = [preloadFlowers(design.selectedFlowers, design.bucketSize)];
+        if (isCustomBg && design.customBgImage) {
+          tasks.push(preloadImage(design.customBgImage));
+        }
+        await Promise.all(tasks);
+      } catch {
+        // Proceed with fallback
+      }
+
+      // ANTI-RACE: discard if a newer render was scheduled while waiting for network
+      if (renderIdRef.current !== thisRenderId) {
+        return;
+      }
+
+      paintCanvasSync(ctx);
+    })();
+  }, [canvasRef, design, currentTheme, paintCanvasSync]);
+
+  // ─── 2c. SINGLE rAF SCHEDULER & EFFECT CLEANUP ───────────────────────────
+  const scheduleRender = useCallback(() => {
+    if (rAfIdRef.current !== null) {
+      cancelAnimationFrame(rAfIdRef.current);
+      rAfIdRef.current = null;
+    }
+    rAfIdRef.current = requestAnimationFrame(() => {
+      rAfIdRef.current = null;
+      renderCanvas();
+    });
+  }, [renderCanvas]);
+
   useEffect(() => {
-    render();
-  }, [render]);
+    scheduleRender();
+    return () => {
+      if (rAfIdRef.current !== null) {
+        cancelAnimationFrame(rAfIdRef.current);
+        rAfIdRef.current = null;
+      }
+    };
+  }, [scheduleRender, design]);
 
   // ─── 3. HIT TESTING UTILITIES ────────────────────────────────────────────
   // Transform raw canvas coords into bouquet-local coords (inverse rotation)
@@ -626,22 +735,22 @@ export default function PreviewCanvas({ canvasRef: externalRef }: PreviewCanvasP
     };
   };
 
-  const getCanvasCoords = (e: React.MouseEvent | React.TouchEvent) => {
+  const getCanvasCoords = (e: React.MouseEvent | React.TouchEvent | React.PointerEvent) => {
     const canvas = canvasRef.current;
     if (!canvas) return { x: 0, y: 0 };
     const rect = canvas.getBoundingClientRect();
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
+    const scaleX = canvasW / rect.width;
+    const scaleY = canvasH / rect.height;
 
     let clientX = 0;
     let clientY = 0;
 
-    if ('touches' in e && e.touches.length > 0) {
-      clientX = e.touches[0].clientX;
-      clientY = e.touches[0].clientY;
+    if ('touches' in e && (e as React.TouchEvent).touches && (e as React.TouchEvent).touches.length > 0) {
+      clientX = (e as React.TouchEvent).touches[0].clientX;
+      clientY = (e as React.TouchEvent).touches[0].clientY;
     } else if ('clientX' in e) {
-      clientX = e.clientX;
-      clientY = e.clientY;
+      clientX = (e as React.MouseEvent).clientX;
+      clientY = (e as React.MouseEvent).clientY;
     }
 
     return {
@@ -716,7 +825,14 @@ export default function PreviewCanvas({ canvasRef: externalRef }: PreviewCanvasP
   };
 
   // ─── 4. MOUSE & TOUCH EVENT HANDLERS ─────────────────────────────────────
-  const handlePointerDown = (e: React.MouseEvent | React.TouchEvent) => {
+  const handlePointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    isDraggingActiveRef.current = true;
+    try {
+      e.currentTarget?.setPointerCapture(e.pointerId);
+    } catch {
+      // Ignore if pointer capture is not supported
+    }
+
     // Snapshot current state in case a drag move occurs
     try {
       preDragSnapshot.current = JSON.parse(JSON.stringify(design));
@@ -837,14 +953,15 @@ export default function PreviewCanvas({ canvasRef: externalRef }: PreviewCanvasP
     }
 
     // 4. Check flower bloom hits (bouquet-local coords, topmost flower first)
+    const activeItems = currentRenderItems.length > 0 ? currentRenderItems : items;
     const isTouchDevice = typeof window !== 'undefined' && ('ontouchstart' in window || (navigator?.maxTouchPoints ?? 0) > 0);
-    const flowerHitSlop = isTouchDevice ? 16 : 6;
-    for (let i = items.length - 1; i >= 0; i--) {
-      const item = items[i];
+    const flowerHitSlop = isTouchDevice ? 22 : 14;
+    for (let i = activeItems.length - 1; i >= 0; i--) {
+      const item = activeItems[i];
       const dist = Math.hypot(flMouseX - item.x, flMouseY - item.y);
 
-      // Hit within circular bloom head boundary (with touch grace margin)
-      if (dist <= item.sz / 2 + flowerHitSlop) {
+      // Hit within circular bloom head boundary (with generous touch grace margin)
+      if (dist <= Math.max(item.sz / 2 + flowerHitSlop, 36)) {
         setSelectedUid(item.flower.uid);
         setIsBucketSelected(false);
         setIsCardSelected(false);
@@ -856,6 +973,8 @@ export default function PreviewCanvas({ canvasRef: externalRef }: PreviewCanvasP
             y: item.y,
             size: item.sz,
             customRotation: item.rot,
+            rotation: Math.round(((item.rot * 180) / Math.PI) * 10) / 10,
+            scale: item.flower.scale ?? 1.0,
             isManual: true,
           });
         }
@@ -905,36 +1024,39 @@ export default function PreviewCanvas({ canvasRef: externalRef }: PreviewCanvasP
     setIsCardSelected(false);
   };
 
-  const handlePointerMove = (e: React.MouseEvent | React.TouchEvent) => {
+  const handlePointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
     const { x: rawX, y: rawY } = getCanvasCoords(e);
     const mouseX = rawX;
     const mouseY = rawY;
     const { x: flMouseX, y: flMouseY } = toBouquetCoords(rawX, rawY);
 
-    // Active Bucket Move Drag
+    // Active Bucket Move Drag (Live Ref without React re-render)
     if (dragState?.mode === 'bucket-move') {
-      if ('touches' in e) e.preventDefault();
+      e.preventDefault();
       hasMovedDrag.current = true;
       const dx = flMouseX - dragState.startMouseX;
       const dy = flMouseY - dragState.startMouseY;
 
-      // Batasi pergeseran buket dalam rentang aman agar tidak bablas keluar kanvas
       const maxClampX = Math.round(canvasW * 0.38);
       const maxClampY = Math.round(canvasH * 0.30);
       const targetX = Math.round(dragState.origX + dx);
       const targetY = Math.round(dragState.origY + dy);
 
-      setBucketOffset({
-        x: Math.max(-maxClampX, Math.min(maxClampX, targetX)),
-        y: Math.max(-maxClampY, Math.min(maxClampY, targetY)),
-      });
+      liveBucketRef.current = {
+        ...liveBucketRef.current,
+        offset: {
+          x: Math.max(-maxClampX, Math.min(maxClampX, targetX)),
+          y: Math.max(-maxClampY, Math.min(maxClampY, targetY)),
+        },
+      };
+      scheduleRender();
       setCursorStyle('grabbing');
       return;
     }
 
-    // Active Bucket Rotate Drag
+    // Active Bucket Rotate Drag (Live Ref without React re-render)
     if (dragState?.mode === 'bucket-rotate') {
-      if ('touches' in e) e.preventDefault();
+      e.preventDefault();
       hasMovedDrag.current = true;
       const pivotX = canvasW / 2;
       const pivotY = canvasH / 2;
@@ -944,27 +1066,35 @@ export default function PreviewCanvas({ canvasRef: externalRef }: PreviewCanvasP
       let newRot = Math.round(dragState.origRot + deltaDeg);
       while (newRot > 180) newRot -= 360;
       while (newRot < -180) newRot += 360;
-      setBouquetRotation(newRot);
+      liveBucketRef.current = {
+        ...liveBucketRef.current,
+        rotation: newRot,
+      };
+      scheduleRender();
       setCursorStyle('grabbing');
       return;
     }
 
-    // Active Bucket Scale Drag
+    // Active Bucket Scale Drag (Live Ref without React re-render)
     if (dragState?.mode === 'bucket-scale') {
-      if ('touches' in e) e.preventDefault();
+      e.preventDefault();
       hasMovedDrag.current = true;
       const currentDist = Math.hypot(flMouseX - dragState.origX, flMouseY - dragState.origY);
       const startDist = Math.hypot(dragState.startMouseX - dragState.origX, dragState.startMouseY - dragState.origY);
       const ratio = currentDist / (startDist || 1);
       const newScale = Math.max(0.4, Math.min(2.0, Number((dragState.origSize * ratio).toFixed(2))));
-      setBouquetScale(newScale);
+      liveBucketRef.current = {
+        ...liveBucketRef.current,
+        scale: newScale,
+      };
+      scheduleRender();
       setCursorStyle('nwse-resize');
       return;
     }
 
-    // Active Greeting Card Scaling
+    // Active Greeting Card Scaling (Live Ref without React re-render)
     if (dragState?.mode === 'scale-card') {
-      if ('touches' in e) e.preventDefault();
+      e.preventDefault();
       hasMovedDrag.current = true;
       const currentDist = Math.hypot(mouseX - dragState.origX, mouseY - dragState.origY);
       const startDist = Math.hypot(
@@ -973,25 +1103,34 @@ export default function PreviewCanvas({ canvasRef: externalRef }: PreviewCanvasP
       );
       const ratio = currentDist / (startDist || 1);
       const newScale = Math.max(0.55, Math.min(2.3, Number((dragState.origRot * ratio).toFixed(2))));
-      setText({ cardScale: newScale });
+      liveCardRef.current = {
+        ...liveCardRef.current,
+        cardScale: newScale,
+      };
+      scheduleRender();
       setCursorStyle('nwse-resize');
       return;
     }
 
-    // Active Greeting Card Dragging
+    // Active Greeting Card Dragging (Live Ref without React re-render)
     if (isDraggingCard) {
-      if ('touches' in e) e.preventDefault();
+      e.preventDefault();
       hasMovedDrag.current = true;
       const newCx = Math.max(40, Math.min(canvasW - 40, Math.round(mouseX - cardDragOffset.current.dx)));
       const newCy = Math.max(40, Math.min(canvasH - 40, Math.round(mouseY - cardDragOffset.current.dy)));
-      setText({ cardX: newCx, cardY: newCy });
+      liveCardRef.current = {
+        ...liveCardRef.current,
+        cardX: newCx,
+        cardY: newCy,
+      };
+      scheduleRender();
       setCursorStyle('grabbing');
       return;
     }
 
-    // Active Flower Dragging (uses bouquet-local coords)
+    // Active Flower Dragging (Live Ref without React re-render)
     if (dragState && selectedUid) {
-      if ('touches' in e) e.preventDefault();
+      e.preventDefault();
       hasMovedDrag.current = true;
 
       if (dragState.mode === 'move') {
@@ -1000,21 +1139,32 @@ export default function PreviewCanvas({ canvasRef: externalRef }: PreviewCanvasP
         const newX = Math.round(dragState.origX + dx);
         const newY = Math.round(dragState.origY + dy);
 
-        updateFlower(selectedUid, {
+        liveFlowerRef.current = {
+          uid: selectedUid,
           x: newX,
           y: newY,
           size: dragState.origSize,
-          customRotation: dragState.origRot,
-        });
+          rotation: dragState.origRot,
+        };
+        scheduleRender();
       } else if (dragState.mode === 'rotate') {
         const angle = Math.atan2(flMouseY - dragState.origY, flMouseX - dragState.origX);
         const newRot = angle + Math.PI / 2;
-        updateFlower(selectedUid, { customRotation: newRot });
+        liveFlowerRef.current = {
+          uid: selectedUid,
+          rotation: newRot,
+        };
+        scheduleRender();
       } else if (dragState.mode === 'scale') {
         const dist = Math.hypot(flMouseX - dragState.origX, flMouseY - dragState.origY);
         const newSize = Math.max(45, Math.min(180, Math.round(dist * 2)));
         const newScale = Number((newSize / 92).toFixed(2));
-        updateFlower(selectedUid, { size: newSize, scale: newScale });
+        liveFlowerRef.current = {
+          uid: selectedUid,
+          size: newSize,
+          scale: newScale,
+        };
+        scheduleRender();
       }
       return;
     }
@@ -1115,17 +1265,165 @@ export default function PreviewCanvas({ canvasRef: externalRef }: PreviewCanvasP
     setCursorStyle('default');
   };
 
-  const handlePointerUp = () => {
-    // If user dragged a flower, bucket, or card, commit the preDragSnapshot to undo history
-    if (hasMovedDrag.current && preDragSnapshot.current) {
-      recordSnapshot(preDragSnapshot.current);
+  const commitDrag = useCallback(() => {
+    if (!isDraggingActiveRef.current && !hasMovedDrag.current) return;
+    isDraggingActiveRef.current = false;
+
+    // Commit live transforms once on pointer release (commit to React state only upon release)
+    if (hasMovedDrag.current) {
+      if (liveBucketRef.current) {
+        const lb = liveBucketRef.current;
+        if (lb.offset) setBucketOffset(lb.offset);
+        if (lb.rotation !== undefined) setBouquetRotation(lb.rotation);
+        if (lb.scale !== undefined) setBouquetScale(lb.scale);
+      } else if (liveFlowerRef.current) {
+        const lf = liveFlowerRef.current;
+        const targetUid = lf.uid || selectedUid;
+        if (targetUid) {
+          updateFlower(targetUid, {
+            ...(lf.x !== undefined ? { x: lf.x } : {}),
+            ...(lf.y !== undefined ? { y: lf.y } : {}),
+            ...(lf.size !== undefined ? { size: lf.size } : {}),
+            ...(lf.scale !== undefined ? { scale: lf.scale } : {}),
+            ...(lf.rotation !== undefined
+              ? {
+                  customRotation: lf.rotation,
+                  rotation: Math.round(((lf.rotation * 180) / Math.PI) * 10) / 10,
+                }
+              : {}),
+            isManual: true,
+          });
+        }
+      } else if (liveCardRef.current) {
+        setText(liveCardRef.current);
+      }
+
+      // Commit the preDragSnapshot to undo history
+      if (preDragSnapshot.current) {
+        recordSnapshot(preDragSnapshot.current);
+      }
     }
+
+    // MANDATORY: ALWAYS unconditionally clear liveRefs, drag state, and preDragSnapshot
+    liveBucketRef.current = null;
+    liveFlowerRef.current = null;
+    liveCardRef.current = null;
     preDragSnapshot.current = null;
     hasMovedDrag.current = false;
-
     setDragState(null);
     setIsDraggingCard(false);
+
+    scheduleRender();
+  }, [
+    selectedUid,
+    setBucketOffset,
+    setBouquetRotation,
+    setBouquetScale,
+    updateFlower,
+    setText,
+    recordSnapshot,
+    scheduleRender,
+  ]);
+
+  const cancelDrag = useCallback(() => {
+    isDraggingActiveRef.current = false;
+
+    // Revert transform to preDragSnapshot (batal), JANGAN commit posisi tengah drag
+    if (preDragSnapshot.current) {
+      const snap = preDragSnapshot.current;
+      if (snap.bucketOffset !== undefined) setBucketOffset(snap.bucketOffset);
+      if (snap.bouquetRotation !== undefined) setBouquetRotation(snap.bouquetRotation);
+      if (snap.bouquetScale !== undefined) setBouquetScale(snap.bouquetScale);
+      if (snap.text) setText(snap.text);
+
+      const targetUid = liveFlowerRef.current?.uid || selectedUid;
+      if (targetUid && snap.selectedFlowers) {
+        const origFl = snap.selectedFlowers.find((f: any) => f.uid === targetUid);
+        if (origFl) {
+          updateFlower(targetUid, {
+            x: origFl.x,
+            y: origFl.y,
+            size: origFl.size,
+            scale: origFl.scale,
+            rotation: origFl.rotation,
+            customRotation: origFl.customRotation,
+            isManual: origFl.isManual,
+          });
+        }
+      }
+    }
+
+    // Unconditionally clear all liveRefs and drag state without recording undo history
+    liveBucketRef.current = null;
+    liveFlowerRef.current = null;
+    liveCardRef.current = null;
+    preDragSnapshot.current = null;
+    hasMovedDrag.current = false;
+    setDragState(null);
+    setIsDraggingCard(false);
+
+    scheduleRender();
+  }, [
+    selectedUid,
+    setBucketOffset,
+    setBouquetRotation,
+    setBouquetScale,
+    updateFlower,
+    setText,
+    scheduleRender,
+  ]);
+
+  const handlePointerUp = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    try {
+      if (e.currentTarget?.hasPointerCapture?.(e.pointerId)) {
+        e.currentTarget.releasePointerCapture(e.pointerId);
+      }
+    } catch {
+      // Ignore
+    }
+    commitDrag();
   };
+
+  const handlePointerCancel = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    try {
+      if (e.currentTarget?.hasPointerCapture?.(e.pointerId)) {
+        e.currentTarget.releasePointerCapture(e.pointerId);
+      }
+    } catch {
+      // Ignore
+    }
+    cancelDrag();
+  };
+
+  const handleLostPointerCapture = (_e: React.PointerEvent<HTMLCanvasElement>) => {
+    // Pastikan lostpointercapture tidak memicu commit kedua setelah pointerup (tidak ada entri undo ganda)
+    if (isDraggingActiveRef.current) {
+      commitDrag();
+    }
+  };
+
+  // Live transform bridge for TransformControlOverlay
+  const handleLiveFlowerTransform = useCallback((live: LiveFlowerTransform | null) => {
+    liveFlowerRef.current = live;
+    scheduleRender();
+  }, [scheduleRender]);
+
+  const handleLiveBucketTransform = useCallback((live: LiveBucketTransform | null) => {
+    liveBucketRef.current = live;
+    scheduleRender();
+  }, [scheduleRender]);
+
+  const handleCommitFlower = useCallback((uid: string, updates: Partial<PlacedFlower>) => {
+    liveFlowerRef.current = null;
+    updateFlower(uid, updates);
+  }, [updateFlower]);
+
+  const handleCommitBucket = useCallback((updates: { scale?: number; rotation?: number; offset?: { x: number; y: number } }) => {
+    liveBucketRef.current = null;
+    if (updates.scale !== undefined) setBouquetScale(updates.scale);
+    if (updates.rotation !== undefined) setBouquetRotation(updates.rotation);
+    if (updates.offset !== undefined) setBucketOffset(updates.offset);
+  }, [setBouquetScale, setBouquetRotation, setBucketOffset]);
 
   const handleDoubleClick = (e: React.MouseEvent) => {
     if (isFinished) return;
@@ -1177,6 +1475,43 @@ export default function PreviewCanvas({ canvasRef: externalRef }: PreviewCanvasP
     }
   };
 
+  // ─── 6. KEYBOARD SHORTCUTS (UNDO, REDO, ESCAPE, DELETE) ────────────────
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.isContentEditable)
+      ) {
+        return;
+      }
+
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'z' || e.key === 'Z')) {
+        e.preventDefault();
+        if (e.shiftKey) {
+          if (canRedo) redo();
+        } else {
+          if (canUndo) undo();
+        }
+      } else if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || e.key === 'Y')) {
+        e.preventDefault();
+        if (canRedo) redo();
+      } else if (e.key === 'Escape') {
+        cancelDrag();
+        setSelectedUid(null);
+        setIsBucketSelected(false);
+      } else if ((e.key === 'Delete' || e.key === 'Backspace') && selectedUid) {
+        e.preventDefault();
+        removeFlowerByUid(selectedUid);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [canUndo, canRedo, undo, redo, selectedUid, setSelectedUid, setIsBucketSelected, removeFlowerByUid, cancelDrag]);
+
   return (
     <div className="preview-canvas-container">
       {/* Visual Canvas Area */}
@@ -1193,20 +1528,87 @@ export default function PreviewCanvas({ canvasRef: externalRef }: PreviewCanvasP
         )}
         <canvas
           ref={canvasRef}
-          width={canvasW}
-          height={canvasH}
+          width={Math.round(canvasW * dpr)}
+          height={Math.round(canvasH * dpr)}
           className="preview-canvas"
           style={{ cursor: cursorStyle, touchAction: 'none' }}
-          onMouseDown={handlePointerDown}
-          onMouseMove={handlePointerMove}
-          onMouseUp={handlePointerUp}
-          onMouseLeave={handlePointerUp}
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          onPointerCancel={handlePointerCancel}
+          onLostPointerCapture={handleLostPointerCapture}
           onDoubleClick={handleDoubleClick}
-          onTouchStart={handlePointerDown}
-          onTouchMove={handlePointerMove}
-          onTouchEnd={handlePointerUp}
           aria-label="Interactive flower bouquet canvas editor"
         />
+
+        {/* DOM-based interactive transform overlay for flowers & whole bouquet */}
+        {!isFinished && (
+          <TransformControlOverlay
+            canvasRef={canvasRef}
+            canvasW={canvasW}
+            canvasH={canvasH}
+            bouquetRotation={design.bouquetRotation ?? 0}
+            bouquetScale={design.bouquetScale ?? 1.0}
+            bucketOffset={design.bucketOffset ?? { x: 0, y: 0 }}
+            selectedItem={currentSelectedItem}
+            isBucketSelected={isBucketSelected}
+            bucketDims={currentBucketDims}
+            onUpdateFlower={updateFlower}
+            onUpdateBucket={(updates) => {
+              if (updates.scale !== undefined) setBouquetScale(updates.scale);
+              if (updates.rotation !== undefined) setBouquetRotation(updates.rotation);
+              if (updates.offset !== undefined) setBucketOffset(updates.offset);
+            }}
+            onLiveFlowerTransform={handleLiveFlowerTransform}
+            onLiveBucketTransform={handleLiveBucketTransform}
+            onCommitFlower={handleCommitFlower}
+            onCommitBucket={handleCommitBucket}
+            onDeselect={() => {
+              liveFlowerRef.current = null;
+              liveBucketRef.current = null;
+              liveCardRef.current = null;
+              setSelectedUid(null);
+              setIsBucketSelected(false);
+            }}
+            onSelectBouquet={() => {
+              setSelectedUid(null);
+              setIsBucketSelected(true);
+            }}
+            onLayerChange={changeFlowerLayer}
+            onDuplicate={duplicateFlower}
+            onDelete={removeFlowerByUid}
+            onReset={resetElementTransform}
+            recordSnapshot={recordSnapshot}
+          />
+        )}
+
+        {/* Floating Undo/Redo Controls */}
+        {!isFinished && (
+          <div className="canvas-history-controls" aria-label="Undo and Redo">
+            <button
+              type="button"
+              className="canvas-history-btn"
+              onClick={() => undo()}
+              disabled={!canUndo}
+              title={isEn ? 'Undo (Ctrl+Z)' : 'Batalkan (Ctrl+Z)'}
+              aria-label={t('btn_undo')}
+            >
+              <RotateCcw size={15} />
+              <span className="history-btn-label">{t('btn_undo')}</span>
+            </button>
+            <button
+              type="button"
+              className="canvas-history-btn"
+              onClick={() => redo()}
+              disabled={!canRedo}
+              title={isEn ? 'Redo (Ctrl+Y)' : 'Ulangi (Ctrl+Y)'}
+              aria-label={t('btn_redo')}
+            >
+              <RotateCw size={15} />
+              <span className="history-btn-label">{t('btn_redo')}</span>
+            </button>
+          </div>
+        )}
 
         {design.selectedFlowers.length === 0 && (
           <div className="canvas-empty-hint">

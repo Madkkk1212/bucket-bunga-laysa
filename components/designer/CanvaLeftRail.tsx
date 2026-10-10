@@ -38,7 +38,7 @@ const STEP_ITEMS = [
   { step: 5, label: 'Unduh', icon: Download },
 ];
 
-export default function CanvaLeftRail({
+const CanvaLeftRail = React.memo(function CanvaLeftRail({
   currentStep,
   onStepClick,
   onBackToDashboard,
@@ -186,4 +186,6 @@ export default function CanvaLeftRail({
       )}
     </div>
   );
-}
+});
+
+export default CanvaLeftRail;

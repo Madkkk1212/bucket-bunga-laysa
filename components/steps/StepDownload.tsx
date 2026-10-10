@@ -27,6 +27,7 @@ import EffectSelector from '../gift/EffectSelector';
 import YouTubeInput from '../gift/YouTubeInput';
 import PhotoUploader, { ClientPhoto } from '../gift/PhotoUploader';
 import PremiumUnlockModal from '../designer/PremiumUnlockModal';
+import ShortGiftShareModal from '../gift/ShortGiftShareModal';
 import { GIFT_TEMPLATES } from '../gift/templates';
 import type { GiftTemplateId, GiftObjectId, GiftEffectId } from '@/types/giftConfig';
 
@@ -36,6 +37,7 @@ interface StepDownloadProps {
 
 export default function StepDownload({ canvasRef }: StepDownloadProps) {
   const { t, isEn } = useLanguage();
+  const [isShortShareModalOpen, setIsShortShareModalOpen] = useState(false);
   const {
     design,
     resetDesign,
@@ -113,7 +115,7 @@ export default function StepDownload({ canvasRef }: StepDownloadProps) {
 
   const handleDownload = async () => {
     setStatus('downloading');
-    await downloadDesign(canvasRef, format, exportResolution);
+    await downloadDesign(canvasRef, format, exportResolution, design);
     setTimeout(() => setStatus('done'), 800);
   };
 
@@ -776,33 +778,47 @@ export default function StepDownload({ canvasRef }: StepDownloadProps) {
             </div>
           </div>
 
-          {/* Download button */}
-          <button
-            id="btn-download"
-            className={`btn download-btn ${status === 'done' ? 'btn-success' : 'btn-primary'} w-full mt-3`}
-            onClick={handleDownload}
-            disabled={status === 'downloading'}
-            style={{ padding: '11px', borderRadius: '12px', fontSize: '13px' }}
-          >
-            {status === 'idle' && (
-              <>
-                <Download size={16} />
-                <span>{isEn ? `Download Image (${format.toUpperCase()})` : `Unduh Gambar (${format.toUpperCase()})`}</span>
-              </>
-            )}
-            {status === 'downloading' && (
-              <>
-                <span className="spinner" />
-                <span>{isEn ? 'Preparing image...' : 'Menyiapkan gambar...'}</span>
-              </>
-            )}
-            {status === 'done' && (
-              <>
-                <CheckCircle size={16} />
-                <span>{isEn ? 'Downloaded! ✓' : 'Berhasil Diunduh! ✓'}</span>
-              </>
-            )}
-          </button>
+          {/* Action Buttons: Unduh Gambar & Buat Link & Kirim */}
+          <div className="flex flex-col sm:flex-row gap-2.5 mt-3">
+            <button
+              id="btn-download"
+              className={`btn download-btn ${status === 'done' ? 'btn-success' : 'btn-primary'} flex-1`}
+              onClick={handleDownload}
+              disabled={status === 'downloading'}
+              style={{ padding: '12px', borderRadius: '12px', fontSize: '13px' }}
+            >
+              {status === 'idle' && (
+                <>
+                  <Download size={16} />
+                  <span>{isEn ? `Download Image (${format.toUpperCase()})` : `Unduh Gambar (${format.toUpperCase()})`}</span>
+                </>
+              )}
+              {status === 'downloading' && (
+                <>
+                  <span className="spinner" />
+                  <span>{isEn ? 'Preparing image...' : 'Menyiapkan gambar...'}</span>
+                </>
+              )}
+              {status === 'done' && (
+                <>
+                  <CheckCircle size={16} />
+                  <span>{isEn ? 'Downloaded! ✓' : 'Berhasil Diunduh! ✓'}</span>
+                </>
+              )}
+            </button>
+
+            {/* C.1: Tombol "Buat Link & Kirim" di samping tombol unduh gambar */}
+            <button
+              id="btn-create-short-link"
+              type="button"
+              className="btn btn-secondary flex-1 flex items-center justify-center gap-2 border-pink-300 text-pink-700 bg-pink-50/80 hover:bg-pink-100 font-bold shadow-xs cursor-pointer"
+              onClick={() => setIsShortShareModalOpen(true)}
+              style={{ padding: '12px', borderRadius: '12px', fontSize: '13px' }}
+            >
+              <Send size={15} className="text-rose-600 shrink-0" />
+              <span>{t('gift_create_link_btn')}</span>
+            </button>
+          </div>
 
           {status === 'done' && (
             <div className="success-banner mt-2.5 text-xs py-2 px-3 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200 text-center font-medium">
@@ -844,6 +860,17 @@ export default function StepDownload({ canvasRef }: StepDownloadProps) {
         isOpen={isUnlockModalOpen}
         onClose={() => setIsUnlockModalOpen(false)}
         itemName={isEn ? 'Kado Link VIP Package' : 'Paket VIP Kado Link'}
+      />
+
+      {/* C.1 & C.4: Modal Buat Link & Kirim Lewat Link (/b/[id]) */}
+      <ShortGiftShareModal
+        isOpen={isShortShareModalOpen}
+        onClose={() => setIsShortShareModalOpen(false)}
+        initialSenderName={senderName}
+        initialRecipientName={recipientName}
+        initialMessage={personalMessage || design.text?.content || ''}
+        design={design}
+        canvasRef={canvasRef}
       />
     </div>
   );
