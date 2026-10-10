@@ -44,9 +44,9 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://giftbucket.web.id'),
-  title: 'Bucket Bunga Laysa — Bikin Buket Bunga Virtual & Hadiah Online Gratis',
+  title: 'Bucket Bunga Laysa — Bikin Buket Bunga Virtual & Hadiah Online',
   description:
-    'Studio pembuat buket bunga virtual gratis. Pilih bunga dan kertas buket, tulis kartu ucapan, lalu unduh gambar HD untuk kado ulang tahun, wisuda, pacar LDR, dan momen spesial.',
+    'Studio pembuat buket bunga virtual interaktif. Pilih bunga dan kertas buket, tulis kartu ucapan, lalu unduh gambar HD untuk kado ulang tahun, wisuda, pacar LDR, dan momen spesial.',
   keywords: [
     // Ulang Tahun & Perayaan (Birthday & Celebration)
     'kado ulang tahun virtual',
@@ -74,11 +74,11 @@ export const metadata: Metadata = {
     'ucapan terima kasih buket bunga digital',
     'get well soon virtual flower bouquet',
     // Fitur & Kebutuhan Instan
-    'bikin buket bunga online gratis',
+    'bikin buket bunga online mudah',
     'generator buket bunga online download gambar',
     'desain buket bunga sendiri tanpa aplikasi',
     'diy virtual flower bouquet maker',
-    'ide kado dadakan aesthetic gratis',
+    'ide kado dadakan aesthetic praktis',
     'custom flower bouquet maker free png',
     'trend bikin bunga online tiktok viral',
     'interactive 2d flower bouquet canvas',
@@ -121,9 +121,9 @@ export const metadata: Metadata = {
     google: 'google707247af897599f6',
   },
   openGraph: {
-    title: 'Bucket Bunga Laysa — Bikin Buket Bunga Virtual & Hadiah Online Gratis',
+    title: 'Bucket Bunga Laysa — Bikin Buket Bunga Virtual & Hadiah Online',
     description:
-      'Studio pembuat buket bunga virtual gratis. Pilih bunga dan kertas buket, tulis kartu ucapan, lalu unduh gambar HD untuk kado ulang tahun, wisuda, pacar LDR, dan momen spesial.',
+      'Studio pembuat buket bunga virtual interaktif. Pilih bunga dan kertas buket, tulis kartu ucapan, lalu unduh gambar HD untuk kado ulang tahun, wisuda, pacar LDR, dan momen spesial.',
     url: 'https://giftbucket.web.id',
     siteName: 'Bucket Bunga Laysa',
     locale: 'id_ID',
@@ -139,9 +139,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Bucket Bunga Laysa — Bikin Buket Bunga Virtual & Hadiah Online Gratis',
+    title: 'Bucket Bunga Laysa — Bikin Buket Bunga Virtual & Hadiah Online',
     description:
-      'Studio pembuat buket bunga virtual gratis. Pilih bunga dan kertas buket, tulis kartu ucapan, lalu unduh gambar HD untuk kado ulang tahun, wisuda, pacar LDR, dan momen spesial.',
+      'Studio pembuat buket bunga virtual interaktif. Pilih bunga dan kertas buket, tulis kartu ucapan, lalu unduh gambar HD untuk kado ulang tahun, wisuda, pacar LDR, dan momen spesial.',
     images: ['/images/home.png'],
   },
 };
@@ -155,7 +155,7 @@ const jsonLdStructuredData = {
       url: 'https://giftbucket.web.id',
       name: 'Bucket Bunga Laysa',
       description:
-        'Studio Kreatif Pembuat Buket Bunga Virtual & Kartu Ucapan Kustom Online Gratis untuk Segala Momen Spesial',
+        'Studio Kreatif Pembuat Buket Bunga Virtual & Kartu Ucapan Kustom Online untuk Segala Momen Spesial',
       inLanguage: 'id-ID',
       publisher: {
         '@type': 'Organization',
@@ -218,7 +218,7 @@ const jsonLdStructuredData = {
         'Koleksi Lengkap Bunga Botani: Mawar, Bunga Matahari, Tulip, Lily, Hydrangea, Baby Breath',
         'Kustomisasi Warna Kertas Pembungkus (Wrapping Paper)',
         'Editor Kartu Ucapan Pribadi untuk Ulang Tahun, Wisuda, Sidang Skripsi, Anniversary, dan Minta Maaf',
-        'Ekspor Desain Resolusi Tinggi (PNG/JPG) Gratis Siap Kirim WhatsApp & Instagram',
+        'Ekspor Desain Resolusi Tinggi (PNG/JPG) Siap Kirim WhatsApp & Instagram',
       ],
     },
     {
@@ -226,7 +226,7 @@ const jsonLdStructuredData = {
       '@id': 'https://giftbucket.web.id/#howto',
       name: 'Cara Membuat Buket Bunga Virtual Kustom untuk Hadiah Online',
       description:
-        'Panduan 4 langkah mudah mendesain buket bunga digital kustom untuk kado ulang tahun, wisuda, atau pacar LDR secara gratis.',
+        'Panduan 4 langkah mudah mendesain buket bunga digital kustom untuk kado ulang tahun, wisuda, atau pacar LDR secara langsung.',
       totalTime: 'PT3M',
       step: [
         {
@@ -264,7 +264,7 @@ const jsonLdStructuredData = {
           name: 'Apakah Bucket Bunga Laysa bisa digunakan untuk kado ulang tahun?',
           acceptedAnswer: {
             '@type': 'Answer',
-            text: 'Sangat bisa! Anda dapat merangkai buket bunga digital bernuansa ceria, memilih mawar atau tulip favorit, serta menulis pesan kartu ucapan selamat ulang tahun yang manis untuk sahabat, pacar, atau keluarga, lalu mengunduhnya secara gratis untuk dikirim tepat jam 00:00.',
+            text: 'Sangat bisa! Anda dapat merangkai buket bunga digital bernuansa ceria, memilih mawar atau tulip favorit, serta menulis pesan kartu ucapan selamat ulang tahun yang manis untuk sahabat, pacar, atau keluarga, lalu mengunduhnya untuk dikirim tepat jam 00:00.',
           },
         },
         {
@@ -277,10 +277,10 @@ const jsonLdStructuredData = {
         },
         {
           '@type': 'Question',
-          name: 'Apakah membuat dan mengunduh buket bunga di sini gratis?',
+          name: 'Apakah membuat dan mengunduh buket bunga di sini praktis?',
           acceptedAnswer: {
             '@type': 'Answer',
-            text: 'Ya, 100% gratis tanpa dipungut biaya apapun. Anda tidak perlu mengunduh aplikasi atau membuat akun pendaftaran.',
+            text: 'Dapat langsung dibuat secara bebas tanpa biaya. Anda tidak perlu mengunduh aplikasi atau membuat akun pendaftaran.',
           },
         },
         {

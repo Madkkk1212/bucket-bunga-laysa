@@ -1,57 +1,74 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Home, Sparkles, ArrowLeft, Flower } from 'lucide-react';
+import { Flower } from 'lucide-react';
 
-export default function NotFound() {
+export default function NotFoundRedirect() {
+  const router = useRouter();
+
+  useEffect(() => {
+    try {
+      if (typeof window !== 'undefined' && window.location.pathname !== '/pagenotfound') {
+        sessionStorage.setItem('laysa_last_invalid_path', window.location.pathname + window.location.search);
+      }
+    } catch {
+      // ignore
+    }
+
+    // Immediately replace URL to /pagenotfound
+    router.replace('/pagenotfound');
+    if (typeof window !== 'undefined' && window.location.pathname !== '/pagenotfound') {
+      window.location.replace('/pagenotfound');
+    }
+  }, [router]);
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-rose-50 via-pink-50 to-amber-50 px-4 py-12 relative overflow-hidden font-sans">
-      {/* Decorative Floral Floating Particles */}
-      <div className="absolute inset-0 pointer-events-none select-none opacity-40">
-        <span className="absolute top-10 left-10 text-4xl animate-bounce">🌸</span>
-        <span className="absolute top-1/4 right-12 text-3xl animate-pulse">✨</span>
-        <span className="absolute bottom-20 left-1/5 text-4xl animate-bounce" style={{ animationDelay: '1s' }}>🌺</span>
-        <span className="absolute bottom-12 right-1/4 text-3xl animate-pulse" style={{ animationDelay: '1.5s' }}>🌷</span>
+    <div
+      style={{
+        minHeight: '100dvh',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#fff0f5',
+        fontFamily: 'system-ui, -apple-system, sans-serif',
+        color: '#be185d',
+        gap: '16px',
+        padding: '24px',
+        textAlign: 'center',
+      }}
+    >
+      <meta name="robots" content="noindex, nofollow" />
+      <div
+        style={{
+          width: '56px',
+          height: '56px',
+          borderRadius: '50%',
+          background: 'linear-gradient(135deg, #f43f5e, #ec4899)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: '#ffffff',
+          boxShadow: '0 8px 24px rgba(244, 63, 94, 0.25)',
+        }}
+      >
+        <Flower size={30} className="animate-spin" style={{ animationDuration: '6s' }} />
       </div>
-
-      <div className="max-w-md w-full bg-white/80 backdrop-blur-xl rounded-3xl p-8 sm:p-10 shadow-2xl border border-pink-100/80 text-center relative z-10 transition-all">
-        {/* Emblem */}
-        <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-tr from-pink-500 to-rose-400 flex items-center justify-center shadow-lg shadow-pink-500/25">
-          <Flower size={42} className="text-white animate-spin" style={{ animationDuration: '12s' }} />
-        </div>
-
-        <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold tracking-wider text-pink-700 bg-pink-100/70 mb-3 uppercase">
-          404 • Halaman Tidak Ditemukan
-        </span>
-
-        <h1 className="text-2xl sm:text-3xl font-bold text-slate-800 mb-3 tracking-tight">
-          Kelopak Ini Hilang Arah
-        </h1>
-
-        <p className="text-slate-600 text-sm sm:text-base leading-relaxed mb-8">
-          Halaman yang Anda tuju mungkin sudah dipindahkan atau tautan yang dimasukkan keliru. Mari kembali ke taman buket bunga kami!
-        </p>
-
-        {/* Action Buttons */}
-        <div className="flex flex-col sm:flex-row gap-3 justify-center">
-          <Link
-            href="/menu"
-            className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl bg-gradient-to-r from-pink-600 to-rose-500 text-white text-sm font-semibold shadow-md shadow-pink-500/25 hover:from-pink-700 hover:to-rose-600 transition-all hover:scale-[1.02] active:scale-[0.98]"
-          >
-            <Sparkles size={16} />
-            <span>Menu Utama</span>
-          </Link>
-
-          <Link
-            href="/"
-            className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl bg-slate-100 hover:bg-slate-200/80 text-slate-700 text-sm font-semibold transition-all hover:scale-[1.02] active:scale-[0.98]"
-          >
-            <Home size={16} />
-            <span>Ke Beranda</span>
-          </Link>
-        </div>
-      </div>
+      <p style={{ fontSize: '15px', fontWeight: 600, color: '#881337', margin: 0 }}>
+        Mengalihkan...
+      </p>
+      <Link
+        href="/pagenotfound"
+        style={{
+          fontSize: '13px',
+          color: '#db2777',
+          textDecoration: 'underline',
+        }}
+      >
+        Klik di sini jika tidak beralih otomatis
+      </Link>
     </div>
   );
 }

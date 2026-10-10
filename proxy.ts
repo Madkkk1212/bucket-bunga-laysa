@@ -125,6 +125,15 @@ export async function proxy(req: NextRequest) {
     );
   }
 
+  // ── 1B. REDIRECT /404 KE /pagenotfound SECARA EKSPLISIT ──
+  if (pathname === '/404') {
+    return NextResponse.redirect(new URL('/pagenotfound', req.url));
+  }
+
+  if (pathname === '/pagenotfound') {
+    return NextResponse.next();
+  }
+
   // ── 2. DYNAMIC SECRET ROUTE REWRITE ──
   // URL rahasia bisa diubah sewaktu-waktu di .env.local: ADMIN_SECRET_PATH
   const configuredSecretPath = (process.env.ADMIN_SECRET_PATH || '/lys-atelier-vault-89x').trim();

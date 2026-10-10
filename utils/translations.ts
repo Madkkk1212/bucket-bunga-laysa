@@ -274,6 +274,15 @@ export const TRANSLATIONS = {
     gift_open_box_prompt: 'Ketuk Kotak untuk Membuka Kado 🎁',
     gift_create_own: 'Buat Buket Juga 💐',
 
+    // 404 / Not Found
+    not_found_badge: 'HALAMAN TIDAK DITEMUKAN',
+    not_found_title: 'Kelopak Ini Hilang Arah',
+    not_found_desc: 'Halaman yang kamu tuju mungkin sudah dipindahkan atau tautannya keliru. Yuk kembali ke taman buket kami!',
+    not_found_btn_create: 'Buat Buket',
+    not_found_btn_home: 'Ke Beranda',
+    not_found_address_label: 'Alamat:',
+    not_found_redirecting: 'Mengalihkan...',
+
     // Menu Page (/menu)
     menu_back_home: 'Kembali ke Beranda',
     menu_atelier_hub: 'Pilih Menu',
@@ -675,6 +684,15 @@ export const TRANSLATIONS = {
     gift_share_web: 'Share',
     gift_open_box_prompt: 'Tap the Box to Open Your Gift 🎁',
     gift_create_own: 'Create Your Bouquet Too 💐',
+
+    // 404 / Not Found
+    not_found_badge: 'PAGE NOT FOUND',
+    not_found_title: 'This Petal Lost Its Way',
+    not_found_desc: 'The page you are looking for might have been moved or the link is incorrect. Let\'s head back to our flower bouquet garden!',
+    not_found_btn_create: 'Create Bouquet',
+    not_found_btn_home: 'Back to Home',
+    not_found_address_label: 'Address:',
+    not_found_redirecting: 'Redirecting...',
 
     // Menu Page (/menu)
     menu_back_home: 'Back to Home',

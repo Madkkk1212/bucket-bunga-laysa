@@ -9,6 +9,15 @@ const nextConfig: NextConfig = {
   },
   compress: true,
   poweredByHeader: false,
+  async redirects() {
+    return [
+      {
+        source: '/404',
+        destination: '/pagenotfound',
+        permanent: true,
+      },
+    ];
+  },
   async headers() {
     return [
       {

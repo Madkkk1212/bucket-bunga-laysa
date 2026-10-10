@@ -1,6 +1,6 @@
 import React from 'react';
 import { Metadata } from 'next';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import GiftShortUnboxing from '@/components/gift/GiftShortUnboxing';
 import { getLocalGift, type StoredGift } from '@/lib/giftsStorage';
 import { supabase, isSupabaseConfigured } from '@/lib/supabaseClient';
@@ -93,7 +93,7 @@ export default async function ShortGiftPage({ params }: PageProps) {
   const gift = await fetchGiftData(id);
 
   if (!gift) {
-    notFound();
+    redirect('/pagenotfound');
   }
 
   return <GiftShortUnboxing gift={gift} />;

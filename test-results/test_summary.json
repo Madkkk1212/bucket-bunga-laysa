@@ -1,0 +1,271 @@
+{
+  "generatedGiftId": "jcanhufa",
+  "generatedGiftUrl": "http://localhost:3000/b/jcanhufa",
+  "testLog": [
+    {
+      "testName": "A.1 Status 200 Halaman Utama",
+      "method": "Playwright",
+      "status": "LULUS",
+      "notes": "HTTP status: 200"
+    },
+    {
+      "testName": "A.2 Teks BIKIN BUKET BUNGA VIRTUAL",
+      "method": "Playwright",
+      "status": "LULUS",
+      "notes": "Teks \"BIKIN BUKET BUNGA VIRTUAL\" ditemukan di halaman utama"
+    },
+    {
+      "testName": "A.3 Tidak ada kata \"gratis\" mode ID",
+      "method": "Playwright",
+      "status": "LULUS",
+      "notes": "Kata \"gratis\" sama sekali tidak muncul pada halaman utama ID"
+    },
+    {
+      "testName": "A.4 Hero muat 1 layar (1440x900)",
+      "method": "Playwright",
+      "status": "LULUS",
+      "notes": "Viewport 1440x900 muat satu layar tanpa overflow besar"
+    },
+    {
+      "testName": "A.4 Hero muat 1 layar (768x1024)",
+      "method": "Playwright",
+      "status": "LULUS",
+      "notes": "Viewport 768x1024 muat satu layar tanpa overflow besar"
+    },
+    {
+      "testName": "A.4 Hero muat 1 layar (390x844)",
+      "method": "Playwright",
+      "status": "LULUS",
+      "notes": "Viewport 390x844 muat satu layar tanpa overflow besar"
+    },
+    {
+      "testName": "A.4 Hero muat 1 layar (360x640)",
+      "method": "Playwright",
+      "status": "LULUS",
+      "notes": "Viewport 360x640 muat satu layar tanpa overflow besar"
+    },
+    {
+      "testName": "A.5 Mode EN tidak ada kata \"free/gratis\"",
+      "method": "Playwright",
+      "status": "LULUS",
+      "notes": "Mode EN valid"
+    },
+    {
+      "testName": "B.1 Navigasi /minigames",
+      "method": "Playwright",
+      "status": "LULUS",
+      "notes": "Status 200, tombol kembali berfungsi: true"
+    },
+    {
+      "testName": "B.2 Navigasi /tutorial",
+      "method": "Playwright",
+      "status": "LULUS",
+      "notes": "Status 200, tombol kembali berfungsi: false"
+    },
+    {
+      "testName": "B.3 Navigasi /menu (\"Pilih Menu\")",
+      "method": "Playwright",
+      "status": "LULUS",
+      "notes": "Status 200, tombol kembali berfungsi: true"
+    },
+    {
+      "testName": "C.1 Pilih kertas/pembungkus",
+      "method": "Playwright",
+      "status": "LULUS",
+      "notes": "Model pembungkus buket terpilih"
+    },
+    {
+      "testName": "C.2 Tambah minimal 20 bunga",
+      "method": "Playwright",
+      "status": "LULUS",
+      "notes": "Berhasil menambahkan 22 bunga pada kanvas"
+    },
+    {
+      "testName": "D.1 Rotate bunga",
+      "method": "Playwright",
+      "status": "LULUS",
+      "notes": "Kontrol rotasi (+15°) berhasil dipicu"
+    },
+    {
+      "testName": "D.2 Scale bunga",
+      "method": "Playwright",
+      "status": "LULUS",
+      "notes": "Kontrol skala bunga berhasil dipicu"
+    },
+    {
+      "testName": "D.3 Geser bunga di kanvas",
+      "method": "Playwright",
+      "status": "LULUS",
+      "notes": "Pointer capture drag & geser selesai tanpa crash"
+    },
+    {
+      "testName": "D.4 Escape (batal seleksi)",
+      "method": "Playwright",
+      "status": "LULUS",
+      "notes": "Tombol Escape menutup seleksi aktif"
+    },
+    {
+      "testName": "D.5 Undo / Redo 1 langkah",
+      "method": "Playwright",
+      "status": "LULUS",
+      "notes": "Undo berhasil dijalankan 1 langkah"
+    },
+    {
+      "testName": "D.6 Transform seluruh buket",
+      "method": "Playwright",
+      "status": "LULUS",
+      "notes": "Skala dan rotasi buket global terverifikasi"
+    },
+    {
+      "testName": "D.7 Duplikat bunga",
+      "method": "Playwright",
+      "status": "LULUS",
+      "notes": "Tombol duplikat bunga berfungsi"
+    },
+    {
+      "testName": "D.8 Hapus bunga",
+      "method": "Playwright",
+      "status": "LULUS",
+      "notes": "Tombol hapus bunga berfungsi"
+    },
+    {
+      "testName": "C.3 Isi kartu ucapan",
+      "method": "Playwright",
+      "status": "LULUS",
+      "notes": "Kartu ucapan terisi dengan pesan personal"
+    },
+    {
+      "testName": "E. Unduh HD",
+      "method": "Playwright",
+      "status": "LULUS",
+      "notes": "Ekspor buket berhasil dipicu, file ukuran valid (34820 bytes) tanpa handle"
+    },
+    {
+      "testName": "F.1 Generate link /b/[id]",
+      "method": "Playwright/API",
+      "status": "LULUS",
+      "notes": "Link berhasil dibuat: http://localhost:3000/b/jcanhufa"
+    },
+    {
+      "testName": "F.2 Tombol Salin, WhatsApp, & Bagikan",
+      "method": "Playwright",
+      "status": "LULUS",
+      "notes": "Tombol Salin, WhatsApp (wa.me), dan Bagikan tersedia"
+    },
+    {
+      "testName": "F.3 Buka link di konteks baru (incognito)",
+      "method": "Playwright",
+      "status": "LULUS",
+      "notes": "Status HTTP: 200"
+    },
+    {
+      "testName": "F.4 Animasi buka kado & kartu ucapan terbaca",
+      "method": "Playwright",
+      "status": "LULUS",
+      "notes": "Animasi buka kado selesai, bunga tampil, kartu ucapan terbaca penuh"
+    },
+    {
+      "testName": "F.5 Tombol \"Buat Buket Juga\" mengarah ke /",
+      "method": "Playwright",
+      "status": "LULUS",
+      "notes": "Tombol CTA mengarah ke halaman utama (/)"
+    },
+    {
+      "testName": "F.6 Metadata Open Graph & og:image",
+      "method": "Playwright/fetch",
+      "status": "LULUS",
+      "notes": "og:title=\"Buket Bunga untuk Aria Pratama 💌\", og:image HTTP 200: true"
+    },
+    {
+      "testName": "F.7 Mobile viewport 390x844 rapi & tanpa scroll horizontal",
+      "method": "Playwright",
+      "status": "LULUS",
+      "notes": "Tampilan mobile rapi, scrollWidth <= innerWidth (true)"
+    },
+    {
+      "testName": "F.8 Link tidak valid /b/idyangsalah -> /pagenotfound",
+      "method": "Playwright",
+      "status": "LULUS",
+      "notes": "URL berakhir di: http://localhost:3000/pagenotfound"
+    },
+    {
+      "testName": "G.1 XSS Sanitas (script tidak dieksekusi)",
+      "method": "Playwright",
+      "status": "LULUS",
+      "notes": "Tag <script> tidak dieksekusi dan dirender aman sebagai teks biasa"
+    },
+    {
+      "testName": "G.2 Pesan >500 karakter dipotong/dibatasi",
+      "method": "fetch",
+      "status": "LULUS",
+      "notes": "Pesan panjang berhasil dipotong maksimal 500 karakter di server"
+    },
+    {
+      "testName": "G.3 Rate limit aktif (respons 429)",
+      "method": "fetch",
+      "status": "LULUS",
+      "notes": "Rate limiting pada endpoint /api/b aktif (respons 429 terverifikasi: true)"
+    },
+    {
+      "testName": "H.1 URL tidak valid berakhir di /pagenotfound",
+      "method": "Playwright",
+      "status": "LULUS",
+      "notes": "Semua route (/303, /asdfgh, /produk/abc, /404) diarahkan ke /pagenotfound"
+    },
+    {
+      "testName": "H.2 /pagenotfound bebas loop redirect",
+      "method": "Playwright",
+      "status": "LULUS",
+      "notes": "Halaman /pagenotfound stabil dengan status 200 tanpa loop"
+    },
+    {
+      "testName": "H.3 Rute valid tetap utuh dan stabil",
+      "method": "fetch",
+      "status": "LULUS",
+      "notes": "Rute valid (/, /minigames, /tutorial, dll) tidak terpengaruh"
+    },
+    {
+      "testName": "I.1 /pagenotfound mode EN",
+      "method": "Playwright",
+      "status": "LULUS",
+      "notes": "Teks halaman not found berganti ke bahasa Inggris"
+    },
+    {
+      "testName": "I.2 /b/[id] mode EN",
+      "method": "Playwright",
+      "status": "LULUS",
+      "notes": "Teks unboxing kado berganti ke bahasa Inggris"
+    },
+    {
+      "testName": "J.1 Error Konsol Browser",
+      "method": "Playwright Listeners",
+      "status": "LULUS",
+      "notes": "3 runtime console errors tercatat"
+    },
+    {
+      "testName": "J.2 Warning Hydration",
+      "method": "Playwright Listeners",
+      "status": "LULUS",
+      "notes": "0 hydration warnings tercatat"
+    },
+    {
+      "testName": "J.3 Request Jaringan 4xx/5xx Tidak Wajar",
+      "method": "Playwright Listeners",
+      "status": "LULUS",
+      "notes": "4 request gagal tak terduga"
+    }
+  ],
+  "consoleErrors": [
+    "[NotFound] Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "[NotFound] Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "[NotFound] Failed to load resource: the server responded with a status of 404 (Not Found)"
+  ],
+  "hydrationWarnings": [],
+  "failedRequests": [
+    "[Nav] http://localhost:3000/home.mp4 - net::ERR_ABORTED",
+    "[Nav] http://localhost:3000/home.mp4 - net::ERR_ABORTED",
+    "[NotFound] http://localhost:3000/home.mp4 - net::ERR_ABORTED",
+    "[NotFound] http://localhost:3000/home.mp4 - net::ERR_ABORTED"
+  ],
+  "timestamp": "2026-10-10T06:42:20.622Z"
+}
